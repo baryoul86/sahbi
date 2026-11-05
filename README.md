@@ -12,7 +12,7 @@ Assistente di intelligenza artificiale che risponde nella lingua dell'utente (da
 
 - `index.html`: l'app (una sola pagina, installabile sul telefono)
 - `api/`: il server su Vercel. Custodisce la chiave di OpenAI, che non arriva mai al telefono
-  - `chat.js` risposte e immagini · `image.js` immagini rimaste · `library.js` galleria · `transcribe.js` microfono · `config.js` dati pubblici
+  - `chat.js` risposte e immagini · `image.js` immagini rimaste · `library.js` galleria · `account.js` cancellazione account · `transcribe.js` microfono · `config.js` dati pubblici
 - `supabase/schema.sql`: il database (limiti giornalieri, galleria immagini)
 
 Nessuna libreria da installare.

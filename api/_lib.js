@@ -171,3 +171,26 @@ export async function deleteImage(userId, id) {
   }).catch(() => {});
   return true;
 }
+
+// Cancella per sempre l'account: file delle immagini, poi l'utente (le righe del database si cancellano a catena).
+export async function deleteAccount(userId) {
+  if (!isUuid(userId)) throw new Error('id non valido');
+  for (let round = 0; round < 20; round++) {
+    const list = await fetch(`${supabaseUrl()}/storage/v1/object/list/${BUCKET}`, {
+      method: 'POST',
+      headers: serviceHeaders({ 'content-type': 'application/json' }),
+      body: JSON.stringify({ prefix: `${userId}/`, limit: 1000, offset: 0 }),
+    });
+    if (!list.ok) throw new Error(`list ${list.status}`);
+    const files = (await list.json()).filter((f) => f.name).map((f) => `${userId}/${f.name}`);
+    if (!files.length) break;
+    const del = await fetch(`${supabaseUrl()}/storage/v1/object/${BUCKET}`, {
+      method: 'DELETE',
+      headers: serviceHeaders({ 'content-type': 'application/json' }),
+      body: JSON.stringify({ prefixes: files }),
+    });
+    if (!del.ok) throw new Error(`delete files ${del.status}`);
+  }
+  const res = await fetch(`${supabaseUrl()}/auth/v1/admin/users/${userId}`, { method: 'DELETE', headers: serviceHeaders() });
+  if (!res.ok) throw new Error(`delete user ${res.status}`);
+}

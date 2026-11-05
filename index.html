@@ -143,9 +143,32 @@ footer.composer .col{padding-block:10px 12px;display:flex;flex-direction:column;
 .auth input.code{letter-spacing:.4em;font-variant-numeric:tabular-nums;text-align:center;font-size:24px}
 .auth .err{color:var(--danger);font-size:14px;min-height:1.2em}
 .cta:disabled{opacity:.6;cursor:default}
-.account{display:flex;align-items:center;justify-content:space-between;gap:8px;border-top:1px solid var(--line);padding-top:12px;font-size:14px;color:var(--muted);min-width:0}
-.account span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.account button{min-height:44px;border:0;background:transparent;color:var(--fg);padding:0 8px;flex:0 0 auto}
+.settings-btn{display:flex;align-items:center;gap:12px;min-height:56px;padding:8px 12px;border:0;border-top:1px solid var(--line);background:transparent;text-align:left;min-width:0}
+.settings-btn:hover{background:var(--panel-2)}
+.settings-btn .who{display:flex;flex-direction:column;min-width:0}
+.settings-btn .who b{font-weight:500}
+.settings-btn .who span{font-size:13px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.settings{position:fixed;inset:0;z-index:25;background:var(--night);display:flex;flex-direction:column}
+.settings header{display:flex;align-items:center;gap:8px;padding:calc(8px + env(safe-area-inset-top,0px)) max(8px,env(safe-area-inset-right,0px)) 8px max(8px,env(safe-area-inset-left,0px));border-bottom:1px solid var(--line)}
+.settings header h2{margin:0;font-size:18px;font-weight:500;flex:1}
+.s-body{flex:1;overflow-y:auto;padding:16px max(16px,env(safe-area-inset-right,0px)) calc(24px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+.s-body .col{display:flex;flex-direction:column;gap:22px;max-width:560px}
+.s-group{display:flex;flex-direction:column;gap:8px}
+.s-group h3{margin:0;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:500}
+.s-card{border:1px solid var(--line);border-radius:16px;background:var(--panel);overflow:hidden}
+.s-row{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:56px;padding:10px 16px;border-top:1px solid var(--line);min-width:0}
+.s-row:first-child{border-top:0}
+.s-row .k{color:var(--muted);font-size:15px}
+.s-row .v{font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;font-variant-numeric:tabular-nums}
+button.s-row{width:100%;border:0;border-top:1px solid var(--line);background:transparent;text-align:left;font-size:16px}
+button.s-row:first-child{border-top:0}
+button.s-row:hover{background:var(--panel-2)}
+button.s-row.danger{color:var(--danger)}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:12px;padding:3px;gap:3px;background:var(--night)}
+.seg button{min-height:38px;padding:0 14px;border:0;border-radius:9px;background:transparent;color:var(--muted);font-size:14px}
+.seg button[aria-pressed="true"]{background:var(--mint);color:var(--mint-ink);font-weight:500}
+.s-note{margin:0;font-size:13px;color:var(--muted)}
+.s-pro{min-height:40px;padding:0 14px;border-radius:12px;border:0;background:var(--mint);color:var(--mint-ink);font-weight:500;font-size:14px;flex:0 0 auto}
 @media (prefers-reduced-motion:reduce){.typing i,.mic.on,.ph{animation:none}}
 </style>
 </head>
@@ -217,11 +240,10 @@ footer.composer .col{padding-block:10px 12px;display:flex;flex-direction:column;
     <b>Sahbi Pro</b>
     <span>8 images par jour, rechargées chaque nuit</span>
   </button>
-  <button class="lib-btn" id="themeBtn" type="button" aria-pressed="false">
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
-    <span id="themeLabel">Mode sombre</span>
+  <button class="settings-btn" id="openSettings" type="button">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+    <span class="who"><b>Paramètres</b><span id="who" dir="auto"></span></span>
   </button>
-  <div class="account"><span id="who" dir="auto"></span><button type="button" id="logout">Se déconnecter</button></div>
 </nav>
 
 <section class="sheet" id="sheet" hidden role="dialog" aria-modal="true" aria-labelledby="plusTitle">
@@ -286,6 +308,61 @@ footer.composer .col{padding-block:10px 12px;display:flex;flex-direction:column;
     <div class="v-actions">
       <a id="vOpen" href="#" target="_blank" rel="noopener">Ouvrir en grand</a>
       <button type="button" id="vDelete" class="danger">Supprimer</button>
+    </div>
+  </div>
+</section>
+
+<section class="settings" id="settings" hidden aria-labelledby="setTitle">
+  <header>
+    <button class="icon-btn" id="closeSettings" type="button" aria-label="Retour">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>
+    </button>
+    <h2 id="setTitle">Paramètres</h2>
+  </header>
+  <div class="s-body">
+    <div class="col">
+      <div class="s-group">
+        <h3>Compte</h3>
+        <div class="s-card">
+          <div class="s-row"><span class="k">E-mail</span><span class="v" id="sEmail" dir="auto"></span></div>
+          <div class="s-row"><span class="k">Abonnement</span><span class="v">Gratuit</span><button class="s-pro" id="sGoPro" type="button">Passer à Pro</button></div>
+        </div>
+      </div>
+
+      <div class="s-group">
+        <h3>Apparence</h3>
+        <div class="s-card">
+          <div class="s-row"><span class="k">Thème</span>
+            <div class="seg" role="group" aria-label="Thème">
+              <button type="button" id="themeLight" aria-pressed="true">Clair</button>
+              <button type="button" id="themeDark" aria-pressed="false">Sombre</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="s-group">
+        <h3>Utilisation aujourd'hui</h3>
+        <div class="s-card">
+          <div class="s-row"><span class="k">Images restantes</span><span class="v" id="sImages">–</span></div>
+        </div>
+        <p class="s-note">Les compteurs se rechargent chaque jour à minuit (heure du Maghreb).</p>
+      </div>
+
+      <div class="s-group">
+        <h3>Langue</h3>
+        <p class="s-note">Sahbi te répond dans la langue que tu utilises : darija, arabe, français, anglais ou toute autre langue. Il n'y a rien à régler.</p>
+      </div>
+
+      <div class="s-group">
+        <h3>Données</h3>
+        <div class="s-card">
+          <button class="s-row" type="button" id="sClear">Effacer l'historique des discussions</button>
+          <button class="s-row" type="button" id="sLogout">Se déconnecter</button>
+          <button class="s-row danger" type="button" id="sDelete">Supprimer mon compte</button>
+        </div>
+        <p class="s-note" id="sNote">L'historique des discussions est enregistré sur ce téléphone. Les images sont enregistrées dans ton compte.</p>
+      </div>
     </div>
   </div>
 </section>
@@ -358,7 +435,7 @@ $('codeForm').addEventListener('submit', async (e) => {
   $('codeForm').hidden = true; $('emailForm').hidden = false;
 });
 $('changeEmail').addEventListener('click', () => { $('codeForm').hidden = true; $('emailForm').hidden = false; $('email').focus(); });
-$('logout').addEventListener('click', async () => { closeAll(); await supabase.auth.signOut(); userId = null; $('auth').hidden = false; });
+async function logout() { closeAll(); $('settings').hidden = true; await supabase.auth.signOut(); userId = null; $('auth').hidden = false; }
 async function api(path, options = {}) {
   const headers = { ...(options.headers || {}), authorization: `Bearer ${await token()}` };
   return fetch(path, { ...options, headers });
@@ -649,7 +726,7 @@ function closeAll() { $('scrim').hidden = true; $('drawer').hidden = true; $('sh
 function openSheet() { closeAll(); $('scrim').hidden = false; $('sheet').hidden = false; $('subscribe').focus(); }
 $('openMenu').addEventListener('click', () => { renderHistory(); $('scrim').hidden = false; $('drawer').hidden = false; $('newChat').focus(); });
 $('scrim').addEventListener('click', closeAll);
-document.addEventListener('keydown', (e) => { if (e.key !== 'Escape') return; if (!$('viewer').hidden) $('viewer').hidden = true; else if (!$('gallery').hidden) $('gallery').hidden = true; else closeAll(); });
+document.addEventListener('keydown', (e) => { if (e.key !== 'Escape') return; if (!$('viewer').hidden) $('viewer').hidden = true; else if (!$('gallery').hidden) $('gallery').hidden = true; else if (!$('settings').hidden) $('settings').hidden = true; else closeAll(); });
 $('openPlus').addEventListener('click', openSheet);
 $('drawerPlus').addEventListener('click', openSheet);
 $('closeSheet').addEventListener('click', closeAll);
@@ -660,15 +737,49 @@ $('newChat').addEventListener('click', () => { closeAll(); newChat(); ta.focus()
 function applyTheme(dark) {
   if (dark) document.documentElement.dataset.theme = 'dark'; else delete document.documentElement.dataset.theme;
   document.querySelector('meta[name="theme-color"]').content = dark ? '#0F2E24' : '#FFFFFF';
-  $('themeLabel').textContent = dark ? 'Mode clair' : 'Mode sombre';
-  $('themeBtn').setAttribute('aria-pressed', String(dark));
+  $('themeLight').setAttribute('aria-pressed', String(!dark));
+  $('themeDark').setAttribute('aria-pressed', String(dark));
 }
-$('themeBtn').addEventListener('click', () => {
-  const dark = document.documentElement.dataset.theme !== 'dark';
+function setTheme(dark) {
   applyTheme(dark);
   try { localStorage.setItem('sahbi-theme', dark ? 'dark' : 'light'); } catch { /* ignorato */ }
-});
+}
+$('themeLight').addEventListener('click', () => setTheme(false));
+$('themeDark').addEventListener('click', () => setTheme(true));
 applyTheme(document.documentElement.dataset.theme === 'dark');
+
+// ---------- Paramètres ----------
+function resetConfirms() {
+  for (const [id, label] of [['sClear', 'Effacer l’historique des discussions'], ['sDelete', 'Supprimer mon compte']]) {
+    $(id).textContent = label; $(id).dataset.confirm = '';
+  }
+}
+async function openSettings() {
+  closeAll(); resetConfirms(); $('settings').hidden = false;
+  $('sEmail').textContent = $('who').textContent || '–';
+  $('sImages').textContent = imgLeft == null ? '…' : `${imgLeft} / ${imgLimit}`;
+  await refreshCount();
+  $('sImages').textContent = imgLeft == null ? '–' : `${imgLeft} / ${imgLimit}`;
+}
+$('openSettings').addEventListener('click', openSettings);
+$('closeSettings').addEventListener('click', () => { $('settings').hidden = true; });
+$('sGoPro').addEventListener('click', () => { $('settings').hidden = true; openSheet(); });
+$('sLogout').addEventListener('click', logout);
+$('sClear').addEventListener('click', () => {
+  const b = $('sClear');
+  if (!b.dataset.confirm) { b.dataset.confirm = '1'; b.textContent = 'Appuie encore pour tout effacer'; return; }
+  chats = []; persist(); newChat(); resetConfirms(); toast('Historique effacé.');
+});
+$('sDelete').addEventListener('click', async () => {
+  const b = $('sDelete');
+  if (!b.dataset.confirm) { b.dataset.confirm = '1'; b.textContent = 'Appuie encore : compte et images supprimés pour toujours'; return; }
+  b.disabled = true; b.textContent = 'Suppression…';
+  const r = await api('/api/account', { method: 'DELETE' }).catch(() => null);
+  b.disabled = false;
+  if (!r?.ok) { resetConfirms(); toast('Impossible de supprimer le compte. Réessaie.'); return; }
+  try { localStorage.removeItem(STORE); } catch { /* ignorato */ }
+  chats = []; await logout(); toast('Ton compte a été supprimé.');
+});
 
 newChat();
 ready.catch(() => toast('Connexion impossible. Recharge la page.'));
