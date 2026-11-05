@@ -5,20 +5,31 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
 <title>Sahbi – Maghreb AI</title>
 <meta name="description" content="Sahbi, l'ami qui te comprend : réponses en darija, arabe, français, anglais et toutes les langues.">
-<meta name="theme-color" content="#0F2E24">
+<meta name="theme-color" content="#FFFFFF">
 <link rel="icon" href="/logo.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/logo.svg">
 <link rel="manifest" href="/manifest.webmanifest">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@800&family=Rubik:wght@400;500&family=Reem+Kufi:wght@600&display=swap">
+<script>
+try { if (localStorage.getItem('sahbi-theme') === 'dark') document.documentElement.dataset.theme = 'dark'; } catch {}
+</script>
 <style>
 :root{
-  --night:#0F2E24; --panel:#153A2E; --panel-2:#1C4738; --line:#2A5747;
-  --fg:#F1F7F3; --muted:#A9C4B7; --mint:#2FAE74; --mint-ink:#0B2219; --danger:#F2A08A;
+  /* Tema chiaro (predefinito): sfondo bianco, testo verde notte, verde del logo per i pulsanti */
+  --night:#FFFFFF; --panel:#F2F7F4; --panel-2:#E2EEE7; --line:#D3E3DA;
+  --fg:#0F2E24; --muted:#4D675C; --mint:#2FAE74; --mint-text:#187A4F; --mint-ink:#0B2219; --danger:#B3401F;
+  --scrim:rgba(15,46,36,.35);
   --brand:"Baloo 2","Rubik",system-ui,sans-serif;
   --body:"Rubik",system-ui,-apple-system,"Segoe UI",sans-serif;
   --arabic:"Reem Kufi","Rubik",sans-serif;
+  color-scheme:light;
+}
+:root[data-theme="dark"]{
+  --night:#0F2E24; --panel:#153A2E; --panel-2:#1C4738; --line:#2A5747;
+  --fg:#F1F7F3; --muted:#A9C4B7; --mint:#2FAE74; --mint-text:#2FAE74; --mint-ink:#0B2219; --danger:#F2A08A;
+  --scrim:rgba(5,16,12,.6);
   color-scheme:dark;
 }
 *{box-sizing:border-box}
@@ -38,7 +49,7 @@ header.bar .col{display:flex;align-items:center;gap:12px;padding-block:10px}
 .icon-btn:hover{background:var(--panel)}
 .brand{display:flex;align-items:center;gap:10px;flex:1;min-width:0}
 .brand b{font-family:var(--brand);font-weight:800;font-size:24px;line-height:1}
-.brand span{font-family:var(--arabic);font-size:17px;color:var(--mint)}
+.brand span{font-family:var(--arabic);font-size:17px;color:var(--mint-text)}
 .pill{display:inline-flex;align-items:center;height:36px;padding:0 14px;border-radius:999px;border:1px solid var(--mint);background:var(--mint);color:var(--mint-ink);font-size:14px;font-weight:500}
 main.thread{flex:1;overflow-y:auto;overscroll-behavior:contain}
 main.thread .col{display:flex;flex-direction:column;gap:18px;padding-block:20px 28px;min-height:100%}
@@ -64,10 +75,10 @@ main.thread .col{display:flex;flex-direction:column;gap:18px;padding-block:20px 
 .gen small{color:var(--muted);font-size:13px}
 .ph{width:100%;aspect-ratio:1;border-radius:16px;background:var(--panel);border:1px dashed var(--line);display:grid;place-items:center;color:var(--muted);font-size:14px;animation:glow 1.6s ease-in-out infinite}
 @keyframes glow{50%{background:var(--panel-2)}}
-.inline-cta{margin-top:10px;display:inline-flex;align-items:center;min-height:44px;padding:0 16px;border-radius:12px;border:1px solid var(--mint);background:transparent;color:var(--mint);font-weight:500}
+.inline-cta{margin-top:10px;display:inline-flex;align-items:center;min-height:44px;padding:0 16px;border-radius:12px;border:1px solid var(--mint-text);background:transparent;color:var(--mint-text);font-weight:500}
 footer.composer{border-top:1px solid var(--line)}
 footer.composer .col{padding-block:10px 12px;display:flex;flex-direction:column;gap:8px}
-.count{font-variant-numeric:tabular-nums;color:var(--mint);font-weight:500}
+.count{font-variant-numeric:tabular-nums;color:var(--mint-text);font-weight:500}
 .box{display:flex;align-items:flex-end;gap:6px;background:var(--panel);border:1px solid var(--line);border-radius:22px;padding:6px 6px 6px 16px}
 .box:focus-within{border-color:var(--mint)}
 .box textarea{flex:1;min-width:0;background:transparent;border:0;resize:none;outline:none;max-height:140px;padding-block:9px;line-height:1.4}
@@ -75,13 +86,13 @@ footer.composer .col{padding-block:10px 12px;display:flex;flex-direction:column;
 .mic,.send{width:44px;height:44px;border-radius:50%;border:0;display:grid;place-items:center;flex:0 0 44px}
 .mic{background:transparent;color:var(--muted)}
 .mic:hover{color:var(--fg)}
-.mic.on{background:var(--panel-2);color:var(--mint);animation:pulse 1.2s infinite}
+.mic.on{background:var(--panel-2);color:var(--mint-text);animation:pulse 1.2s infinite}
 .mic.busy{opacity:.5;cursor:default}
 @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(47,174,116,.55)}100%{box-shadow:0 0 0 14px rgba(47,174,116,0)}}
 .send{background:var(--mint);color:var(--mint-ink)}
 .send:disabled{background:var(--panel-2);color:var(--muted);cursor:default}
 .hint{font-size:12px;color:var(--muted);text-align:center}
-.scrim{position:fixed;inset:0;background:rgba(5,16,12,.6);z-index:20}
+.scrim{position:fixed;inset:0;background:var(--scrim);z-index:20}
 .drawer{position:fixed;top:0;bottom:0;left:0;width:min(320px,86vw);background:var(--panel);z-index:21;display:flex;flex-direction:column;gap:16px;padding:calc(16px + env(safe-area-inset-top,0px)) 16px calc(16px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));border-right:1px solid var(--line)}
 .drawer h2{margin:0;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:500}
 .new{min-height:48px;border-radius:14px;border:0;background:var(--mint);color:var(--mint-ink);font-weight:500;display:flex;align-items:center;gap:10px;padding:0 16px}
@@ -96,7 +107,7 @@ footer.composer .col{padding-block:10px 12px;display:flex;flex-direction:column;
 .sheet{position:fixed;left:0;right:0;bottom:0;z-index:21;background:var(--panel);border-radius:24px 24px 0 0;border-top:1px solid var(--line);padding:22px max(16px,env(safe-area-inset-right,0px)) calc(20px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
 .sheet .col{display:flex;flex-direction:column;gap:14px;max-width:480px}
 .sheet h2{margin:0;font-family:var(--brand);font-weight:800;font-size:30px;line-height:1.1}
-.price{font-size:18px}.price b{font-size:36px;font-family:var(--brand);font-weight:800;color:var(--mint);font-variant-numeric:tabular-nums}
+.price{font-size:18px}.price b{font-size:36px;font-family:var(--brand);font-weight:800;color:var(--mint-text);font-variant-numeric:tabular-nums}
 .feats{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
 .feats li{display:flex;gap:10px;align-items:flex-start}
 .feats svg{flex:0 0 20px;margin-top:3px}
@@ -123,7 +134,7 @@ footer.composer .col{padding-block:10px 12px;display:flex;flex-direction:column;
 .auth .col{min-height:100%;display:flex;flex-direction:column;justify-content:center;gap:20px;padding-block:calc(32px + env(safe-area-inset-top,0px)) calc(32px + env(safe-area-inset-bottom,0px));max-width:420px}
 .wm{display:flex;align-items:baseline;gap:12px}
 .wm b{font-family:var(--brand);font-weight:800;font-size:52px;line-height:1}
-.wm span{font-family:var(--arabic);font-size:28px;color:var(--mint)}
+.wm span{font-family:var(--arabic);font-size:28px;color:var(--mint-text)}
 .auth p{margin:0;color:var(--muted)}
 .auth form{display:flex;flex-direction:column;gap:12px}
 .auth label{font-size:14px;color:var(--muted)}
@@ -205,6 +216,10 @@ footer.composer .col{padding-block:10px 12px;display:flex;flex-direction:column;
   <button class="plus-card" id="drawerPlus" type="button">
     <b>Sahbi Plus</b>
     <span>8 images par jour, rechargées chaque nuit</span>
+  </button>
+  <button class="lib-btn" id="themeBtn" type="button" aria-pressed="false">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+    <span id="themeLabel">Mode sombre</span>
   </button>
   <div class="account"><span id="who" dir="auto"></span><button type="button" id="logout">Se déconnecter</button></div>
 </nav>
@@ -640,6 +655,20 @@ $('drawerPlus').addEventListener('click', openSheet);
 $('closeSheet').addEventListener('click', closeAll);
 $('subscribe').addEventListener('click', () => { closeAll(); toast('L’abonnement arrive bientôt.'); });
 $('newChat').addEventListener('click', () => { closeAll(); newChat(); ta.focus(); });
+
+// ---------- Tema chiaro / scuro ----------
+function applyTheme(dark) {
+  if (dark) document.documentElement.dataset.theme = 'dark'; else delete document.documentElement.dataset.theme;
+  document.querySelector('meta[name="theme-color"]').content = dark ? '#0F2E24' : '#FFFFFF';
+  $('themeLabel').textContent = dark ? 'Mode clair' : 'Mode sombre';
+  $('themeBtn').setAttribute('aria-pressed', String(dark));
+}
+$('themeBtn').addEventListener('click', () => {
+  const dark = document.documentElement.dataset.theme !== 'dark';
+  applyTheme(dark);
+  try { localStorage.setItem('sahbi-theme', dark ? 'dark' : 'light'); } catch { /* ignorato */ }
+});
+applyTheme(document.documentElement.dataset.theme === 'dark');
 
 newChat();
 ready.catch(() => toast('Connexion impossible. Recharge la page.'));
