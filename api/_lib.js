@@ -42,7 +42,8 @@ async function rpc(fn, args) {
   if (!key) throw new Error('SUPABASE_SERVICE_ROLE_KEY mancante');
   const res = await fetch(`${supabaseUrl()}/rest/v1/rpc/${fn}`, {
     method: 'POST',
-    headers: { apikey: key, authorization: `Bearer ${key}`, 'content-type': 'application/json' },
+    // Le chiavi nuove (sb_secret_...) vanno solo in "apikey"; quelle vecchie (JWT) anche come Bearer.
+    headers: { apikey: key, ...(key.startsWith('eyJ') ? { authorization: `Bearer ${key}` } : {}), 'content-type': 'application/json' },
     body: JSON.stringify(args),
   });
   if (!res.ok) throw new Error(`Supabase ${fn}: ${res.status}`);
