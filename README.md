@@ -18,7 +18,8 @@ Assistente di intelligenza artificiale che risponde nella lingua dell'utente (da
 - `api/`: il server su Vercel, che custodisce tutte le chiavi
   - `chat.js` risposte, foto e immagini · `me.js` piano e limiti · `speak.js` voce · `transcribe.js` microfono
   - `library.js` galleria · `referral.js` inviti · `account.js` cancellazione account · `config.js` dati pubblici
-  - `checkout.js`, `portal.js`, `stripe-webhook.js`, `chargily-webhook.js`: pagamenti
+  - `checkout.js` (pagamento e gestione abbonamento), `stripe-webhook.js`, `chargily-webhook.js`: pagamenti
+  - Limite del piano gratuito di Vercel: massimo 12 file in `api/` (quelli che iniziano con `_` non contano)
 - `supabase/schema.sql` e `supabase/002_pro.sql`: il database (da eseguire in quest'ordine)
 
 Nessuna libreria da installare. Variabili: vedi `.env.example`. Guida al lancio: `LANCIO.md`.

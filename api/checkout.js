@@ -2,6 +2,7 @@ import { env, json, fail, getUser, getProfile } from './_lib.js';
 import { publicUrl, stripe, chargily } from './_pay.js';
 
 // Crea una pagina di pagamento per Sahbi Pro. POST { provider: 'stripe' | 'chargily' } -> { url }
+// POST { provider: 'portal' } -> pagina Stripe per cambiare carta o disdire l'abbonamento.
 export async function POST(request) {
   const user = await getUser(request);
   if (!user) return fail('auth', 401, 'Sessione scaduta. Ricarica la pagina.');
@@ -10,6 +11,14 @@ export async function POST(request) {
   const base = publicUrl(request);
 
   try {
+    if (body?.provider === 'portal') {
+      if (!env('STRIPE_SECRET_KEY')) return fail('unavailable', 503, 'Indisponible.');
+      const profile = await getProfile(user.id);
+      if (!profile.stripe_customer_id) return fail('not_found', 404, 'Aucun abonnement par carte.');
+      const portal = await stripe('billing_portal/sessions', { customer: profile.stripe_customer_id, return_url: `${base}/` });
+      return json({ url: portal.url });
+    }
+
     if (body?.provider === 'stripe') {
       if (!env('STRIPE_SECRET_KEY') || !env('STRIPE_PRICE_ID')) return fail('unavailable', 503, 'Le paiement par carte n’est pas encore disponible.');
       const profile = await getProfile(user.id);

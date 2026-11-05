@@ -38,7 +38,7 @@
   "rewrites": [
     {
       "source": "/ads.txt",
-      "destination": "/api/ads-txt"
+      "destination": "/api/config?file=ads.txt"
     }
   ]
 }

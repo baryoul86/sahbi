@@ -1083,7 +1083,7 @@ $('openSettings').addEventListener('click', openSettings);
 $('closeSettings').addEventListener('click', () => { $('settings').hidden = true; });
 $('sGoPro').addEventListener('click', async () => {
   if (me?.pro && me.canManageBilling) {
-    const r = await api('/api/portal', { method: 'POST' }).catch(() => null);
+    const r = await api('/api/checkout', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ provider: 'portal' }) }).catch(() => null);
     const d = await r?.json().catch(() => ({})) || {};
     if (r?.ok && d.url) { location.href = d.url; return; }
     toast(d.message || 'Impossible d’ouvrir la gestion de l’abonnement.'); return;
