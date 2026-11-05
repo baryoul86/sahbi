@@ -82,7 +82,7 @@ footer.composer{border-top:1px solid var(--line)}
 .adbar .col{display:flex;align-items:center;justify-content:center;min-height:56px;padding-block:3px;position:relative}
 .ad-tag{position:absolute;top:2px;left:0;font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
 .ad-slot{width:100%;max-width:468px;height:50px;overflow:hidden;display:flex;justify-content:center}
-.ad-slot ins{display:block;width:100%;height:50px}
+.ad-slot ins{display:inline-block;width:320px;height:50px}
 .house{width:100%;max-width:468px;min-height:48px;display:flex;align-items:center;gap:12px;padding:6px 10px;border:0;border-radius:12px;background:transparent;text-align:left}
 .house:hover{background:var(--panel-2)}
 .house .hi{flex:0 0 36px;height:36px;border-radius:10px;background:var(--mint);color:var(--mint-ink);display:grid;place-items:center}
@@ -864,6 +864,7 @@ function loadAdsense() {
     document.head.appendChild(sc);
     const ins = document.createElement('ins');
     ins.className = 'adsbygoogle';
+    ins.style.cssText = 'display:inline-block;width:320px;height:50px';
     ins.dataset.adClient = a.client; ins.dataset.adSlot = a.slot;
     $('adSlot').appendChild(ins);
     (window.adsbygoogle = window.adsbygoogle || []).push({});
