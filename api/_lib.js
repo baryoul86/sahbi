@@ -32,6 +32,8 @@ export async function getUserId(request) {
   });
   if (!res.ok) return null;
   const user = await res.json();
+  // Solo utenti registrati con e-mail: gli account anonimi non possono usare l'app.
+  if (user?.is_anonymous) return null;
   return typeof user?.id === 'string' ? user.id : null;
 }
 

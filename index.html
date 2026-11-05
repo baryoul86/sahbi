@@ -104,6 +104,22 @@ footer.composer .col{padding-block:10px 12px;display:flex;flex-direction:column;
 .cta{min-height:52px;border-radius:16px;border:0;background:var(--mint);color:var(--mint-ink);font-weight:500;font-size:17px}
 .ghost{min-height:44px;border:0;background:transparent;color:var(--muted)}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(120px + env(safe-area-inset-bottom,0px));z-index:40;background:var(--fg);color:var(--night);padding:10px 16px;border-radius:12px;font-size:14px;max-width:calc(100% - 32px)}
+.auth{position:fixed;inset:0;z-index:30;background:var(--night);overflow-y:auto}
+.auth .col{min-height:100%;display:flex;flex-direction:column;justify-content:center;gap:20px;padding-block:calc(32px + env(safe-area-inset-top,0px)) calc(32px + env(safe-area-inset-bottom,0px));max-width:420px}
+.wm{display:flex;align-items:baseline;gap:12px}
+.wm b{font-family:var(--brand);font-weight:800;font-size:52px;line-height:1}
+.wm span{font-family:var(--arabic);font-size:28px;color:var(--mint)}
+.auth p{margin:0;color:var(--muted)}
+.auth form{display:flex;flex-direction:column;gap:12px}
+.auth label{font-size:14px;color:var(--muted)}
+.auth input{min-height:52px;border-radius:14px;border:1px solid var(--line);background:var(--panel);color:var(--fg);padding:0 16px;font:inherit;font-size:17px}
+.auth input:focus{outline:none;border-color:var(--mint)}
+.auth input.code{letter-spacing:.4em;font-variant-numeric:tabular-nums;text-align:center;font-size:24px}
+.auth .err{color:var(--danger);font-size:14px;min-height:1.2em}
+.cta:disabled{opacity:.6;cursor:default}
+.account{display:flex;align-items:center;justify-content:space-between;gap:8px;border-top:1px solid var(--line);padding-top:12px;font-size:14px;color:var(--muted);min-width:0}
+.account span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.account button{min-height:44px;border:0;background:transparent;color:var(--fg);padding:0 8px;flex:0 0 auto}
 @media (prefers-reduced-motion:reduce){.typing i,.mic.on{animation:none}}
 </style>
 </head>
@@ -175,6 +191,7 @@ footer.composer .col{padding-block:10px 12px;display:flex;flex-direction:column;
     <b>Sahbi Plus</b>
     <span>8 images par jour, rechargées chaque nuit</span>
   </button>
+  <div class="account"><span id="who" dir="auto"></span><button type="button" id="logout">Se déconnecter</button></div>
 </nav>
 
 <section class="sheet" id="sheet" hidden role="dialog" aria-modal="true" aria-labelledby="plusTitle">
@@ -192,6 +209,29 @@ footer.composer .col{padding-block:10px 12px;display:flex;flex-direction:column;
   </div>
 </section>
 
+<section class="auth gutter" id="auth" hidden aria-labelledby="authTitle">
+  <div class="col">
+    <svg width="80" height="80" aria-hidden="true"><use href="#logo"/></svg>
+    <div class="wm"><b id="authTitle">sahbi</b><span lang="ar" dir="rtl">صاحبي</span></div>
+    <p>L'ami qui te comprend, dans toutes les langues. Crée ton compte ou connecte-toi.</p>
+
+    <form id="emailForm" novalidate>
+      <label for="email">Ton adresse e-mail</label>
+      <input id="email" type="email" inputmode="email" autocomplete="email" placeholder="nom@exemple.com" required>
+      <div class="err" id="emailErr" role="alert"></div>
+      <button class="cta" type="submit" id="emailBtn">Recevoir mon code</button>
+    </form>
+
+    <form id="codeForm" novalidate hidden>
+      <label for="code">Code reçu par e-mail à <b id="sentTo"></b></label>
+      <input id="code" class="code" inputmode="numeric" autocomplete="one-time-code" maxlength="8" placeholder="••••••" required>
+      <div class="err" id="codeErr" role="alert"></div>
+      <button class="cta" type="submit" id="codeBtn">Se connecter</button>
+      <button class="ghost" type="button" id="changeEmail">Changer d'adresse e-mail</button>
+    </form>
+  </div>
+</section>
+
 <div class="toast" id="toast" hidden role="status"></div>
 
 <script type="module">
@@ -199,26 +239,68 @@ import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js
 
 const $ = (id) => document.getElementById(id);
 const msgsEl = $('msgs'), thread = $('thread'), ta = $('msg'), sendBtn = $('send'), mic = $('mic');
-const STORE = 'sahbi-chats-v1';
-let supabase = null, busy = false, mode = 'chat', imgLeft = null, imgLimit = 8;
+let STORE = 'sahbi-chats-v1';
+let supabase = null, busy = false, mode = 'chat', imgLeft = null, imgLimit = 8, userId = null;
 
-// ---------- Connessione anonima a Supabase ----------
+// ---------- Account (Supabase) ----------
 const ready = (async () => {
   const cfg = await fetch('/api/config').then((r) => r.json());
   imgLimit = cfg.limits?.image ?? 8;
-  supabase = createClient(cfg.supabaseUrl, cfg.supabaseAnonKey, { auth: { persistSession: true, autoRefreshToken: true } });
+  supabase = createClient(cfg.supabaseUrl, cfg.supabaseAnonKey, { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true } });
+  supabase.auth.onAuthStateChange((_event, session) => { setTimeout(() => onSession(session), 0); });
   const { data } = await supabase.auth.getSession();
-  if (!data.session) {
-    const { error } = await supabase.auth.signInAnonymously();
-    if (error) throw error;
-  }
+  onSession(data.session);
 })();
+
+function onSession(session) {
+  const id = session?.user?.id || null;
+  if (!id) { userId = null; $('auth').hidden = false; return; }
+  $('auth').hidden = true;
+  $('who').textContent = session.user.email || '';
+  if (id === userId) return;
+  userId = id;
+  STORE = `sahbi-chats-v1-${id}`;
+  chats = load(); newChat(); refreshCount();
+}
 
 async function token() {
   await ready;
   const { data } = await supabase.auth.getSession();
-  return data.session?.access_token || '';
+  if (!data.session) { $('auth').hidden = false; throw new Error('auth'); }
+  return data.session.access_token;
 }
+
+// Accesso con codice via e-mail
+let pendingEmail = '';
+$('emailForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const email = $('email').value.trim().toLowerCase();
+  $('emailErr').textContent = '';
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { $('emailErr').textContent = 'Écris une adresse e-mail valide.'; return; }
+  $('emailBtn').disabled = true; $('emailBtn').textContent = 'Envoi…';
+  await ready.catch(() => {});
+  const { error } = await supabase.auth.signInWithOtp({ email, options: { shouldCreateUser: true, emailRedirectTo: location.origin } });
+  $('emailBtn').disabled = false; $('emailBtn').textContent = 'Recevoir mon code';
+  if (error) {
+    $('emailErr').textContent = error.status === 429 ? 'Trop de demandes. Attends quelques minutes et réessaie.' : 'Impossible d’envoyer le code. Vérifie l’adresse et réessaie.';
+    return;
+  }
+  pendingEmail = email; $('sentTo').textContent = email;
+  $('emailForm').hidden = true; $('codeForm').hidden = false; $('code').value = ''; $('code').focus();
+});
+$('codeForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const code = $('code').value.replace(/\D/g, '');
+  $('codeErr').textContent = '';
+  if (code.length < 6) { $('codeErr').textContent = 'Écris le code à 6 chiffres reçu par e-mail.'; return; }
+  $('codeBtn').disabled = true; $('codeBtn').textContent = 'Vérification…';
+  const { error } = await supabase.auth.verifyOtp({ email: pendingEmail, token: code, type: 'email' });
+  $('codeBtn').disabled = false; $('codeBtn').textContent = 'Se connecter';
+  if (error) { $('codeErr').textContent = 'Code incorrect ou expiré. Vérifie-le ou demande un nouveau code.'; return; }
+  $('codeForm').hidden = true; $('emailForm').hidden = false;
+});
+$('changeEmail').addEventListener('click', () => { $('codeForm').hidden = true; $('emailForm').hidden = false; $('email').focus(); });
+$('logout').addEventListener('click', async () => { closeAll(); await supabase.auth.signOut(); userId = null; $('auth').hidden = false; });
 async function api(path, options = {}) {
   const headers = { ...(options.headers || {}), authorization: `Bearer ${await token()}` };
   return fetch(path, { ...options, headers });
@@ -455,7 +537,7 @@ $('subscribe').addEventListener('click', () => { closeAll(); toast('L’abonneme
 $('newChat').addEventListener('click', () => { closeAll(); newChat(); ta.focus(); });
 
 newChat();
-ready.then(refreshCount).catch(() => toast('Connexion impossible. Recharge la page.'));
+ready.catch(() => toast('Connexion impossible. Recharge la page.'));
 </script>
 </body>
 </html>
