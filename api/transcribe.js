@@ -1,4 +1,4 @@
-import { env, json, fail, getUserId, useCredit, refundCredit, limits, openaiHeaders, OPENAI } from './_lib.js';
+import { env, json, fail, getUserId, useCredit, refundCredit, getPlan, openaiHeaders, OPENAI } from './_lib.js';
 
 const MAX_BYTES = 4 * 1024 * 1024; // circa 2-3 minuti di voce
 
@@ -13,7 +13,8 @@ export async function POST(request) {
   if (!audio || typeof audio === 'string' || !audio.size) return fail('bad_request', 400, 'Audio vuoto.');
   if (audio.size > MAX_BYTES) return fail('too_big', 413, 'Registrazione troppo lunga. Massimo circa 2 minuti.');
 
-  const left = await useCredit(userId, 'voice', limits().voice);
+  const { limits } = await getPlan(userId);
+  const left = await useCredit(userId, 'voice', limits.voice);
   if (left < 0) return fail('limit', 429, 'Limite di messaggi vocali di oggi raggiunto.');
 
   const out = new FormData();

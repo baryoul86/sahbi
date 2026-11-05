@@ -22,8 +22,8 @@ function supabaseUrl() {
   return url.replace(/\/$/, '');
 }
 
-// Verifica il token dell'utente con Supabase e restituisce il suo id, oppure null.
-export async function getUserId(request) {
+// Verifica il token dell'utente con Supabase e restituisce { id, email }, oppure null.
+export async function getUser(request) {
   const auth = request.headers.get('authorization') || '';
   const token = auth.startsWith('Bearer ') ? auth.slice(7) : '';
   if (!token) return null;
@@ -33,8 +33,12 @@ export async function getUserId(request) {
   if (!res.ok) return null;
   const user = await res.json();
   // Solo utenti registrati con e-mail: gli account anonimi non possono usare l'app.
-  if (user?.is_anonymous) return null;
-  return typeof user?.id === 'string' ? user.id : null;
+  if (user?.is_anonymous || typeof user?.id !== 'string') return null;
+  return { id: user.id, email: user.email || '' };
+}
+
+export async function getUserId(request) {
+  return (await getUser(request))?.id || null;
 }
 
 // Intestazioni con la chiave segreta del server.
@@ -45,7 +49,7 @@ function serviceHeaders(extra = {}) {
   return { apikey: key, ...(key.startsWith('eyJ') ? { authorization: `Bearer ${key}` } : {}), ...extra };
 }
 
-async function rpc(fn, args) {
+export async function rpc(fn, args) {
   const res = await fetch(`${supabaseUrl()}/rest/v1/rpc/${fn}`, {
     method: 'POST',
     headers: serviceHeaders({ 'content-type': 'application/json' }),
@@ -66,11 +70,37 @@ export const refundCredit = (userId, kind) =>
 export const remainingCredit = (userId, kind, limit) =>
   rpc('remaining_credit', { p_user: userId, p_kind: kind, p_limit: limit });
 
-export const limits = () => ({
-  chat: Number(env('CHAT_DAILY_LIMIT', '100')),
-  image: Number(env('IMAGE_DAILY_LIMIT', '8')),
-  voice: Number(env('VOICE_DAILY_LIMIT', '60')),
-});
+// Limiti giornalieri: diversi per Gratis e Pro (modificabili dalle variabili di Vercel).
+export const limits = (pro = false) => (pro
+  ? {
+      chat: Number(env('PRO_CHAT_DAILY_LIMIT', '300')),
+      image: Number(env('PRO_IMAGE_DAILY_LIMIT', '8')),
+      voice: Number(env('PRO_VOICE_DAILY_LIMIT', '100')),
+      tts: Number(env('PRO_TTS_DAILY_LIMIT', '100')),
+    }
+  : {
+      chat: Number(env('FREE_CHAT_DAILY_LIMIT', '30')),
+      image: Number(env('FREE_IMAGE_DAILY_LIMIT', '2')),
+      voice: Number(env('FREE_VOICE_DAILY_LIMIT', '20')),
+      tts: Number(env('FREE_TTS_DAILY_LIMIT', '0')),
+    });
+
+// Profilo dell'utente (creato se manca) con il campo "pro" già calcolato.
+export async function getProfile(userId) {
+  let p;
+  try { p = await rpc('get_profile', { p_user: userId }); } catch (e) {
+    // Database non ancora aggiornato (002_pro.sql): l'app continua a funzionare in modalità gratuita.
+    console.error('Profilo non disponibile', e.message);
+    p = { pro_until: null, referral_code: null, referred_by: null, referrals: 0, stripe_customer_id: null };
+  }
+  const pro = !!p?.pro_until && new Date(p.pro_until) > new Date();
+  return { ...p, pro };
+}
+
+export async function getPlan(userId) {
+  const profile = await getProfile(userId);
+  return { profile, pro: profile.pro, limits: limits(profile.pro) };
+}
 
 export function openaiHeaders(extra = {}) {
   const key = env('OPENAI_API_KEY');
@@ -81,26 +111,43 @@ export function openaiHeaders(extra = {}) {
 export const OPENAI = env('OPENAI_BASE_URL', 'https://api.openai.com/v1').replace(/\/$/, '');
 
 // Crea un'immagine con OpenAI, usando un credito del giorno (restituito se qualcosa va storto).
-export async function generateImage(userId, rawPrompt) {
+// Una foto inviata dall'utente: "data:image/jpeg;base64,..." (massimo ~4 MB).
+export function parsePhoto(value) {
+  if (typeof value !== 'string') return null;
+  const m = /^data:(image\/(?:jpeg|png|webp));base64,([A-Za-z0-9+/=]+)$/.exec(value);
+  if (!m || m[2].length > 5_600_000) return null;
+  return { mime: m[1], b64: m[2], dataUrl: value };
+}
+
+export async function generateImage(userId, rawPrompt, { limit, photo = null } = {}) {
   const prompt = String(rawPrompt || '').trim().slice(0, 1000);
   if (!prompt) return { ok: false, error: 'bad_request', status: 400, message: "Décris l'image que tu veux." };
 
-  const limit = limits().image;
-  const left = await useCredit(userId, 'image', limit);
+  const left = await useCredit(userId, 'image', limit ?? limits(false).image);
   if (left < 0) return { ok: false, error: 'limit', status: 429, message: "Tu as utilisé tes images d'aujourd'hui." };
 
-  const upstream = await fetch(`${OPENAI}/images/generations`, {
-    method: 'POST',
-    headers: openaiHeaders({ 'content-type': 'application/json' }),
-    body: JSON.stringify({
-      model: env('OPENAI_IMAGE_MODEL', 'gpt-image-1-mini'),
-      prompt,
-      size: env('OPENAI_IMAGE_SIZE', '1024x1024'),
-      quality: env('OPENAI_IMAGE_QUALITY', 'medium'),
-      output_format: 'jpeg',
-      n: 1,
-    }),
-  });
+  const model = env('OPENAI_IMAGE_MODEL', 'gpt-image-1-mini');
+  const size = env('OPENAI_IMAGE_SIZE', '1024x1024');
+  const quality = env('OPENAI_IMAGE_QUALITY', 'medium');
+  let upstream;
+  if (photo) {
+    // Trasforma la foto dell'utente (stile cartone, anime, ecc.).
+    const form = new FormData();
+    const ext = photo.mime.split('/')[1];
+    form.append('image', new Blob([Buffer.from(photo.b64, 'base64')], { type: photo.mime }), `photo.${ext}`);
+    form.append('model', model);
+    form.append('prompt', prompt);
+    form.append('size', size);
+    form.append('quality', quality);
+    form.append('output_format', 'jpeg');
+    upstream = await fetch(`${OPENAI}/images/edits`, { method: 'POST', headers: openaiHeaders(), body: form });
+  } else {
+    upstream = await fetch(`${OPENAI}/images/generations`, {
+      method: 'POST',
+      headers: openaiHeaders({ 'content-type': 'application/json' }),
+      body: JSON.stringify({ model, prompt, size, quality, output_format: 'jpeg', n: 1 }),
+    });
+  }
   const data = await upstream.json().catch(() => null);
   const b64 = data?.data?.[0]?.b64_json;
   if (!upstream.ok || !b64) {

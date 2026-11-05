@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Confidentialité – Sahbi</title>
+<link rel="icon" href="/logo.svg" type="image/svg+xml">
+<style>
+:root{--bg:#FFFFFF;--fg:#0F2E24;--muted:#4D675C;--line:#D3E3DA;--mint:#187A4F;color-scheme:light}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.65 "Rubik",system-ui,-apple-system,"Segoe UI",sans-serif}
+main{max-width:720px;margin:0 auto;padding:32px max(16px,env(safe-area-inset-right)) 64px max(16px,env(safe-area-inset-left))}
+h1{font-size:30px;line-height:1.2;margin:0 0 4px}
+h2{font-size:19px;margin:32px 0 8px}
+.meta{color:var(--muted);margin:0 0 24px}
+.todo{background:#FFF4D6;padding:0 4px;border-radius:4px}
+table{border-collapse:collapse;width:100%;font-size:15px}
+th,td{text-align:left;border-bottom:1px solid var(--line);padding:8px 6px;vertical-align:top}
+.scroll{overflow-x:auto}
+a{color:var(--mint)}
+</style>
+</head>
+<body>
+<main>
+<p><a href="/">← Retour à Sahbi</a></p>
+<h1>Politique de confidentialité</h1>
+<p class="meta">Dernière mise à jour : <span class="todo">[DATE]</span></p>
+
+<h2>Responsable</h2>
+<p><span class="todo">[NOM OU SOCIÉTÉ]</span>, <span class="todo">[ADRESSE]</span>. Pour toute question sur tes données : <span class="todo">[E-MAIL DE CONTACT]</span>.</p>
+
+<h2>Les données que nous utilisons</h2>
+<div class="scroll">
+<table>
+  <tr><th>Donnée</th><th>Pourquoi</th><th>Où et combien de temps</th></tr>
+  <tr><td>Adresse e-mail</td><td>Créer ton compte et te connecter</td><td>Supabase (Europe), jusqu'à la suppression du compte</td></tr>
+  <tr><td>Messages, photos et enregistrements vocaux envoyés</td><td>Produire la réponse, l'image ou la transcription</td><td>Transmis à OpenAI pour le traitement, non conservés par Sahbi</td></tr>
+  <tr><td>Historique des discussions</td><td>Te permettre de reprendre une discussion</td><td>Uniquement sur ton téléphone ; tu peux l'effacer dans Paramètres</td></tr>
+  <tr><td>Images créées</td><td>Ta galerie « Images »</td><td>Supabase (Europe), jusqu'à ce que tu les supprimes ou supprimes ton compte</td></tr>
+  <tr><td>Compteurs d'utilisation, statut Pro, code d'invitation</td><td>Appliquer les limites et l'abonnement</td><td>Supabase (Europe), jusqu'à la suppression du compte</td></tr>
+  <tr><td>Paiements</td><td>Activer Sahbi Pro</td><td>Gérés par Stripe ou Chargily ; Sahbi ne voit ni ne stocke ton numéro de carte</td></tr>
+</table>
+</div>
+
+<h2>Nos prestataires</h2>
+<ul>
+  <li><b>Supabase</b> : comptes, base de données et stockage des images (serveurs en Europe).</li>
+  <li><b>Vercel</b> : hébergement de l'application.</li>
+  <li><b>OpenAI</b> : production des réponses, des images, de la voix et des transcriptions. Selon ses conditions pour les services professionnels, les données envoyées par l'API ne servent pas à entraîner ses modèles par défaut.</li>
+  <li><b>Stripe</b> et <b>Chargily Pay</b> : paiements.</li>
+</ul>
+<p>Certains prestataires peuvent traiter des données hors de ton pays ; ils sont encadrés par leurs propres garanties contractuelles.</p>
+
+<h2>Ce que nous ne faisons pas</h2>
+<p>Nous ne vendons pas tes données et ne les utilisons pas pour de la publicité. Sahbi n'identifie jamais une personne à partir de son visage.</p>
+
+<h2>Tes droits</h2>
+<p>Tu peux consulter, corriger ou supprimer tes données. La suppression complète (compte, images, compteurs) se fait directement dans Paramètres › Supprimer mon compte. Pour toute autre demande, écris à <span class="todo">[E-MAIL DE CONTACT]</span>. Si tu vis dans l'Union européenne, tu peux aussi contacter l'autorité de protection des données de ton pays.</p>
+
+<p class="meta">Voir aussi les <a href="/conditions.html">conditions d'utilisation</a>.</p>
+</main>
+</body>
+</html>

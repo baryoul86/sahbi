@@ -1,4 +1,4 @@
-import { env, fail, getUserId, useCredit, refundCredit, limits, openaiHeaders, OPENAI, generateImage } from './_lib.js';
+import { env, fail, getUserId, useCredit, refundCredit, getPlan, openaiHeaders, OPENAI, generateImage, parsePhoto } from './_lib.js';
 
 const SYSTEM = `Sei Sahbi (صاحبي), "amico mio": un assistente di intelligenza artificiale caldo, diretto e utile, nato nel Maghreb.
 
@@ -16,6 +16,13 @@ Immagini:
 - Non creare immagini sessuali, violente in modo esplicito, di persone reali riconoscibili o che imitano marchi e personaggi protetti: spiega gentilmente che non puoi e proponi un'alternativa.
 - Nella cronologia, "[Image créée : ...]" indica un'immagine che hai già creato con quella descrizione.
 
+Foto dell'utente:
+- L'utente può inviare una foto insieme al messaggio. Se fa una domanda sulla foto (spiegare un esercizio, tradurre un documento, leggere una bolletta, descrivere), rispondi guardando la foto.
+- Se vuole TRASFORMARE la sua foto (stile cartone animato, anime, 3D, fumetto, acquerello, realistico, cambiare lo sfondo...), usa create_image con edit_photo = true e descrivi in inglese la trasformazione, chiedendo di mantenere riconoscibili persone e composizione.
+- Con edit_photo = false l'immagine viene creata da zero, senza la foto.
+- Nella cronologia, "[Photo envoyée]" indica una foto mandata prima: non la vedi più, se serve chiedi di rimandarla.
+- Non identificare mai chi è una persona nella foto dal suo viso.
+
 Stile:
 - Frasi brevi e chiare, tono amichevole e rispettoso. Niente prediche.
 - Usa elenchi solo quando aiutano (passaggi, ricette, liste).
@@ -31,9 +38,10 @@ const TOOLS = [{
     parameters: {
       type: 'object',
       properties: {
-        prompt: { type: 'string', description: 'Descrizione dettagliata in inglese di cosa disegnare.' },
+        prompt: { type: 'string', description: 'Descrizione dettagliata in inglese di cosa disegnare o di come trasformare la foto.' },
+        edit_photo: { type: 'boolean', description: "true per trasformare la foto che l'utente ha appena inviato; false per creare da zero." },
       },
-      required: ['prompt'],
+      required: ['prompt', 'edit_photo'],
       additionalProperties: false,
     },
   },
@@ -56,15 +64,18 @@ function cleanMessages(input) {
 
 const frame = (obj) => `${SEP}${JSON.stringify(obj)}${SEP}`;
 
-async function imageFrames(userId, prompt) {
-  const r = await generateImage(userId, prompt);
+async function imageFrames(userId, prompt, opts) {
+  const r = await generateImage(userId, prompt, opts);
   return r.ok
     ? frame({ type: 'image', id: r.id, image: r.image, prompt, remaining: r.remaining, limit: r.limit })
     : frame({ type: 'image_error', error: r.error, message: r.message });
 }
 
-const promptFrom = (args) => {
-  try { return String(JSON.parse(args || '{}').prompt || '').trim(); } catch { return ''; }
+const parseArgs = (args) => {
+  try {
+    const a = JSON.parse(args || '{}');
+    return { prompt: String(a.prompt || '').trim(), edit: a.edit_photo === true };
+  } catch { return { prompt: '', edit: false }; }
 };
 
 export async function POST(request) {
@@ -75,9 +86,22 @@ export async function POST(request) {
   try { body = await request.json(); } catch { return fail('bad_request', 400, 'Richiesta non valida.'); }
   const messages = cleanMessages(body?.messages);
   if (!messages) return fail('bad_request', 400, 'Messaggio vuoto.');
+  const photo = body?.photo ? parsePhoto(body.photo) : null;
+  if (body?.photo && !photo) return fail('bad_request', 400, 'Photo non valide ou trop grande.');
 
-  const left = await useCredit(userId, 'chat', limits().chat);
-  if (left < 0) return fail('limit', 429, 'Limite di messaggi di oggi raggiunto.');
+  const { limits, pro } = await getPlan(userId);
+  const left = await useCredit(userId, 'chat', limits.chat);
+  if (left < 0) return fail('limit', 429, pro ? 'Limite di messaggi di oggi raggiunto.' : 'Limite gratuito di oggi raggiunto.');
+  const imgOpts = (edit) => ({ limit: limits.image, photo: edit ? photo : null });
+
+  // La foto va solo nell'ultimo messaggio dell'utente.
+  if (photo) {
+    const last = messages[messages.length - 1];
+    last.content = [
+      { type: 'text', text: last.content },
+      { type: 'image_url', image_url: { url: photo.dataUrl } },
+    ];
+  }
 
   const model = env('OPENAI_CHAT_MODEL', 'gpt-5-nano');
   const payload = {
@@ -102,10 +126,10 @@ export async function POST(request) {
       const data = await plain.json().catch(() => null);
       const msg = data?.choices?.[0]?.message;
       const toolCall = msg?.tool_calls?.find((t) => t.function?.name === 'create_image');
-      const prompt = toolCall ? promptFrom(toolCall.function.arguments) : '';
+      const { prompt, edit } = toolCall ? parseArgs(toolCall.function.arguments) : { prompt: '' };
       if (plain.ok && (msg?.content || prompt)) {
         let out = msg.content || '';
-        if (prompt) out += frame({ type: 'image_start', prompt }) + await imageFrames(userId, prompt);
+        if (prompt) out += frame({ type: 'image_start', prompt }) + await imageFrames(userId, prompt, imgOpts(edit));
         return new Response(out, { headers });
       }
     }
@@ -149,9 +173,9 @@ export async function POST(request) {
     },
     async flush(controller) {
       if (tool.name !== 'create_image') return;
-      const prompt = promptFrom(tool.args);
+      const { prompt, edit } = parseArgs(tool.args);
       if (!prompt) { controller.enqueue(encoder.encode(frame({ type: 'image_error', error: 'bad_request', message: "Je n'ai pas compris l'image à créer. Décris-la autrement." }))); return; }
-      controller.enqueue(encoder.encode(await imageFrames(userId, prompt)));
+      controller.enqueue(encoder.encode(await imageFrames(userId, prompt, imgOpts(edit))));
     },
   }));
 

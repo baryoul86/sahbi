@@ -2,31 +2,23 @@
 
 Assistente di intelligenza artificiale che risponde nella lingua dell'utente (darija, arabo, francese, inglese e tutte le altre).
 
-- Chat che risponde nella lingua in cui si scrive o si parla
-- Microfono: la voce diventa testo
-- Generazione di immagini: 8 al giorno, ricaricate a mezzanotte (ora del Maghreb)
-- Registrazione obbligatoria con e-mail e codice a 6 cifre
-- Abbonamento Sahbi Pro: 6,50 € al mese (pagamento in arrivo)
+- Chat in una sola casella: Sahbi capisce da solo se rispondere a parole o creare un'immagine
+- Foto: domande sulle foto (compiti, documenti, traduzioni) e trasformazione in stili (cartoon, anime, 3D…)
+- Microfono (voce → testo) e Sahbi che legge le risposte ad alta voce (Pro)
+- Galleria Images, condivisione su WhatsApp, scorciatoie (Bac, CV, lettere, traduzioni)
+- Registrazione con e-mail, Paramètres, cancellazione account
+- Piani Gratis e Pro: pagamento con Stripe (carte, abbonamento) e Chargily (Edahabia / CIB, 30 giorni)
+- Invita un amico: 7 giorni di Pro a entrambi
+- Tema chiaro e scuro, installabile sul telefono
 
 ## Come è fatta
 
-- `index.html`: l'app (una sola pagina, installabile sul telefono)
-- `api/`: il server su Vercel. Custodisce la chiave di OpenAI, che non arriva mai al telefono
-  - `chat.js` risposte e immagini · `image.js` immagini rimaste · `library.js` galleria · `account.js` cancellazione account · `transcribe.js` microfono · `config.js` dati pubblici
-- `supabase/schema.sql`: il database (limiti giornalieri, galleria immagini)
+- `index.html`: l'app (una sola pagina) · `sw.js`, `manifest.webmanifest`, `icons/`: installazione sul telefono
+- `conditions.html`, `confidentialite.html`: pagine legali (da completare dove c'è scritto `[...]`)
+- `api/`: il server su Vercel, che custodisce tutte le chiavi
+  - `chat.js` risposte, foto e immagini · `me.js` piano e limiti · `speak.js` voce · `transcribe.js` microfono
+  - `library.js` galleria · `referral.js` inviti · `account.js` cancellazione account · `config.js` dati pubblici
+  - `checkout.js`, `portal.js`, `stripe-webhook.js`, `chargily-webhook.js`: pagamenti
+- `supabase/schema.sql` e `supabase/002_pro.sql`: il database (da eseguire in quest'ordine)
 
-Nessuna libreria da installare.
-
-## Messa online (una volta sola)
-
-1. **Supabase**: nuovo progetto `sahbi`. Poi:
-   - *SQL Editor › New query*: incolla `supabase/schema.sql` e premi *Run*
-   - *Authentication › Sign In / Providers*: lascia attivo **Email** (l'accesso anonimo resta spento)
-   - *Authentication › Emails*: nei modelli **Confirm signup** e **Magic Link** aggiungi `{{ .Token }}`, così l'e-mail contiene il codice a 6 cifre
-   - *Authentication › URL Configuration*: in **Site URL** metti l'indirizzo dell'app su Vercel
-   - Per gli utenti veri serve un servizio e-mail (SMTP) proprio, per esempio Resend: quello incluso in Supabase invia solo pochi messaggi di prova
-   - *Project Settings › API*: copia Project URL, chiave `anon` e chiave `service_role`
-2. **OpenAI**: crea una chiave API e imposta un limite di spesa mensile.
-3. **Vercel**: *Add New › Project* › importa `sahbi` da GitHub. In *Environment Variables* aggiungi i nomi di `.env.example` con i valori veri, poi *Deploy*.
-
-Le chiavi vanno solo nelle impostazioni di Vercel, mai nel codice o in chat.
+Nessuna libreria da installare. Variabili: vedi `.env.example`. Guida al lancio: `LANCIO.md`.

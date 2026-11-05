@@ -7,7 +7,7 @@
 <meta name="description" content="Sahbi, l'ami qui te comprend : réponses en darija, arabe, français, anglais et toutes les langues.">
 <meta name="theme-color" content="#FFFFFF">
 <link rel="icon" href="/logo.svg" type="image/svg+xml">
-<link rel="apple-touch-icon" href="/logo.svg">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
 <link rel="manifest" href="/manifest.webmanifest">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -79,7 +79,7 @@ main.thread .col{display:flex;flex-direction:column;gap:18px;padding-block:20px 
 footer.composer{border-top:1px solid var(--line)}
 footer.composer .col{padding-block:10px 12px;display:flex;flex-direction:column;gap:8px}
 .count{font-variant-numeric:tabular-nums;color:var(--mint-text);font-weight:500}
-.box{display:flex;align-items:flex-end;gap:6px;background:var(--panel);border:1px solid var(--line);border-radius:22px;padding:6px 6px 6px 16px}
+.box{display:flex;align-items:flex-end;gap:6px;background:var(--panel);border:1px solid var(--line);border-radius:22px;padding:6px 6px 6px 14px}
 .box:focus-within{border-color:var(--mint)}
 .box textarea{flex:1;min-width:0;background:transparent;border:0;resize:none;outline:none;max-height:140px;padding-block:9px;line-height:1.4}
 .box textarea::placeholder{color:var(--muted)}
@@ -129,6 +129,36 @@ footer.composer .col{padding-block:10px 12px;display:flex;flex-direction:column;
 .v-actions{display:flex;gap:8px;flex-wrap:wrap;max-width:640px;width:100%}
 .v-actions a,.v-actions button{min-height:44px;padding:0 16px;border-radius:12px;border:1px solid var(--line);background:var(--panel);color:var(--fg);display:inline-flex;align-items:center;text-decoration:none;font-size:15px}
 .v-actions .danger{color:var(--danger)}
+.stack{display:flex;flex-direction:column;gap:4px;min-width:0;max-width:85%}
+.stack .text{max-width:100%}
+.actions{display:flex;gap:2px;flex-wrap:wrap;margin-left:-8px}
+.act{min-height:36px;min-width:36px;padding:0 8px;border:0;border-radius:10px;background:transparent;color:var(--muted);display:inline-flex;align-items:center;gap:6px;font-size:13px}
+.act:hover{background:var(--panel);color:var(--fg)}
+.act.on{color:var(--mint-text)}
+.me-photo{display:flex;flex-direction:column;align-items:flex-end;gap:6px;max-width:85%}
+.me-photo img{width:180px;max-width:100%;border-radius:16px;display:block}
+.attach{width:44px;height:44px;border-radius:50%;border:0;background:transparent;color:var(--muted);display:grid;place-items:center;flex:0 0 44px;margin-left:-10px}
+.attach:hover{color:var(--fg)}
+.attach-bar{display:flex;flex-direction:column;gap:8px}
+.thumb{position:relative;width:64px;height:64px}
+.thumb img{width:64px;height:64px;object-fit:cover;border-radius:12px;display:block;border:1px solid var(--line)}
+.thumb button{position:absolute;top:-8px;right:-8px;width:28px;height:28px;border-radius:50%;border:2px solid var(--night);background:var(--fg);color:var(--night);display:grid;place-items:center;font-size:16px;line-height:1;padding:0}
+.styles{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;scrollbar-width:none}
+.styles button{flex:0 0 auto;min-height:36px;padding:0 12px;border-radius:999px;border:1px solid var(--line);background:var(--panel);font-size:13px;white-space:nowrap}
+.styles button:hover{border-color:var(--mint)}
+.shortcuts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;width:100%;max-width:520px;margin-top:6px}
+.sc{min-height:64px;padding:10px 12px;border-radius:14px;border:1px solid var(--line);background:var(--panel);text-align:left;display:flex;flex-direction:column;justify-content:center;gap:2px}
+.sc:hover{border-color:var(--mint)}
+.sc b{font-weight:500;font-size:15px}
+.sc span{font-size:12px;color:var(--muted)}
+.pay{display:flex;flex-direction:column;gap:10px}
+.pay .cta{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:8px 16px}
+.pay .cta small{font-size:13px;opacity:.85}
+.pay .alt{min-height:52px;border-radius:16px;border:1px solid var(--line);background:var(--panel);color:var(--fg);font-weight:500;font-size:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:8px 16px}
+.pay .alt small{font-size:13px;color:var(--muted);font-weight:400}
+.pay button:disabled{opacity:.55;cursor:default}
+.pro-badge{display:inline-flex;align-items:center;gap:6px;color:var(--mint-text);font-weight:500}
+.invite-code{font-family:var(--brand);font-size:22px;letter-spacing:.12em;color:var(--mint-text)}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(120px + env(safe-area-inset-bottom,0px));z-index:40;background:var(--fg);color:var(--night);padding:10px 16px;border-radius:12px;font-size:14px;max-width:calc(100% - 32px)}
 .auth{position:fixed;inset:0;z-index:30;background:var(--night);overflow-y:auto}
 .auth .col{min-height:100%;display:flex;flex-direction:column;justify-content:center;gap:20px;padding-block:calc(32px + env(safe-area-inset-top,0px)) calc(32px + env(safe-area-inset-bottom,0px));max-width:420px}
@@ -168,6 +198,7 @@ button.s-row.danger{color:var(--danger)}
 .seg button{min-height:38px;padding:0 14px;border:0;border-radius:9px;background:transparent;color:var(--muted);font-size:14px}
 .seg button[aria-pressed="true"]{background:var(--mint);color:var(--mint-ink);font-weight:500}
 .s-note{margin:0;font-size:13px;color:var(--muted)}
+.s-note a{color:var(--mint-text)}
 .s-pro{min-height:40px;padding:0 14px;border-radius:12px;border:0;background:var(--mint);color:var(--mint-ink);font-weight:500;font-size:14px;flex:0 0 auto}
 @media (prefers-reduced-motion:reduce){.typing i,.mic.on,.ph{animation:none}}
 </style>
@@ -208,9 +239,17 @@ button.s-row.danger{color:var(--danger)}
 
   <footer class="composer gutter">
     <form class="col" id="form" autocomplete="off">
+      <div class="attach-bar" id="attachBar" hidden>
+        <div class="thumb"><img id="thumb" alt="Photo jointe"><button type="button" id="removePhoto" aria-label="Retirer la photo">×</button></div>
+        <div class="styles" id="styles" aria-label="Transformer la photo"></div>
+      </div>
       <div class="box">
+        <button class="attach" id="attach" type="button" aria-label="Ajouter une photo">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+        </button>
+        <input type="file" id="file" accept="image/*" hidden>
         <label for="msg" class="sr">Message</label>
-        <textarea id="msg" rows="1" dir="auto" placeholder="Écris ou demande une image…"></textarea>
+        <textarea id="msg" rows="1" dir="auto" placeholder="Écris, envoie une photo…"></textarea>
         <button class="mic" id="mic" type="button" aria-label="Parler au micro" aria-pressed="false">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>
         </button>
@@ -238,7 +277,7 @@ button.s-row.danger{color:var(--danger)}
   <ul class="hist" id="hist"></ul>
   <button class="plus-card" id="drawerPlus" type="button">
     <b>Sahbi Pro</b>
-    <span>8 images par jour, rechargées chaque nuit</span>
+    <span id="drawerProText">8 images par jour, photos, voix</span>
   </button>
   <button class="settings-btn" id="openSettings" type="button">
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
@@ -249,14 +288,19 @@ button.s-row.danger{color:var(--danger)}
 <section class="sheet" id="sheet" hidden role="dialog" aria-modal="true" aria-labelledby="plusTitle">
   <div class="col">
     <h2 id="plusTitle">Sahbi Pro</h2>
-    <div class="price"><b>6,50 €</b> / mois</div>
+    <div class="price"><b id="priceEur">6,50 €</b> / mois</div>
     <ul class="feats">
-      <li><svg width="20" height="20" aria-hidden="true"><use href="#check"/></svg>Discussions dans toutes les langues : darija, arabe, français, English…</li>
-      <li><svg width="20" height="20" aria-hidden="true"><use href="#check"/></svg>8 images par jour, rechargées chaque nuit (jusqu'à 240 par mois)</li>
-      <li><svg width="20" height="20" aria-hidden="true"><use href="#check"/></svg>Pack de 50 images en plus pour 2 €</li>
+      <li><svg width="20" height="20" aria-hidden="true"><use href="#check"/></svg><span><span id="fChat">300</span> messages par jour, dans toutes les langues</span></li>
+      <li><svg width="20" height="20" aria-hidden="true"><use href="#check"/></svg><span><span id="fImg">8</span> images par jour, rechargées chaque nuit</span></li>
+      <li><svg width="20" height="20" aria-hidden="true"><use href="#check"/></svg>Transforme tes photos : cartoon, anime, 3D, aquarelle…</li>
+      <li><svg width="20" height="20" aria-hidden="true"><use href="#check"/></svg>Sahbi lit ses réponses à voix haute</li>
       <li><svg width="20" height="20" aria-hidden="true"><use href="#check"/></svg>Sans engagement, résiliable à tout moment</li>
     </ul>
-    <button class="cta" id="subscribe" type="button">S'abonner</button>
+    <p class="s-note" id="proStatus" hidden></p>
+    <div class="pay" id="payBox">
+      <button class="cta" id="payCard" type="button">Payer par carte<small id="payCardSub">6,50 € par mois</small></button>
+      <button class="alt" id="payDz" type="button">Edahabia ou CIB<small id="payDzSub">1 000 DA pour 30 jours</small></button>
+    </div>
     <button class="ghost" id="closeSheet" type="button">Plus tard</button>
   </div>
 </section>
@@ -272,6 +316,7 @@ button.s-row.danger{color:var(--danger)}
       <input id="email" type="email" inputmode="email" autocomplete="email" placeholder="nom@exemple.com" required>
       <div class="err" id="emailErr" role="alert"></div>
       <button class="cta" type="submit" id="emailBtn">Recevoir mon code</button>
+      <p class="s-note">En continuant, tu acceptes les <a href="/conditions.html" target="_blank" rel="noopener">conditions d'utilisation</a> et la <a href="/confidentialite.html" target="_blank" rel="noopener">politique de confidentialité</a>.</p>
     </form>
 
     <form id="codeForm" novalidate hidden>
@@ -325,7 +370,7 @@ button.s-row.danger{color:var(--danger)}
         <h3>Compte</h3>
         <div class="s-card">
           <div class="s-row"><span class="k">E-mail</span><span class="v" id="sEmail" dir="auto"></span></div>
-          <div class="s-row"><span class="k">Abonnement</span><span class="v">Gratuit</span><button class="s-pro" id="sGoPro" type="button">Passer à Pro</button></div>
+          <div class="s-row"><span class="k">Abonnement</span><span class="v" id="sPlan">Gratuit</span><button class="s-pro" id="sGoPro" type="button">Passer à Pro</button></div>
         </div>
       </div>
 
@@ -344,9 +389,21 @@ button.s-row.danger{color:var(--danger)}
       <div class="s-group">
         <h3>Utilisation aujourd'hui</h3>
         <div class="s-card">
+          <div class="s-row"><span class="k">Messages restants</span><span class="v" id="sChat">–</span></div>
           <div class="s-row"><span class="k">Images restantes</span><span class="v" id="sImages">–</span></div>
+          <div class="s-row"><span class="k">Lectures à voix haute</span><span class="v" id="sTts">–</span></div>
         </div>
         <p class="s-note">Les compteurs se rechargent chaque jour à minuit (heure du Maghreb).</p>
+      </div>
+
+      <div class="s-group">
+        <h3>Invite tes amis</h3>
+        <div class="s-card">
+          <div class="s-row"><span class="k">Ton code</span><span class="invite-code" id="sCode">–</span></div>
+          <button class="s-row" type="button" id="sShareInvite">Partager mon lien d'invitation</button>
+          <div class="s-row"><span class="k">Amis invités</span><span class="v" id="sRefs">0</span></div>
+        </div>
+        <p class="s-note">Ton ami s'inscrit avec ton lien : vous recevez tous les deux 7 jours de Sahbi Pro.</p>
       </div>
 
       <div class="s-group">
@@ -362,6 +419,7 @@ button.s-row.danger{color:var(--danger)}
           <button class="s-row danger" type="button" id="sDelete">Supprimer mon compte</button>
         </div>
         <p class="s-note" id="sNote">L'historique des discussions est enregistré sur ce téléphone. Les images sont enregistrées dans ton compte.</p>
+        <p class="s-note"><a href="/conditions.html" target="_blank" rel="noopener">Conditions d'utilisation</a> · <a href="/confidentialite.html" target="_blank" rel="noopener">Confidentialité</a></p>
       </div>
     </div>
   </div>
@@ -375,12 +433,12 @@ import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js
 const $ = (id) => document.getElementById(id);
 const msgsEl = $('msgs'), thread = $('thread'), ta = $('msg'), sendBtn = $('send'), mic = $('mic');
 let STORE = 'sahbi-chats-v1';
-let supabase = null, busy = false, mode = 'chat', imgLeft = null, imgLimit = 8, userId = null;
+let supabase = null, busy = false, imgLeft = null, imgLimit = 2, userId = null, cfg = {}, me = null, photo = null;
 
 // ---------- Account (Supabase) ----------
 const ready = (async () => {
-  const cfg = await fetch('/api/config').then((r) => r.json());
-  imgLimit = cfg.limits?.image ?? 8;
+  cfg = await fetch('/api/config').then((r) => r.json());
+  imgLimit = cfg.limits?.free?.image ?? 2;
   supabase = createClient(cfg.supabaseUrl, cfg.supabaseAnonKey, { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true } });
   supabase.auth.onAuthStateChange((_event, session) => { setTimeout(() => onSession(session), 0); });
   const { data } = await supabase.auth.getSession();
@@ -395,7 +453,7 @@ function onSession(session) {
   if (id === userId) return;
   userId = id; library = null;
   STORE = `sahbi-chats-v1-${id}`;
-  chats = load(); newChat(); refreshCount();
+  chats = load(); newChat(); refreshMe().then(applyPendingReferral);
 }
 
 async function token() {
@@ -469,10 +527,81 @@ const scroll = () => { thread.scrollTop = thread.scrollHeight; };
 
 function bubble(role, text, extra = '') {
   const m = el('div', `msg ${role === 'user' ? 'me' : 'bot'} ${extra}`);
-  if (role !== 'user') m.appendChild(avatar());
   const t = el('div', 'text', text); t.dir = 'auto';
-  m.appendChild(t); msgsEl.appendChild(m); scroll();
+  if (role === 'user') m.appendChild(t);
+  else { const st = el('div', 'stack'); st.appendChild(t); m.append(avatar(), st); }
+  msgsEl.appendChild(m); scroll();
   return t;
+}
+function userPhotoBubble(src, text) {
+  const m = el('div', 'msg me'); const w = el('div', 'me-photo');
+  if (src) { const img = el('img'); img.src = src; img.alt = 'Photo envoyée'; w.appendChild(img); }
+  if (text) { const t = el('div', 'text', text); t.dir = 'auto'; w.appendChild(t); }
+  m.appendChild(w); msgsEl.appendChild(m); scroll();
+}
+
+// ---------- Azioni sotto i messaggi: ascolta, copia, condividi ----------
+const ICONS = {
+  speak: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M19 5a10 10 0 0 1 0 14"/></svg>',
+  stop: '<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>',
+  copy: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>',
+  share: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/></svg>',
+  open: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3h7v7M10 14L21 3M21 14v7H3V3h7"/></svg>',
+};
+function actBtn(icon, label, onClick, showLabel = false) {
+  const b = el('button', 'act'); b.type = 'button'; b.setAttribute('aria-label', label); b.title = label;
+  b.innerHTML = ICONS[icon] + (showLabel ? `<span>${label}</span>` : '');
+  b.addEventListener('click', () => onClick(b)); return b;
+}
+const SHARE_TAIL = () => `\n\n— Sahbi, l'IA qui parle ta langue : ${location.origin}`;
+async function shareText(text) {
+  const full = text + SHARE_TAIL();
+  if (navigator.share) { try { await navigator.share({ text: full }); return; } catch (e) { if (e?.name === 'AbortError') return; } }
+  window.open(`https://wa.me/?text=${encodeURIComponent(full)}`, '_blank', 'noopener');
+}
+async function shareImage(src, caption) {
+  try {
+    const blob = await (await fetch(src)).blob();
+    const file = new File([blob], 'sahbi.jpg', { type: blob.type || 'image/jpeg' });
+    if (navigator.canShare?.({ files: [file] })) { await navigator.share({ files: [file], text: `Créé avec Sahbi : ${location.origin}` }); return; }
+  } catch (e) { if (e?.name === 'AbortError') return; }
+  window.open(src, '_blank', 'noopener');
+  toast('Appuie longuement sur l’image pour l’enregistrer, puis partage-la.');
+}
+let audio = null, audioBtn = null;
+function stopAudio() {
+  if (audio) { audio.pause(); URL.revokeObjectURL(audio.src); audio = null; }
+  if (audioBtn) { audioBtn.innerHTML = ICONS.speak; audioBtn.classList.remove('on'); audioBtn = null; }
+}
+async function speak(text, b) {
+  if (audioBtn === b) { stopAudio(); return; }
+  stopAudio();
+  if (me && !me.pro && !(me.limits?.tts > 0)) { openSheet(); toast('La voix de Sahbi est incluse dans Sahbi Pro.'); return; }
+  b.classList.add('on'); audioBtn = b;
+  const r = await api('/api/speak', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ text }) }).catch(() => null);
+  if (audioBtn !== b) return;
+  if (!r?.ok) {
+    const d = await r?.json().catch(() => ({})) || {};
+    stopAudio();
+    if (d.error === 'pro') { openSheet(); toast('La voix de Sahbi est incluse dans Sahbi Pro.'); } else toast(d.message || 'Lecture impossible pour le moment.');
+    return;
+  }
+  audio = new Audio(URL.createObjectURL(await r.blob()));
+  b.innerHTML = ICONS.stop;
+  audio.addEventListener('ended', stopAudio);
+  audio.play().catch(stopAudio);
+}
+function addTextActions(textEl, text) {
+  const st = textEl.parentElement; if (!st?.classList.contains('stack')) return;
+  const row = el('div', 'actions');
+  row.append(
+    actBtn('speak', 'Écouter', (b) => speak(text, b)),
+    actBtn('copy', 'Copier', async () => {
+      try { await navigator.clipboard.writeText(text); toast('Copié.'); } catch { toast('Copie impossible.'); }
+    }),
+    actBtn('share', 'Partager', () => shareText(text)),
+  );
+  st.appendChild(row);
 }
 function typing() {
   const m = el('div', 'msg bot'); m.appendChild(avatar());
@@ -486,6 +615,11 @@ function imageBubble(src, caption, note) {
   if (src) { const img = el('img'); img.src = src; img.alt = caption; box.appendChild(img); }
   else box.appendChild(el('div', 'text', `Image : ${caption}`));
   if (note) box.appendChild(el('small', '', note));
+  if (src) {
+    const row = el('div', 'actions');
+    row.append(actBtn('share', 'Partager', () => shareImage(src, caption), true));
+    box.appendChild(row);
+  }
   m.appendChild(box); msgsEl.appendChild(m); scroll();
 }
 function limitBubble(message) {
@@ -495,12 +629,13 @@ function limitBubble(message) {
   d.appendChild(b); m.appendChild(d); msgsEl.appendChild(m); scroll();
 }
 
-const SUGGESTIONS = [
-  'Wach n9der ntayeb l 3cha b batata w bid?',
-  'Aide-moi à écrire une lettre de motivation',
-  'اشرح لي الذكاء الاصطناعي ببساطة',
-  'Fais-moi une image d’un chat dans la médina de Fès',
-  'Give me 5 ideas for a weekend in Tunis',
+const SHORTCUTS = [
+  { t: 'Aide au Bac', d: 'Cours, exercices, révisions', p: 'Aide-moi à réviser pour le Bac. Matière et chapitre : ' },
+  { t: 'Mon CV', d: 'Un CV clair et pro', p: 'Aide-moi à écrire mon CV. Voici mon parcours : ' },
+  { t: 'Lettre administrative', d: 'Mairie, banque, employeur', p: 'Écris une lettre administrative pour ' },
+  { t: 'Traduire', d: 'Darija ↔ français ↔ arabe', p: 'Traduis en français : ' },
+  { t: 'Transformer une photo', d: 'Cartoon, anime, 3D…', photo: true },
+  { t: 'Créer une image', d: 'Décris, Sahbi dessine', p: 'Fais-moi une image de ' },
 ];
 function render() {
   msgsEl.replaceChildren();
@@ -509,18 +644,23 @@ function render() {
     const logo = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
     logo.setAttribute('width', '72'); logo.setAttribute('height', '72'); logo.setAttribute('aria-hidden', 'true');
     const u = document.createElementNS('http://www.w3.org/2000/svg', 'use'); u.setAttribute('href', '#logo'); logo.appendChild(u);
-    const chips = el('div', 'chips');
-    for (const s of SUGGESTIONS) {
-      const c = el('button', 'chip', s); c.type = 'button'; c.dir = 'auto';
-      c.addEventListener('click', () => { ta.value = s; grow(); $('form').requestSubmit(); });
+    const chips = el('div', 'shortcuts');
+    for (const s of SHORTCUTS) {
+      const c = el('button', 'sc'); c.type = 'button';
+      c.append(el('b', '', s.t), el('span', '', s.d));
+      c.addEventListener('click', () => {
+        if (s.photo) { $('file').click(); return; }
+        ta.value = s.p; grow(); ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length);
+      });
       chips.appendChild(c);
     }
-    e.append(logo, el('h1', '', 'Salam, ana Sahbi'), el('p', '', 'Écris ou parle dans ta langue, je te réponds dans la même. Je peux aussi créer des images.'), chips);
+    e.append(logo, el('h1', '', 'Salam, ana Sahbi'), el('p', '', 'Écris, parle ou envoie une photo, dans ta langue. Je peux aussi créer des images.'), chips);
     msgsEl.appendChild(e);
   }
   for (const m of current.messages) {
     if (m.kind === 'image') storedImageBubble(m);
-    else bubble(m.role, m.content);
+    else if (m.role === 'user' && m.photo) userPhotoBubble(null, `📷 ${m.content}`);
+    else { const t = bubble(m.role, m.content); if (m.role === 'assistant') addTextActions(t, m.content); }
   }
   renderHistory();
 }
@@ -537,43 +677,49 @@ function renderHistory() {
 
 // ---------- Chat (testo e immagini nella stessa casella) ----------
 const SEP = '\u001e';
-const toApi = (m) => (m.kind === 'image' ? { role: 'assistant', content: `[Image créée : ${m.content}]` } : { role: m.role, content: m.content });
+const toApi = (m, isLast) => {
+  if (m.kind === 'image') return { role: 'assistant', content: `[Image créée : ${m.content}]` };
+  if (m.photo && !isLast) return { role: m.role, content: `${m.content}\n[Photo envoyée]` };
+  return { role: m.role, content: m.content };
+};
 function imagePlaceholder() {
   const m = el('div', 'msg bot'); m.appendChild(avatar());
   const box = el('div', 'gen'); box.appendChild(el('div', 'ph', 'Je dessine ton image…'));
   m.appendChild(box); msgsEl.appendChild(m); scroll();
   return m;
 }
-async function sendChat(text) {
-  current.messages.push({ role: 'user', content: text });
-  if (current.messages.length === 1) render(); else bubble('user', text);
+async function sendChat(text, pic = null) {
+  current.messages.push(pic ? { role: 'user', content: text, photo: true } : { role: 'user', content: text });
+  if (current.messages.length === 1) { render(); if (pic) msgsEl.lastElementChild?.remove(); }
+  if (pic) userPhotoBubble(pic, text); else if (current.messages.length > 1) bubble('user', text);
   saveCurrent();
   const wait = typing();
-  const history = current.messages.map(toApi);
+  const history = current.messages.map((m, i, a) => toApi(m, i === a.length - 1));
   let res;
   try {
-    res = await api('/api/chat', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ messages: history }) });
+    res = await api('/api/chat', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ messages: history, ...(pic ? { photo: pic } : {}) }) });
   } catch { wait.remove(); bubble('bot', 'Pas de connexion. Vérifie internet et réessaie.', 'err'); return; }
   if (!res.ok) {
     wait.remove();
     const err = await res.json().catch(() => ({}));
-    if (err.error === 'limit') limitBubble('Tu as atteint la limite de messages pour aujourd’hui. Ça se recharge à minuit.');
+    if (err.error === 'limit') limitBubble(me?.pro ? 'Tu as atteint la limite de messages pour aujourd’hui. Ça se recharge à minuit.' : 'Tu as utilisé tes messages gratuits d’aujourd’hui. Passe à Sahbi Pro pour continuer, ou reviens demain.');
     else bubble('bot', err.message || 'Sahbi ne peut pas répondre maintenant. Réessaie.', 'err');
     return;
   }
   wait.remove();
   const out = bubble('assistant', '');
+  const outMsg = out.closest('.msg'); outMsg.hidden = true;
   const extra = []; let pending = null, handled = 0, raw = '', reply = '';
   const onFrame = (f) => {
     if (f.type === 'image_start') { if (!pending) pending = imagePlaceholder(); return; }
     if (pending) { pending.remove(); pending = null; }
     if (f.type === 'image') {
-      imgLeft = f.remaining; imgLimit = f.limit;
+      imgLeft = f.remaining; imgLimit = f.limit; if (me?.remaining) me.remaining.image = f.remaining;
       imageBubble(f.image, f.prompt || 'Image créée par Sahbi', `Il te reste ${f.remaining} image${f.remaining === 1 ? '' : 's'} aujourd’hui`);
       extra.push({ role: 'assistant', kind: 'image', content: f.prompt || 'image', id: f.id || null });
       library = null;
     } else if (f.type === 'image_error') {
-      if (f.error === 'limit') limitBubble('Tu as utilisé tes images d’aujourd’hui. Elles reviennent à minuit, ou prends un pack de 50 images pour 2 €.');
+      if (f.error === 'limit') limitBubble(me?.pro ? 'Tu as utilisé tes images d’aujourd’hui. Elles reviennent à minuit.' : 'Tu as utilisé tes images gratuites d’aujourd’hui. Avec Sahbi Pro tu en as 8 par jour.');
       else bubble('bot', f.message || 'Impossible de créer l’image maintenant.', 'err');
     }
   };
@@ -584,7 +730,7 @@ async function sendChat(text) {
     raw += dec.decode(value, { stream: true });
     const parts = raw.split(SEP);
     reply = parts.filter((_, i) => i % 2 === 0).join('');
-    out.textContent = reply;
+    out.textContent = reply; if (reply.trim()) outMsg.hidden = false;
     for (let i = 1; i < parts.length - 1; i += 2) {
       if ((i - 1) / 2 < handled) continue;
       handled++;
@@ -594,10 +740,11 @@ async function sendChat(text) {
   }
   if (pending) { pending.remove(); bubble('bot', 'Impossible de créer l’image maintenant. Réessaie.', 'err'); }
   if (!reply.trim()) {
-    out.parentElement.remove();
+    out.closest(".msg").remove();
     if (!extra.length && !handled) bubble('bot', 'Je n’ai pas pu répondre. Réessaie.', 'err');
   } else {
     current.messages.push({ role: 'assistant', content: reply });
+    addTextActions(out, reply);
   }
   current.messages.push(...extra);
   saveCurrent(); renderHistory();
@@ -658,10 +805,93 @@ $('vDelete').addEventListener('click', async () => {
   if (!$('gallery').hidden) openLibrary();
 });
 
-// ---------- Immagini: quante ne restano oggi ----------
-async function refreshCount() {
-  try { const r = await api('/api/image'); if (r.ok) { const d = await r.json(); imgLeft = d.remaining; imgLimit = d.limit; } } catch { /* offline */ }
+// ---------- Stato dell'account (piano, limiti, invito) ----------
+async function refreshMe() {
+  try {
+    const r = await api('/api/me');
+    if (!r.ok) return;
+    me = await r.json();
+    imgLeft = me.remaining.image; imgLimit = me.limits.image;
+    $('openPlus').textContent = me.pro ? 'Pro ✓' : 'Pro';
+    $('drawerProText').textContent = me.pro ? `Actif jusqu’au ${fmtDate(me.proUntil)}` : '8 images par jour, photos, voix';
+  } catch { /* offline */ }
 }
+const fmtDate = (d) => (d ? new Date(d).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }) : '');
+
+// Inviti: il link ?ref=CODICE viene ricordato fino all'accesso.
+(() => {
+  const q = new URLSearchParams(location.search);
+  const ref = q.get('ref'); const paid = q.get('paid');
+  if (ref) { try { localStorage.setItem('sahbi-ref', ref.toUpperCase().slice(0, 12)); } catch { /* ignorato */ } }
+  if (paid === '1') setTimeout(() => toast('Merci ! Ton Sahbi Pro s’active dans quelques secondes.'), 800);
+  if (paid === '0') setTimeout(() => toast('Paiement annulé. Tu peux réessayer quand tu veux.'), 800);
+  if (paid === '1') { setTimeout(refreshMe, 4000); setTimeout(refreshMe, 12000); }
+  if (ref || paid) history.replaceState(null, '', location.pathname);
+})();
+async function applyPendingReferral() {
+  let code = null; try { code = localStorage.getItem('sahbi-ref'); } catch { /* ignorato */ }
+  if (!code || !me) return;
+  try { localStorage.removeItem('sahbi-ref'); } catch { /* ignorato */ }
+  if (me.referredBy || code === me.referralCode) return;
+  const r = await api('/api/referral', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ code }) }).catch(() => null);
+  const d = await r?.json().catch(() => ({})) || {};
+  if (r?.ok) { toast(d.message); refreshMe(); }
+}
+const inviteLink = () => (me?.referralCode ? `${location.origin}/?ref=${me.referralCode}` : location.origin);
+
+// ---------- Abbonamento Pro ----------
+function renderSheet() {
+  const pay = cfg.payments || {};
+  $('priceEur').textContent = pay.priceEur || '6,50 €';
+  $('payCardSub').textContent = pay.stripe ? `${pay.priceEur || '6,50 €'} par mois` : 'Bientôt disponible';
+  $('payDzSub').textContent = pay.chargily ? `${(pay.priceDzd || 1000).toLocaleString('fr-FR')} DA pour 30 jours` : 'Bientôt disponible';
+  $('payCard').disabled = !pay.stripe; $('payDz').disabled = !pay.chargily;
+  $('fChat').textContent = cfg.limits?.pro?.chat ?? 300; $('fImg').textContent = cfg.limits?.pro?.image ?? 8;
+  const st = $('proStatus');
+  if (me?.pro) { st.hidden = false; st.textContent = `Tu es Pro jusqu’au ${fmtDate(me.proUntil)}. Un paiement Edahabia / CIB ajoute 30 jours.`; }
+  else st.hidden = true;
+}
+async function startCheckout(provider, b) {
+  b.disabled = true;
+  const r = await api('/api/checkout', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ provider }) }).catch(() => null);
+  const d = await r?.json().catch(() => ({})) || {};
+  if (r?.ok && d.url) { location.href = d.url; return; }
+  b.disabled = false; toast(d.message || 'Le paiement n’a pas pu démarrer. Réessaie.');
+}
+
+// ---------- Foto: scegli, rimpicciolisci, invia ----------
+const STYLES = ['Cartoon', 'Anime', '3D animé', 'Bande dessinée', 'Aquarelle', 'Réaliste', 'Pixel art'];
+for (const st of STYLES) {
+  const b = el('button', '', st); b.type = 'button';
+  b.addEventListener('click', () => { ta.value = `Transforme ma photo en style ${st.toLowerCase()}.`; grow(); $('form').requestSubmit(); });
+  $('styles').appendChild(b);
+}
+function setPhoto(dataUrl) {
+  photo = dataUrl;
+  $('attachBar').hidden = !dataUrl;
+  if (dataUrl) $('thumb').src = dataUrl; else $('thumb').removeAttribute('src');
+  ta.placeholder = dataUrl ? 'Pose une question ou choisis un style…' : placeholder();
+  grow();
+}
+async function shrink(file, max = 1280) {
+  const url = URL.createObjectURL(file);
+  try {
+    const img = await new Promise((ok, ko) => { const i = new Image(); i.onload = () => ok(i); i.onerror = ko; i.src = url; });
+    const k = Math.min(1, max / Math.max(img.naturalWidth, img.naturalHeight));
+    const c = document.createElement('canvas');
+    c.width = Math.round(img.naturalWidth * k); c.height = Math.round(img.naturalHeight * k);
+    c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+    return c.toDataURL('image/jpeg', 0.85);
+  } finally { URL.revokeObjectURL(url); }
+}
+$('attach').addEventListener('click', () => $('file').click());
+$('file').addEventListener('change', async () => {
+  const f = $('file').files?.[0]; $('file').value = '';
+  if (!f) return;
+  if (!f.type.startsWith('image/')) { toast('Choisis une photo.'); return; }
+  try { setPhoto(await shrink(f)); ta.focus(); } catch { toast('Impossible de lire cette photo.'); }
+});
+$('removePhoto').addEventListener('click', () => setPhoto(null));
 
 // ---------- Microfono ----------
 let recorder = null, chunks = [], stopTimer = null;
@@ -704,33 +934,35 @@ mic.addEventListener('click', () => {
 });
 
 // ---------- Interfaccia ----------
-const placeholder = () => 'Écris ou demande une image…';
+const placeholder = () => 'Écris, envoie une photo…';
 
-function grow() { ta.style.height = 'auto'; ta.style.height = Math.min(ta.scrollHeight, 140) + 'px'; sendBtn.disabled = busy || !ta.value.trim(); }
+function grow() { ta.style.height = 'auto'; ta.style.height = Math.min(ta.scrollHeight, 140) + 'px'; sendBtn.disabled = busy || (!ta.value.trim() && !photo); }
 ta.addEventListener('input', grow);
 ta.addEventListener('keydown', (e) => {
   if (e.key === 'Enter' && !e.shiftKey && !matchMedia('(pointer:coarse)').matches) { e.preventDefault(); $('form').requestSubmit(); }
 });
 $('form').addEventListener('submit', async (e) => {
   e.preventDefault();
-  const v = ta.value.trim();
+  const pic = photo;
+  const v = ta.value.trim() || (pic ? 'Explique-moi cette photo.' : '');
   if (!v || busy) return;
-  ta.value = ''; busy = true; grow();
-  try { await sendChat(v); }
+  ta.value = ''; setPhoto(null); busy = true; grow();
+  try { await sendChat(v, pic); }
   catch { bubble('bot', 'Une erreur est survenue. Recharge la page et réessaie.', 'err'); }
   busy = false; grow();
 });
 
 function toast(t) { const x = $('toast'); x.textContent = t; x.hidden = false; clearTimeout(toast.t); toast.t = setTimeout(() => { x.hidden = true; }, 3000); }
 function closeAll() { $('scrim').hidden = true; $('drawer').hidden = true; $('sheet').hidden = true; }
-function openSheet() { closeAll(); $('scrim').hidden = false; $('sheet').hidden = false; $('subscribe').focus(); }
+function openSheet() { closeAll(); renderSheet(); $('scrim').hidden = false; $('sheet').hidden = false; $('closeSheet').focus(); }
 $('openMenu').addEventListener('click', () => { renderHistory(); $('scrim').hidden = false; $('drawer').hidden = false; $('newChat').focus(); });
 $('scrim').addEventListener('click', closeAll);
 document.addEventListener('keydown', (e) => { if (e.key !== 'Escape') return; if (!$('viewer').hidden) $('viewer').hidden = true; else if (!$('gallery').hidden) $('gallery').hidden = true; else if (!$('settings').hidden) $('settings').hidden = true; else closeAll(); });
 $('openPlus').addEventListener('click', openSheet);
 $('drawerPlus').addEventListener('click', openSheet);
 $('closeSheet').addEventListener('click', closeAll);
-$('subscribe').addEventListener('click', () => { closeAll(); toast('L’abonnement arrive bientôt.'); });
+$('payCard').addEventListener('click', () => startCheckout('stripe', $('payCard')));
+$('payDz').addEventListener('click', () => startCheckout('chargily', $('payDz')));
 $('newChat').addEventListener('click', () => { closeAll(); newChat(); ta.focus(); });
 
 // ---------- Tema chiaro / scuro ----------
@@ -757,13 +989,30 @@ function resetConfirms() {
 async function openSettings() {
   closeAll(); resetConfirms(); $('settings').hidden = false;
   $('sEmail').textContent = $('who').textContent || '–';
-  $('sImages').textContent = imgLeft == null ? '…' : `${imgLeft} / ${imgLimit}`;
-  await refreshCount();
-  $('sImages').textContent = imgLeft == null ? '–' : `${imgLeft} / ${imgLimit}`;
+  const fill = () => {
+    const r = me?.remaining || {}, l = me?.limits || {};
+    $('sPlan').textContent = me?.pro ? `Pro · jusqu’au ${fmtDate(me.proUntil)}` : 'Gratuit';
+    $('sGoPro').textContent = me?.pro ? (me.canManageBilling ? 'Gérer' : 'Prolonger') : 'Passer à Pro';
+    $('sChat').textContent = me ? `${r.chat} / ${l.chat}` : '…';
+    $('sImages').textContent = me ? `${r.image} / ${l.image}` : '…';
+    $('sTts').textContent = me ? (l.tts > 0 ? `${r.tts} / ${l.tts}` : 'Avec Pro') : '…';
+    $('sCode').textContent = me?.referralCode || '–';
+    $('sRefs').textContent = String(me?.referrals ?? 0);
+  };
+  fill(); await refreshMe(); fill();
 }
+$('sShareInvite').addEventListener('click', () => shareText(`Salam ! J’utilise Sahbi, l’IA qui parle darija, arabe et français. Inscris-toi avec mon lien et on reçoit 7 jours de Pro tous les deux : ${inviteLink()}`).catch(() => {}));
 $('openSettings').addEventListener('click', openSettings);
 $('closeSettings').addEventListener('click', () => { $('settings').hidden = true; });
-$('sGoPro').addEventListener('click', () => { $('settings').hidden = true; openSheet(); });
+$('sGoPro').addEventListener('click', async () => {
+  if (me?.pro && me.canManageBilling) {
+    const r = await api('/api/portal', { method: 'POST' }).catch(() => null);
+    const d = await r?.json().catch(() => ({})) || {};
+    if (r?.ok && d.url) { location.href = d.url; return; }
+    toast(d.message || 'Impossible d’ouvrir la gestion de l’abonnement.'); return;
+  }
+  $('settings').hidden = true; openSheet();
+});
 $('sLogout').addEventListener('click', logout);
 $('sClear').addEventListener('click', () => {
   const b = $('sClear');
@@ -780,6 +1029,8 @@ $('sDelete').addEventListener('click', async () => {
   try { localStorage.removeItem(STORE); } catch { /* ignorato */ }
   chats = []; await logout(); toast('Ton compte a été supprimé.');
 });
+
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
 
 newChat();
 ready.catch(() => toast('Connexion impossible. Recharge la page.'));
