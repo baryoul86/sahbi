@@ -175,7 +175,7 @@ footer.composer .col{padding-block:10px 12px;display:flex;flex-direction:column;
         <svg width="32" height="32" aria-hidden="true"><use href="#logo"/></svg>
         <b>sahbi</b><span lang="ar" dir="rtl">صاحبي</span>
       </div>
-      <button class="pill" id="openPlus">Plus</button>
+      <button class="pill" id="openPlus">Pro</button>
     </div>
   </header>
 
@@ -214,7 +214,7 @@ footer.composer .col{padding-block:10px 12px;display:flex;flex-direction:column;
   <h2>Récents</h2>
   <ul class="hist" id="hist"></ul>
   <button class="plus-card" id="drawerPlus" type="button">
-    <b>Sahbi Plus</b>
+    <b>Sahbi Pro</b>
     <span>8 images par jour, rechargées chaque nuit</span>
   </button>
   <button class="lib-btn" id="themeBtn" type="button" aria-pressed="false">
@@ -226,7 +226,7 @@ footer.composer .col{padding-block:10px 12px;display:flex;flex-direction:column;
 
 <section class="sheet" id="sheet" hidden role="dialog" aria-modal="true" aria-labelledby="plusTitle">
   <div class="col">
-    <h2 id="plusTitle">Sahbi Plus</h2>
+    <h2 id="plusTitle">Sahbi Pro</h2>
     <div class="price"><b>6,50 €</b> / mois</div>
     <ul class="feats">
       <li><svg width="20" height="20" aria-hidden="true"><use href="#check"/></svg>Discussions dans toutes les langues : darija, arabe, français, English…</li>
@@ -414,7 +414,7 @@ function imageBubble(src, caption, note) {
 function limitBubble(message) {
   const m = el('div', 'msg bot'); m.appendChild(avatar());
   const d = el('div'); d.appendChild(el('div', 'text', message));
-  const b = el('button', 'inline-cta', 'Voir Sahbi Plus'); b.type = 'button'; b.addEventListener('click', openSheet);
+  const b = el('button', 'inline-cta', 'Voir Sahbi Pro'); b.type = 'button'; b.addEventListener('click', openSheet);
   d.appendChild(b); m.appendChild(d); msgsEl.appendChild(m); scroll();
 }
 

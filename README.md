@@ -6,7 +6,7 @@ Assistente di intelligenza artificiale che risponde nella lingua dell'utente (da
 - Microfono: la voce diventa testo
 - Generazione di immagini: 8 al giorno, ricaricate a mezzanotte (ora del Maghreb)
 - Registrazione obbligatoria con e-mail e codice a 6 cifre
-- Abbonamento Sahbi Plus: 6,50 € al mese (pagamento in arrivo)
+- Abbonamento Sahbi Pro: 6,50 € al mese (pagamento in arrivo)
 
 ## Come è fatta
 
