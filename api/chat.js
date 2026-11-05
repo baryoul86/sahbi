@@ -46,11 +46,28 @@ export async function POST(request) {
   const payload = { model, stream: true, messages: [{ role: 'system', content: SYSTEM }, ...messages] };
   if (model.startsWith('gpt-5')) payload.reasoning_effort = env('OPENAI_REASONING_EFFORT', 'minimal');
 
-  const upstream = await fetch(`${OPENAI}/chat/completions`, {
+  const call = (p) => fetch(`${OPENAI}/chat/completions`, {
     method: 'POST',
     headers: openaiHeaders({ 'content-type': 'application/json' }),
-    body: JSON.stringify(payload),
+    body: JSON.stringify(p),
   });
+  const upstream = await call(payload);
+
+  // Account OpenAI non verificati non possono usare lo streaming: rispondiamo tutto in una volta.
+  if (upstream.status === 400) {
+    const errText = await upstream.text().catch(() => '');
+    if (/stream/i.test(errText) && /verif/i.test(errText)) {
+      const plain = await call({ ...payload, stream: false });
+      const data = await plain.json().catch(() => null);
+      const text = data?.choices?.[0]?.message?.content;
+      if (plain.ok && text) {
+        return new Response(text, { headers: { 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'no-store', 'x-remaining': String(left) } });
+      }
+    }
+    await refundCredit(userId, 'chat').catch(() => {});
+    console.error('OpenAI chat error', 400, errText.slice(0, 300));
+    return fail('upstream', 502, 'Sahbi non riesce a rispondere ora. Riprova tra poco.');
+  }
   if (!upstream.ok || !upstream.body) {
     await refundCredit(userId, 'chat').catch(() => {});
     console.error('OpenAI chat error', upstream.status, await upstream.text().catch(() => ''));
