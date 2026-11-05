@@ -1,0 +1,461 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
+<title>Sahbi – Maghreb AI</title>
+<meta name="description" content="Sahbi, l'ami qui te comprend : réponses en darija, arabe, français, anglais et toutes les langues.">
+<meta name="theme-color" content="#0F2E24">
+<link rel="icon" href="/logo.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/logo.svg">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@800&family=Rubik:wght@400;500&family=Reem+Kufi:wght@600&display=swap">
+<style>
+:root{
+  --night:#0F2E24; --panel:#153A2E; --panel-2:#1C4738; --line:#2A5747;
+  --fg:#F1F7F3; --muted:#A9C4B7; --mint:#2FAE74; --mint-ink:#0B2219; --danger:#F2A08A;
+  --brand:"Baloo 2","Rubik",system-ui,sans-serif;
+  --body:"Rubik",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --arabic:"Reem Kufi","Rubik",sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:var(--night);color:var(--fg);font-family:var(--body);font-size:16px;line-height:1.55;overflow:hidden;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+[hidden]{display:none!important}
+button,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--mint);outline-offset:2px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.gutter{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.app{height:100%;display:flex;flex-direction:column}
+.col{width:100%;max-width:760px;margin:0 auto}
+header.bar{border-bottom:1px solid var(--line)}
+header.bar .col{display:flex;align-items:center;gap:12px;padding-block:10px}
+.icon-btn{width:44px;height:44px;display:grid;place-items:center;border-radius:12px;background:transparent;border:0}
+.icon-btn:hover{background:var(--panel)}
+.brand{display:flex;align-items:center;gap:10px;flex:1;min-width:0}
+.brand b{font-family:var(--brand);font-weight:800;font-size:24px;line-height:1}
+.brand span{font-family:var(--arabic);font-size:17px;color:var(--mint)}
+.pill{display:inline-flex;align-items:center;height:36px;padding:0 14px;border-radius:999px;border:1px solid var(--mint);background:var(--mint);color:var(--mint-ink);font-size:14px;font-weight:500}
+main.thread{flex:1;overflow-y:auto;overscroll-behavior:contain}
+main.thread .col{display:flex;flex-direction:column;gap:18px;padding-block:20px 28px;min-height:100%}
+.empty{margin:auto 0;display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center;padding-block:24px}
+.empty h1{margin:0;font-family:var(--brand);font-weight:800;font-size:32px;line-height:1.1;text-wrap:balance}
+.empty p{margin:0;color:var(--muted);max-width:30ch}
+.chips{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:6px}
+.chip{min-height:40px;padding:8px 14px;border-radius:14px;border:1px solid var(--line);background:var(--panel);font-size:14px;text-align:left}
+.chip:hover{border-color:var(--mint)}
+.msg{display:flex;gap:10px;align-items:flex-start;min-width:0}
+.msg.me{justify-content:flex-end}
+.av{flex:0 0 32px;margin-top:2px}
+.text{min-width:0;max-width:85%;white-space:pre-wrap;overflow-wrap:anywhere}
+.msg.me .text{background:var(--mint);color:var(--mint-ink);padding:10px 14px;border-radius:20px 20px 6px 20px}
+.msg.bot .text{padding-top:4px}
+.msg.err .text{color:var(--danger)}
+.typing{display:inline-flex;gap:5px;padding-top:12px}
+.typing i{width:7px;height:7px;border-radius:50%;background:var(--muted);animation:b 1s infinite}
+.typing i:nth-child(2){animation-delay:.15s}.typing i:nth-child(3){animation-delay:.3s}
+@keyframes b{0%,80%,100%{opacity:.3}40%{opacity:1}}
+.gen{display:flex;flex-direction:column;gap:8px;max-width:360px;min-width:0}
+.gen img{width:100%;border-radius:16px;display:block;background:var(--panel)}
+.gen small{color:var(--muted);font-size:13px}
+.inline-cta{margin-top:10px;display:inline-flex;align-items:center;min-height:44px;padding:0 16px;border-radius:12px;border:1px solid var(--mint);background:transparent;color:var(--mint);font-weight:500}
+footer.composer{border-top:1px solid var(--line)}
+footer.composer .col{padding-block:10px 12px;display:flex;flex-direction:column;gap:8px}
+.modes{display:flex;gap:8px;flex-wrap:wrap}
+.mode{height:36px;padding:0 14px;border-radius:999px;border:1px solid var(--line);background:transparent;font-size:14px;display:inline-flex;align-items:center;gap:8px;color:var(--muted)}
+.mode[aria-pressed="true"]{background:var(--panel-2);border-color:var(--mint);color:var(--fg)}
+.count{font-variant-numeric:tabular-nums;color:var(--mint);font-weight:500}
+.box{display:flex;align-items:flex-end;gap:6px;background:var(--panel);border:1px solid var(--line);border-radius:22px;padding:6px 6px 6px 16px}
+.box:focus-within{border-color:var(--mint)}
+.box textarea{flex:1;min-width:0;background:transparent;border:0;resize:none;outline:none;max-height:140px;padding-block:9px;line-height:1.4}
+.box textarea::placeholder{color:var(--muted)}
+.mic,.send{width:44px;height:44px;border-radius:50%;border:0;display:grid;place-items:center;flex:0 0 44px}
+.mic{background:transparent;color:var(--muted)}
+.mic:hover{color:var(--fg)}
+.mic.on{background:var(--panel-2);color:var(--mint);animation:pulse 1.2s infinite}
+.mic.busy{opacity:.5;cursor:default}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(47,174,116,.55)}100%{box-shadow:0 0 0 14px rgba(47,174,116,0)}}
+.send{background:var(--mint);color:var(--mint-ink)}
+.send:disabled{background:var(--panel-2);color:var(--muted);cursor:default}
+.hint{font-size:12px;color:var(--muted);text-align:center}
+.scrim{position:fixed;inset:0;background:rgba(5,16,12,.6);z-index:20}
+.drawer{position:fixed;top:0;bottom:0;left:0;width:min(320px,86vw);background:var(--panel);z-index:21;display:flex;flex-direction:column;gap:16px;padding:calc(16px + env(safe-area-inset-top,0px)) 16px calc(16px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));border-right:1px solid var(--line)}
+.drawer h2{margin:0;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:500}
+.new{min-height:48px;border-radius:14px;border:0;background:var(--mint);color:var(--mint-ink);font-weight:500;display:flex;align-items:center;gap:10px;padding:0 16px}
+.hist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px;overflow-y:auto;flex:1}
+.hist button{width:100%;text-align:left;min-height:44px;padding:8px 12px;border-radius:10px;border:0;background:transparent;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hist button[aria-current="true"]{background:var(--panel-2)}
+.hist button:hover{background:var(--panel-2)}
+.hist-empty{color:var(--muted);font-size:14px;padding:0 12px}
+.plus-card{border:1px solid var(--line);border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:6px;background:var(--night);text-align:left}
+.plus-card b{font-family:var(--brand);font-size:20px;font-weight:800}
+.plus-card span{color:var(--muted);font-size:14px}
+.sheet{position:fixed;left:0;right:0;bottom:0;z-index:21;background:var(--panel);border-radius:24px 24px 0 0;border-top:1px solid var(--line);padding:22px max(16px,env(safe-area-inset-right,0px)) calc(20px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+.sheet .col{display:flex;flex-direction:column;gap:14px;max-width:480px}
+.sheet h2{margin:0;font-family:var(--brand);font-weight:800;font-size:30px;line-height:1.1}
+.price{font-size:18px}.price b{font-size:36px;font-family:var(--brand);font-weight:800;color:var(--mint);font-variant-numeric:tabular-nums}
+.feats{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
+.feats li{display:flex;gap:10px;align-items:flex-start}
+.feats svg{flex:0 0 20px;margin-top:3px}
+.cta{min-height:52px;border-radius:16px;border:0;background:var(--mint);color:var(--mint-ink);font-weight:500;font-size:17px}
+.ghost{min-height:44px;border:0;background:transparent;color:var(--muted)}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(120px + env(safe-area-inset-bottom,0px));z-index:40;background:var(--fg);color:var(--night);padding:10px 16px;border-radius:12px;font-size:14px;max-width:calc(100% - 32px)}
+@media (prefers-reduced-motion:reduce){.typing i,.mic.on{animation:none}}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="logo" viewBox="0 0 110 110">
+    <rect width="110" height="110" rx="26" fill="#0F2E24"/>
+    <rect x="1" y="1" width="108" height="108" rx="25" fill="none" stroke="#2A5747" stroke-width="2"/>
+    <circle cx="44" cy="50" r="24" fill="#FFFFFF"/>
+    <polygon points="28,64 22,84 42,72" fill="#FFFFFF"/>
+    <circle cx="66" cy="60" r="24" fill="#2FAE74"/>
+    <polygon points="82,74 88,94 68,82" fill="#2FAE74"/>
+    <circle cx="37" cy="46" r="3.5" fill="#0F2E24"/>
+    <circle cx="49" cy="46" r="3.5" fill="#0F2E24"/>
+    <path d="M57 64 Q67 72 77 64" stroke="#0F2E24" stroke-width="4" stroke-linecap="round" fill="none"/>
+  </symbol>
+  <symbol id="check" viewBox="0 0 20 20"><circle cx="10" cy="10" r="10" fill="#2FAE74"/><path d="M6 10.5l2.6 2.6L14 7.6" stroke="#0B2219" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+</svg>
+
+<div class="app">
+  <header class="bar gutter">
+    <div class="col">
+      <button class="icon-btn" id="openMenu" aria-label="Ouvrir le menu">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h10"/></svg>
+      </button>
+      <div class="brand">
+        <svg width="32" height="32" aria-hidden="true"><use href="#logo"/></svg>
+        <b>sahbi</b><span lang="ar" dir="rtl">صاحبي</span>
+      </div>
+      <button class="pill" id="openPlus">Plus</button>
+    </div>
+  </header>
+
+  <main class="thread gutter" id="thread">
+    <div class="col" id="msgs" aria-live="polite"></div>
+  </main>
+
+  <footer class="composer gutter">
+    <form class="col" id="form" autocomplete="off">
+      <div class="modes">
+        <button type="button" class="mode" id="modeChat" aria-pressed="true">Discuter</button>
+        <button type="button" class="mode" id="modeImg" aria-pressed="false">Créer une image <span class="count" id="imgCount"></span></button>
+      </div>
+      <div class="box">
+        <label for="msg" class="sr">Message</label>
+        <textarea id="msg" rows="1" dir="auto" placeholder="Écris dans ta langue…"></textarea>
+        <button class="mic" id="mic" type="button" aria-label="Parler au micro" aria-pressed="false">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>
+        </button>
+        <button class="send" id="send" type="submit" aria-label="Envoyer" disabled>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+        </button>
+      </div>
+      <div class="hint">Sahbi peut se tromper. Vérifie les informations importantes.</div>
+    </form>
+  </footer>
+</div>
+
+<div class="scrim" id="scrim" hidden></div>
+
+<nav class="drawer" id="drawer" hidden aria-label="Menu">
+  <button class="new" id="newChat" type="button">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+    Nouvelle discussion
+  </button>
+  <h2>Récents</h2>
+  <ul class="hist" id="hist"></ul>
+  <button class="plus-card" id="drawerPlus" type="button">
+    <b>Sahbi Plus</b>
+    <span>8 images par jour, rechargées chaque nuit</span>
+  </button>
+</nav>
+
+<section class="sheet" id="sheet" hidden role="dialog" aria-modal="true" aria-labelledby="plusTitle">
+  <div class="col">
+    <h2 id="plusTitle">Sahbi Plus</h2>
+    <div class="price"><b>6,50 €</b> / mois</div>
+    <ul class="feats">
+      <li><svg width="20" height="20" aria-hidden="true"><use href="#check"/></svg>Discussions dans toutes les langues : darija, arabe, français, English…</li>
+      <li><svg width="20" height="20" aria-hidden="true"><use href="#check"/></svg>8 images par jour, rechargées chaque nuit (jusqu'à 240 par mois)</li>
+      <li><svg width="20" height="20" aria-hidden="true"><use href="#check"/></svg>Pack de 50 images en plus pour 2 €</li>
+      <li><svg width="20" height="20" aria-hidden="true"><use href="#check"/></svg>Sans engagement, résiliable à tout moment</li>
+    </ul>
+    <button class="cta" id="subscribe" type="button">S'abonner</button>
+    <button class="ghost" id="closeSheet" type="button">Plus tard</button>
+  </div>
+</section>
+
+<div class="toast" id="toast" hidden role="status"></div>
+
+<script type="module">
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/+esm';
+
+const $ = (id) => document.getElementById(id);
+const msgsEl = $('msgs'), thread = $('thread'), ta = $('msg'), sendBtn = $('send'), mic = $('mic');
+const STORE = 'sahbi-chats-v1';
+let supabase = null, busy = false, mode = 'chat', imgLeft = null, imgLimit = 8;
+
+// ---------- Connessione anonima a Supabase ----------
+const ready = (async () => {
+  const cfg = await fetch('/api/config').then((r) => r.json());
+  imgLimit = cfg.limits?.image ?? 8;
+  supabase = createClient(cfg.supabaseUrl, cfg.supabaseAnonKey, { auth: { persistSession: true, autoRefreshToken: true } });
+  const { data } = await supabase.auth.getSession();
+  if (!data.session) {
+    const { error } = await supabase.auth.signInAnonymously();
+    if (error) throw error;
+  }
+})();
+
+async function token() {
+  await ready;
+  const { data } = await supabase.auth.getSession();
+  return data.session?.access_token || '';
+}
+async function api(path, options = {}) {
+  const headers = { ...(options.headers || {}), authorization: `Bearer ${await token()}` };
+  return fetch(path, { ...options, headers });
+}
+
+// ---------- Discussioni salvate sul telefono ----------
+function load() { try { return JSON.parse(localStorage.getItem(STORE) || '[]'); } catch { return []; } }
+function persist() {
+  try { localStorage.setItem(STORE, JSON.stringify(chats.slice(0, 50))); } catch { /* memoria piena: ignorato */ }
+}
+let chats = load();
+let current = null;
+function newChat() { current = { id: (crypto.randomUUID?.() || Date.now().toString(36) + Math.random().toString(36).slice(2)), title: '', messages: [], updated: Date.now() }; render(); }
+function saveCurrent() {
+  if (!current.messages.length) return;
+  current.updated = Date.now();
+  if (!current.title) current.title = (current.messages.find((m) => m.role === 'user')?.content || 'Discussion').slice(0, 60);
+  chats = [current, ...chats.filter((c) => c.id !== current.id)];
+  persist();
+}
+
+// ---------- Disegno dei messaggi ----------
+function el(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+function avatar() {
+  const s = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  s.setAttribute('width', '32'); s.setAttribute('height', '32'); s.setAttribute('class', 'av'); s.setAttribute('aria-hidden', 'true');
+  const u = document.createElementNS('http://www.w3.org/2000/svg', 'use'); u.setAttribute('href', '#logo'); s.appendChild(u);
+  return s;
+}
+const scroll = () => { thread.scrollTop = thread.scrollHeight; };
+
+function bubble(role, text, extra = '') {
+  const m = el('div', `msg ${role === 'user' ? 'me' : 'bot'} ${extra}`);
+  if (role !== 'user') m.appendChild(avatar());
+  const t = el('div', 'text', text); t.dir = 'auto';
+  m.appendChild(t); msgsEl.appendChild(m); scroll();
+  return t;
+}
+function typing() {
+  const m = el('div', 'msg bot'); m.appendChild(avatar());
+  const t = el('div', 'typing'); t.setAttribute('aria-label', 'Sahbi écrit'); t.append(el('i'), el('i'), el('i'));
+  m.appendChild(t); msgsEl.appendChild(m); scroll();
+  return m;
+}
+function imageBubble(src, caption, note) {
+  const m = el('div', 'msg bot'); m.appendChild(avatar());
+  const box = el('div', 'gen');
+  if (src) { const img = el('img'); img.src = src; img.alt = caption; box.appendChild(img); }
+  else box.appendChild(el('div', 'text', `Image : ${caption}`));
+  if (note) box.appendChild(el('small', '', note));
+  m.appendChild(box); msgsEl.appendChild(m); scroll();
+}
+function limitBubble(message) {
+  const m = el('div', 'msg bot'); m.appendChild(avatar());
+  const d = el('div'); d.appendChild(el('div', 'text', message));
+  const b = el('button', 'inline-cta', 'Voir Sahbi Plus'); b.type = 'button'; b.addEventListener('click', openSheet);
+  d.appendChild(b); m.appendChild(d); msgsEl.appendChild(m); scroll();
+}
+
+const SUGGESTIONS = [
+  'Wach n9der ntayeb l 3cha b batata w bid?',
+  'Aide-moi à écrire une lettre de motivation',
+  'اشرح لي الذكاء الاصطناعي ببساطة',
+  'Give me 5 ideas for a weekend in Tunis',
+];
+function render() {
+  msgsEl.replaceChildren();
+  if (!current.messages.length) {
+    const e = el('div', 'empty');
+    const logo = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    logo.setAttribute('width', '72'); logo.setAttribute('height', '72'); logo.setAttribute('aria-hidden', 'true');
+    const u = document.createElementNS('http://www.w3.org/2000/svg', 'use'); u.setAttribute('href', '#logo'); logo.appendChild(u);
+    const chips = el('div', 'chips');
+    for (const s of SUGGESTIONS) {
+      const c = el('button', 'chip', s); c.type = 'button'; c.dir = 'auto';
+      c.addEventListener('click', () => { ta.value = s; grow(); $('form').requestSubmit(); });
+      chips.appendChild(c);
+    }
+    e.append(logo, el('h1', '', 'Salam, ana Sahbi'), el('p', '', 'Écris ou parle dans ta langue, je te réponds dans la même.'), chips);
+    msgsEl.appendChild(e);
+  }
+  for (const m of current.messages) {
+    if (m.kind === 'image') imageBubble(null, m.content, 'Image créée (non enregistrée sur le téléphone)');
+    else bubble(m.role, m.content);
+  }
+  renderHistory();
+}
+function renderHistory() {
+  const hist = $('hist'); hist.replaceChildren();
+  if (!chats.length) { hist.appendChild(el('li', 'hist-empty', 'Tes discussions apparaîtront ici.')); return; }
+  for (const c of chats) {
+    const li = el('li'); const b = el('button', '', c.title || 'Discussion'); b.type = 'button'; b.dir = 'auto';
+    if (current && c.id === current.id) b.setAttribute('aria-current', 'true');
+    b.addEventListener('click', () => { current = c; closeAll(); render(); });
+    li.appendChild(b); hist.appendChild(li);
+  }
+}
+
+// ---------- Chat ----------
+async function sendChat(text) {
+  current.messages.push({ role: 'user', content: text });
+  if (current.messages.length === 1) render(); else bubble('user', text);
+  saveCurrent();
+  const wait = typing();
+  const history = current.messages.filter((m) => m.kind !== 'image').map(({ role, content }) => ({ role, content }));
+  let res;
+  try {
+    res = await api('/api/chat', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ messages: history }) });
+  } catch { wait.remove(); bubble('bot', 'Pas de connexion. Vérifie internet et réessaie.', 'err'); return; }
+  if (!res.ok) {
+    wait.remove();
+    const err = await res.json().catch(() => ({}));
+    if (err.error === 'limit') limitBubble('Tu as atteint la limite de messages pour aujourd’hui. Ça se recharge à minuit.');
+    else bubble('bot', err.message || 'Sahbi ne peut pas répondre maintenant. Réessaie.', 'err');
+    return;
+  }
+  wait.remove();
+  const out = bubble('assistant', '');
+  const reader = res.body.getReader(); const dec = new TextDecoder(); let full = '';
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    full += dec.decode(value, { stream: true });
+    out.textContent = full; scroll();
+  }
+  if (!full.trim()) { out.textContent = 'Je n’ai pas pu répondre. Réessaie.'; out.parentElement.classList.add('err'); return; }
+  current.messages.push({ role: 'assistant', content: full });
+  saveCurrent(); renderHistory();
+}
+
+// ---------- Immagini ----------
+function updateCount() { $('imgCount').textContent = imgLeft == null ? '' : `${imgLeft}/${imgLimit}`; }
+async function refreshCount() {
+  try { const r = await api('/api/image'); if (r.ok) { const d = await r.json(); imgLeft = d.remaining; imgLimit = d.limit; updateCount(); } } catch { /* offline */ }
+}
+async function sendImage(prompt) {
+  current.messages.push({ role: 'user', content: prompt });
+  if (current.messages.length === 1) render(); else bubble('user', prompt);
+  saveCurrent();
+  const wait = typing();
+  let res;
+  try {
+    res = await api('/api/image', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ prompt }) });
+  } catch { wait.remove(); bubble('bot', 'Pas de connexion. Vérifie internet et réessaie.', 'err'); return; }
+  const data = await res.json().catch(() => ({}));
+  wait.remove();
+  if (!res.ok) {
+    if (data.error === 'limit') { imgLeft = 0; updateCount(); limitBubble('Tu as utilisé tes images d’aujourd’hui. Elles reviennent à minuit, ou prends un pack de 50 images pour 2 €.'); }
+    else bubble('bot', data.message || 'Impossible de créer l’image maintenant.', 'err');
+    return;
+  }
+  imgLeft = data.remaining; imgLimit = data.limit; updateCount();
+  imageBubble(data.image, prompt, `Il te reste ${imgLeft} image${imgLeft === 1 ? '' : 's'} aujourd’hui`);
+  current.messages.push({ role: 'assistant', kind: 'image', content: prompt });
+  saveCurrent(); renderHistory();
+}
+
+// ---------- Microfono ----------
+let recorder = null, chunks = [], stopTimer = null;
+function micState(on) {
+  mic.classList.toggle('on', on); mic.setAttribute('aria-pressed', String(on));
+  mic.setAttribute('aria-label', on ? 'Arrêter et transcrire' : 'Parler au micro');
+  ta.placeholder = on ? 'J’écoute… appuie encore pour terminer' : placeholder();
+}
+async function startMic() {
+  if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === 'undefined') { toast('Le micro n’est pas disponible sur ce navigateur.'); return; }
+  let stream;
+  try { stream = await navigator.mediaDevices.getUserMedia({ audio: true }); }
+  catch { toast('Autorise le micro dans les réglages du navigateur.'); return; }
+  const type = ['audio/webm', 'audio/mp4'].find((t) => MediaRecorder.isTypeSupported(t)) || '';
+  recorder = new MediaRecorder(stream, type ? { mimeType: type } : undefined);
+  chunks = [];
+  recorder.ondataavailable = (e) => { if (e.data.size) chunks.push(e.data); };
+  recorder.onstop = async () => {
+    stream.getTracks().forEach((t) => t.stop());
+    clearTimeout(stopTimer); micState(false);
+    const blob = new Blob(chunks, { type: recorder.mimeType || 'audio/webm' });
+    recorder = null;
+    if (blob.size < 1000) return;
+    mic.classList.add('busy'); ta.placeholder = 'Transcription…';
+    try {
+      const fd = new FormData(); fd.append('audio', blob, 'audio');
+      const r = await api('/api/transcribe', { method: 'POST', body: fd });
+      const d = await r.json().catch(() => ({}));
+      if (r.ok && d.text) { ta.value = (ta.value ? ta.value + ' ' : '') + d.text; grow(); ta.focus(); }
+      else toast(d.message || 'Je n’ai pas compris. Réessaie.');
+    } catch { toast('Pas de connexion.'); }
+    mic.classList.remove('busy'); ta.placeholder = placeholder();
+  };
+  recorder.start(); micState(true);
+  stopTimer = setTimeout(() => recorder && recorder.stop(), 120000);
+}
+mic.addEventListener('click', () => {
+  if (mic.classList.contains('busy')) return;
+  if (recorder) recorder.stop(); else startMic();
+});
+
+// ---------- Interfaccia ----------
+const placeholder = () => (mode === 'img' ? 'Décris l’image… ex : un coucher de soleil sur le Sahara' : 'Écris dans ta langue…');
+function setMode(m) {
+  mode = m;
+  $('modeChat').setAttribute('aria-pressed', String(m === 'chat'));
+  $('modeImg').setAttribute('aria-pressed', String(m === 'img'));
+  ta.placeholder = placeholder(); ta.focus();
+}
+$('modeChat').addEventListener('click', () => setMode('chat'));
+$('modeImg').addEventListener('click', () => setMode('img'));
+
+function grow() { ta.style.height = 'auto'; ta.style.height = Math.min(ta.scrollHeight, 140) + 'px'; sendBtn.disabled = busy || !ta.value.trim(); }
+ta.addEventListener('input', grow);
+ta.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && !e.shiftKey && !matchMedia('(pointer:coarse)').matches) { e.preventDefault(); $('form').requestSubmit(); }
+});
+$('form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const v = ta.value.trim();
+  if (!v || busy) return;
+  ta.value = ''; busy = true; grow();
+  try { await (mode === 'img' ? sendImage(v) : sendChat(v)); }
+  catch { bubble('bot', 'Une erreur est survenue. Recharge la page et réessaie.', 'err'); }
+  busy = false; grow();
+});
+
+function toast(t) { const x = $('toast'); x.textContent = t; x.hidden = false; clearTimeout(toast.t); toast.t = setTimeout(() => { x.hidden = true; }, 3000); }
+function closeAll() { $('scrim').hidden = true; $('drawer').hidden = true; $('sheet').hidden = true; }
+function openSheet() { closeAll(); $('scrim').hidden = false; $('sheet').hidden = false; $('subscribe').focus(); }
+$('openMenu').addEventListener('click', () => { renderHistory(); $('scrim').hidden = false; $('drawer').hidden = false; $('newChat').focus(); });
+$('scrim').addEventListener('click', closeAll);
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeAll(); });
+$('openPlus').addEventListener('click', openSheet);
+$('drawerPlus').addEventListener('click', openSheet);
+$('closeSheet').addEventListener('click', closeAll);
+$('subscribe').addEventListener('click', () => { closeAll(); toast('L’abonnement arrive bientôt.'); });
+$('newChat').addEventListener('click', () => { closeAll(); newChat(); ta.focus(); });
+
+newChat();
+ready.then(refreshCount).catch(() => toast('Connexion impossible. Recharge la page.'));
+</script>
+</body>
+</html>

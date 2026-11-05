@@ -1,0 +1,12 @@
+{
+  "name": "Sahbi – Maghreb AI",
+  "short_name": "Sahbi",
+  "description": "L'ami qui te comprend, dans toutes les langues.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0F2E24",
+  "theme_color": "#0F2E24",
+  "icons": [
+    { "src": "/logo.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}
