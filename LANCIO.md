@@ -38,6 +38,14 @@ Poi aggiorna: `PUBLIC_URL` su Vercel e **Site URL** in Supabase › Authenticati
 3. Metti il file `assetlinks.json` del pacchetto in `.well-known/assetlinks.json` di questo progetto (lo aggiungo io).
 4. Carica il file `.aab` su Google Play Console, con le pagine `/conditions.html` e `/confidentialite.html` come link legali.
 
-## 7. Prima del lancio
+## 7. Pubblicità: Google AdSense
+1. Serve il dominio proprio (Google non accetta indirizzi `.vercel.app`) e le pagine legali complete.
+2. adsense.google.com › aggiungi il sito e attendi l'approvazione (da qualche giorno a qualche settimana).
+3. Annunci › Per unità pubblicitaria › Display, formato orizzontale. Copia `ca-pub-...` → `ADSENSE_CLIENT` e il numero `data-ad-slot` → `ADSENSE_SLOT`.
+4. Il file `/ads.txt` si crea da solo con il tuo codice.
+5. Per gli utenti in Europa Google richiede un banner di consenso cookie certificato: in AdSense › Privacy e messaggi › Europa, attiva il messaggio di consenso di Google.
+6. Regola importante: la pubblicità di Google non va ricaricata da sola. Sahbi carica un annuncio per apertura dell'app; le promozioni di Sahbi invece girano ogni minuto.
+
+## 8. Prima del lancio
 - Completa i campi `[...]` nelle pagine legali (meglio con un consulente).
 - Su OpenAI: limite di spesa mensile e, se le immagini danno errore, verifica dell'organizzazione.

@@ -77,6 +77,18 @@ main.thread .col{display:flex;flex-direction:column;gap:18px;padding-block:20px 
 @keyframes glow{50%{background:var(--panel-2)}}
 .inline-cta{margin-top:10px;display:inline-flex;align-items:center;min-height:44px;padding:0 16px;border-radius:12px;border:1px solid var(--mint-text);background:transparent;color:var(--mint-text);font-weight:500}
 footer.composer{border-top:1px solid var(--line)}
+.adbar{border-top:1px solid var(--line);background:var(--panel)}
+.adbar .col{display:flex;align-items:center;justify-content:center;min-height:56px;padding-block:3px;position:relative}
+.ad-tag{position:absolute;top:2px;left:0;font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.ad-slot{width:100%;max-width:468px;height:50px;overflow:hidden;display:flex;justify-content:center}
+.ad-slot ins{display:block;width:100%;height:50px}
+.house{width:100%;max-width:468px;min-height:48px;display:flex;align-items:center;gap:12px;padding:6px 10px;border:0;border-radius:12px;background:transparent;text-align:left}
+.house:hover{background:var(--panel-2)}
+.house .hi{flex:0 0 36px;height:36px;border-radius:10px;background:var(--mint);color:var(--mint-ink);display:grid;place-items:center}
+.house .ht{display:flex;flex-direction:column;min-width:0;line-height:1.25}
+.house .ht b{font-weight:500;font-size:14px}
+.house .ht span{font-size:12.5px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.house .hc{margin-left:auto;font-size:13px;color:var(--mint-text);font-weight:500;flex:0 0 auto}
 footer.composer .col{padding-block:10px 12px;display:flex;flex-direction:column;gap:8px}
 .count{font-variant-numeric:tabular-nums;color:var(--mint-text);font-weight:500}
 .box{display:flex;align-items:flex-end;gap:6px;background:var(--panel);border:1px solid var(--line);border-radius:22px;padding:6px 6px 6px 14px}
@@ -237,6 +249,18 @@ button.s-row.danger{color:var(--danger)}
     <div class="col" id="msgs" aria-live="polite"></div>
   </main>
 
+  <aside class="adbar gutter" id="adbar" hidden aria-label="Publicité">
+    <div class="col">
+      <span class="ad-tag" id="adTag" hidden>Pub</span>
+      <div class="ad-slot" id="adSlot" hidden></div>
+      <button class="house" id="house" type="button">
+        <span class="hi" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3 7h7l-5.5 4.5 2 7.5L12 17l-6.5 4 2-7.5L2 9h7z"/></svg></span>
+        <span class="ht"><b id="houseT"></b><span id="houseD"></span></span>
+        <span class="hc" id="houseC"></span>
+      </button>
+    </div>
+  </aside>
+
   <footer class="composer gutter">
     <form class="col" id="form" autocomplete="off">
       <div class="attach-bar" id="attachBar" hidden>
@@ -294,6 +318,7 @@ button.s-row.danger{color:var(--danger)}
       <li><svg width="20" height="20" aria-hidden="true"><use href="#check"/></svg><span><span id="fImg">8</span> images par jour, rechargées chaque nuit</span></li>
       <li><svg width="20" height="20" aria-hidden="true"><use href="#check"/></svg>Transforme tes photos : cartoon, anime, 3D, aquarelle…</li>
       <li><svg width="20" height="20" aria-hidden="true"><use href="#check"/></svg>Sahbi lit ses réponses à voix haute</li>
+      <li><svg width="20" height="20" aria-hidden="true"><use href="#check"/></svg>Sans publicité</li>
       <li><svg width="20" height="20" aria-hidden="true"><use href="#check"/></svg>Sans engagement, résiliable à tout moment</li>
     </ul>
     <p class="s-note" id="proStatus" hidden></p>
@@ -805,6 +830,56 @@ $('vDelete').addEventListener('click', async () => {
   if (!$('gallery').hidden) openLibrary();
 });
 
+// ---------- Pubblicità (solo per chi non è Pro) ----------
+// Google AdSense: un annuncio per apertura dell'app (le regole di Google vietano di ricaricarlo da soli).
+// Promozioni di Sahbi: girano ogni minuto quando AdSense non è attivo o non ha annunci da mostrare.
+const HOUSE = [
+  { t: 'Sahbi Pro, sans publicité', d: '8 images par jour, voix, 300 messages', c: 'Voir', go: () => openSheet() },
+  { t: 'Invite un ami', d: '7 jours de Pro offerts à tous les deux', c: 'Inviter', go: () => shareText(`Salam ! J’utilise Sahbi, l’IA qui parle darija, arabe et français. Inscris-toi avec mon lien et on reçoit 7 jours de Pro tous les deux : ${inviteLink()}`) },
+  { t: 'Transforme tes photos', d: 'Cartoon, anime, 3D, aquarelle…', c: 'Essayer', go: () => $('file').click() },
+  { t: 'Sahbi lit à voix haute', d: 'Appuie sur le haut-parleur sous une réponse', c: 'Pro', go: () => openSheet() },
+  { t: 'Aide au Bac', d: 'Exercices expliqués pas à pas', c: 'Essayer', go: () => { ta.value = 'Aide-moi à réviser pour le Bac. Matière et chapitre : '; grow(); ta.focus(); } },
+];
+let houseI = 0, houseTimer = null, adsenseLoaded = false;
+function showHouse(i) {
+  const h = HOUSE[i % HOUSE.length];
+  $('houseT').textContent = h.t; $('houseD').textContent = h.d; $('houseC').textContent = h.c;
+}
+$('house').addEventListener('click', () => HOUSE[houseI % HOUSE.length].go());
+function startHouse() {
+  $('adSlot').hidden = true; $('house').hidden = false; $('adTag').hidden = true;
+  showHouse(houseI);
+  clearInterval(houseTimer);
+  houseTimer = setInterval(() => { if (!document.hidden) showHouse(++houseI); }, 60000);
+}
+function loadAdsense() {
+  const a = cfg.ads || {};
+  if (!a.client || !a.slot) return false;
+  if (!adsenseLoaded) {
+    adsenseLoaded = true;
+    const sc = document.createElement('script');
+    sc.async = true; sc.crossOrigin = 'anonymous';
+    sc.src = `https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${encodeURIComponent(a.client)}`;
+    document.head.appendChild(sc);
+    const ins = document.createElement('ins');
+    ins.className = 'adsbygoogle';
+    ins.dataset.adClient = a.client; ins.dataset.adSlot = a.slot;
+    $('adSlot').appendChild(ins);
+    (window.adsbygoogle = window.adsbygoogle || []).push({});
+    // Se Google non riempie lo spazio, tornano le promozioni di Sahbi.
+    setTimeout(() => { if (ins.dataset.adStatus === 'unfilled' || !ins.querySelector('iframe')) startHouse(); }, 8000);
+  }
+  clearInterval(houseTimer);
+  $('house').hidden = true; $('adSlot').hidden = false; $('adTag').hidden = false;
+  return true;
+}
+function updateAds() {
+  const show = !!me && !me.pro;
+  $('adbar').hidden = !show;
+  if (!show) { clearInterval(houseTimer); return; }
+  if (!loadAdsense()) startHouse();
+}
+
 // ---------- Stato dell'account (piano, limiti, invito) ----------
 async function refreshMe() {
   try {
@@ -813,7 +888,8 @@ async function refreshMe() {
     me = await r.json();
     imgLeft = me.remaining.image; imgLimit = me.limits.image;
     $('openPlus').textContent = me.pro ? 'Pro ✓' : 'Pro';
-    $('drawerProText').textContent = me.pro ? `Actif jusqu’au ${fmtDate(me.proUntil)}` : '8 images par jour, photos, voix';
+    $('drawerProText').textContent = me.pro ? `Actif jusqu’au ${fmtDate(me.proUntil)}` : '8 images par jour, voix, sans pub';
+    updateAds();
   } catch { /* offline */ }
 }
 const fmtDate = (d) => (d ? new Date(d).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }) : '');
