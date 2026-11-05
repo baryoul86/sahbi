@@ -223,7 +223,8 @@ footer.composer .col{padding-block:10px 12px;display:flex;flex-direction:column;
     </form>
 
     <form id="codeForm" novalidate hidden>
-      <label for="code">Code reçu par e-mail à <b id="sentTo"></b></label>
+      <p>On t'a envoyé un e-mail à <b id="sentTo"></b>. Appuie sur le lien dans l'e-mail pour te connecter, ou écris ici le code s'il y en a un.</p>
+      <label for="code">Code (facultatif)</label>
       <input id="code" class="code" inputmode="numeric" autocomplete="one-time-code" maxlength="8" placeholder="••••••" required>
       <div class="err" id="codeErr" role="alert"></div>
       <button class="cta" type="submit" id="codeBtn">Se connecter</button>
