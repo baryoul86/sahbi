@@ -59,7 +59,7 @@ const frame = (obj) => `${SEP}${JSON.stringify(obj)}${SEP}`;
 async function imageFrames(userId, prompt) {
   const r = await generateImage(userId, prompt);
   return r.ok
-    ? frame({ type: 'image', image: r.image, prompt, remaining: r.remaining, limit: r.limit })
+    ? frame({ type: 'image', id: r.id, image: r.image, prompt, remaining: r.remaining, limit: r.limit })
     : frame({ type: 'image_error', error: r.error, message: r.message });
 }
 

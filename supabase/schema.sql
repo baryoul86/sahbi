@@ -63,3 +63,23 @@ revoke all on function public.remaining_credit(uuid, text, integer) from public,
 grant execute on function public.use_credit(uuid, text, integer) to service_role;
 grant execute on function public.refund_credit(uuid, text) to service_role;
 grant execute on function public.remaining_credit(uuid, text, integer) to service_role;
+
+-- ---------- Galleria immagini ----------
+
+-- Una riga per ogni immagine creata; il file sta nella cartella privata "images" di Storage.
+create table if not exists public.images (
+  id uuid primary key,
+  user_id uuid not null references auth.users (id) on delete cascade,
+  prompt text not null default '',
+  path text not null unique,
+  created_at timestamptz not null default now()
+);
+create index if not exists images_user_created on public.images (user_id, created_at desc);
+
+-- Solo il server legge e scrive (nessun accesso diretto dal browser).
+alter table public.images enable row level security;
+
+-- Cartella privata per i file: visibili solo tramite link temporanei creati dal server.
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values ('images', 'images', false, 10485760, array['image/jpeg', 'image/png', 'image/webp'])
+on conflict (id) do nothing;

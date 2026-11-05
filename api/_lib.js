@@ -37,13 +37,18 @@ export async function getUserId(request) {
   return typeof user?.id === 'string' ? user.id : null;
 }
 
-async function rpc(fn, args) {
+// Intestazioni con la chiave segreta del server.
+// Le chiavi nuove (sb_secret_...) vanno solo in "apikey"; quelle vecchie (JWT) anche come Bearer.
+function serviceHeaders(extra = {}) {
   const key = env('SUPABASE_SERVICE_ROLE_KEY');
   if (!key) throw new Error('SUPABASE_SERVICE_ROLE_KEY mancante');
+  return { apikey: key, ...(key.startsWith('eyJ') ? { authorization: `Bearer ${key}` } : {}), ...extra };
+}
+
+async function rpc(fn, args) {
   const res = await fetch(`${supabaseUrl()}/rest/v1/rpc/${fn}`, {
     method: 'POST',
-    // Le chiavi nuove (sb_secret_...) vanno solo in "apikey"; quelle vecchie (JWT) anche come Bearer.
-    headers: { apikey: key, ...(key.startsWith('eyJ') ? { authorization: `Bearer ${key}` } : {}), 'content-type': 'application/json' },
+    headers: serviceHeaders({ 'content-type': 'application/json' }),
     body: JSON.stringify(args),
   });
   if (!res.ok) throw new Error(`Supabase ${fn}: ${res.status}`);
@@ -105,5 +110,64 @@ export async function generateImage(userId, rawPrompt) {
       ? { ok: false, error: 'blocked', status: 400, message: "Je ne peux pas créer cette image. Essaie une autre description." }
       : { ok: false, error: 'upstream', status: 502, message: "Impossible de créer l'image maintenant. Réessaie dans un instant." };
   }
-  return { ok: true, image: `data:image/jpeg;base64,${b64}`, remaining: left, limit };
+  const id = await saveImage(userId, b64, prompt).catch((e) => { console.error('Salvataggio immagine', e.message); return null; });
+  return { ok: true, id, image: `data:image/jpeg;base64,${b64}`, remaining: left, limit };
+}
+
+// ---------- Galleria: immagini salvate in Supabase Storage (cartella privata "images") ----------
+
+const BUCKET = 'images';
+const isUuid = (v) => typeof v === 'string' && /^[0-9a-f-]{36}$/i.test(v);
+
+async function saveImage(userId, b64, prompt) {
+  const id = crypto.randomUUID();
+  const path = `${userId}/${id}.jpg`;
+  const up = await fetch(`${supabaseUrl()}/storage/v1/object/${BUCKET}/${path}`, {
+    method: 'POST',
+    headers: serviceHeaders({ 'content-type': 'image/jpeg', 'x-upsert': 'false' }),
+    body: Buffer.from(b64, 'base64'),
+  });
+  if (!up.ok) throw new Error(`storage ${up.status}`);
+  const row = await fetch(`${supabaseUrl()}/rest/v1/images`, {
+    method: 'POST',
+    headers: serviceHeaders({ 'content-type': 'application/json', prefer: 'return=minimal' }),
+    body: JSON.stringify({ id, user_id: userId, prompt: prompt.slice(0, 1000), path }),
+  });
+  if (!row.ok) throw new Error(`images ${row.status}`);
+  return id;
+}
+
+// Le ultime immagini dell'utente, con un link temporaneo (1 ora) per vederle.
+export async function listImages(userId, limit = 60) {
+  const q = new URLSearchParams({ user_id: `eq.${userId}`, select: 'id,prompt,path,created_at', order: 'created_at.desc', limit: String(limit) });
+  const res = await fetch(`${supabaseUrl()}/rest/v1/images?${q}`, { headers: serviceHeaders() });
+  if (!res.ok) throw new Error(`images ${res.status}`);
+  const rows = await res.json();
+  if (!rows.length) return [];
+  const sign = await fetch(`${supabaseUrl()}/storage/v1/object/sign/${BUCKET}`, {
+    method: 'POST',
+    headers: serviceHeaders({ 'content-type': 'application/json' }),
+    body: JSON.stringify({ expiresIn: 3600, paths: rows.map((r) => r.path) }),
+  });
+  if (!sign.ok) throw new Error(`sign ${sign.status}`);
+  const urls = new Map((await sign.json()).filter((x) => x.signedURL).map((x) => [x.path, `${supabaseUrl()}/storage/v1${x.signedURL}`]));
+  return rows.filter((r) => urls.has(r.path)).map((r) => ({ id: r.id, prompt: r.prompt, created: r.created_at, url: urls.get(r.path) }));
+}
+
+// Cancella un'immagine dell'utente (file e riga).
+export async function deleteImage(userId, id) {
+  if (!isUuid(id)) return false;
+  const q = new URLSearchParams({ id: `eq.${id}`, user_id: `eq.${userId}` });
+  const res = await fetch(`${supabaseUrl()}/rest/v1/images?${q}`, {
+    method: 'DELETE',
+    headers: serviceHeaders({ prefer: 'return=representation' }),
+  });
+  const rows = res.ok ? await res.json() : [];
+  if (!rows.length) return false;
+  await fetch(`${supabaseUrl()}/storage/v1/object/${BUCKET}`, {
+    method: 'DELETE',
+    headers: serviceHeaders({ 'content-type': 'application/json' }),
+    body: JSON.stringify({ prefixes: [rows[0].path] }),
+  }).catch(() => {});
+  return true;
 }

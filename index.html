@@ -102,6 +102,22 @@ footer.composer .col{padding-block:10px 12px;display:flex;flex-direction:column;
 .feats svg{flex:0 0 20px;margin-top:3px}
 .cta{min-height:52px;border-radius:16px;border:0;background:var(--mint);color:var(--mint-ink);font-weight:500;font-size:17px}
 .ghost{min-height:44px;border:0;background:transparent;color:var(--muted)}
+.lib-btn{min-height:48px;border-radius:14px;border:1px solid var(--line);background:transparent;display:flex;align-items:center;gap:10px;padding:0 16px;text-align:left}
+.lib-btn:hover{background:var(--panel-2)}
+.gallery,.viewer{position:fixed;inset:0;z-index:25;background:var(--night);display:flex;flex-direction:column}
+.gallery header,.viewer header{display:flex;align-items:center;gap:8px;padding:calc(8px + env(safe-area-inset-top,0px)) max(8px,env(safe-area-inset-right,0px)) 8px max(8px,env(safe-area-inset-left,0px));border-bottom:1px solid var(--line)}
+.gallery h2,.viewer h2{margin:0;font-size:18px;font-weight:500;flex:1}
+.grid-wrap{flex:1;overflow-y:auto;padding:4px max(4px,env(safe-area-inset-right,0px)) calc(16px + env(safe-area-inset-bottom,0px)) max(4px,env(safe-area-inset-left,0px))}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:4px;max-width:1000px;margin:0 auto}
+.grid button{padding:0;border:0;background:var(--panel);aspect-ratio:1;border-radius:6px;overflow:hidden}
+.grid img{width:100%;height:100%;object-fit:cover;display:block}
+.g-empty{color:var(--muted);text-align:center;padding:48px 24px;max-width:36ch;margin:0 auto}
+.viewer .body{flex:1;overflow-y:auto;display:flex;flex-direction:column;align-items:center;gap:14px;padding:16px max(16px,env(safe-area-inset-right,0px)) calc(16px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+.viewer img{width:100%;max-width:640px;border-radius:12px;display:block}
+.viewer p{margin:0;color:var(--muted);max-width:640px;width:100%;font-size:14px}
+.v-actions{display:flex;gap:8px;flex-wrap:wrap;max-width:640px;width:100%}
+.v-actions a,.v-actions button{min-height:44px;padding:0 16px;border-radius:12px;border:1px solid var(--line);background:var(--panel);color:var(--fg);display:inline-flex;align-items:center;text-decoration:none;font-size:15px}
+.v-actions .danger{color:var(--danger)}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(120px + env(safe-area-inset-bottom,0px));z-index:40;background:var(--fg);color:var(--night);padding:10px 16px;border-radius:12px;font-size:14px;max-width:calc(100% - 32px)}
 .auth{position:fixed;inset:0;z-index:30;background:var(--night);overflow-y:auto}
 .auth .col{min-height:100%;display:flex;flex-direction:column;justify-content:center;gap:20px;padding-block:calc(32px + env(safe-area-inset-top,0px)) calc(32px + env(safe-area-inset-bottom,0px));max-width:420px}
@@ -180,6 +196,10 @@ footer.composer .col{padding-block:10px 12px;display:flex;flex-direction:column;
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
     Nouvelle discussion
   </button>
+  <button class="lib-btn" id="openLib" type="button">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5L5 21"/></svg>
+    Images
+  </button>
   <h2>Récents</h2>
   <ul class="hist" id="hist"></ul>
   <button class="plus-card" id="drawerPlus" type="button">
@@ -228,6 +248,33 @@ footer.composer .col{padding-block:10px 12px;display:flex;flex-direction:column;
   </div>
 </section>
 
+<section class="gallery" id="gallery" hidden aria-labelledby="galTitle">
+  <header>
+    <button class="icon-btn" id="closeLib" type="button" aria-label="Retour">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>
+    </button>
+    <h2 id="galTitle">Images</h2>
+  </header>
+  <div class="grid-wrap"><div class="grid" id="grid"></div><div class="g-empty" id="gEmpty" hidden></div></div>
+</section>
+
+<section class="viewer" id="viewer" hidden role="dialog" aria-modal="true" aria-labelledby="vTitle">
+  <header>
+    <button class="icon-btn" id="closeViewer" type="button" aria-label="Retour">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>
+    </button>
+    <h2 id="vTitle">Image</h2>
+  </header>
+  <div class="body">
+    <img id="vImg" alt="">
+    <p id="vPrompt" dir="auto"></p>
+    <div class="v-actions">
+      <a id="vOpen" href="#" target="_blank" rel="noopener">Ouvrir en grand</a>
+      <button type="button" id="vDelete" class="danger">Supprimer</button>
+    </div>
+  </div>
+</section>
+
 <div class="toast" id="toast" hidden role="status"></div>
 
 <script type="module">
@@ -254,7 +301,7 @@ function onSession(session) {
   $('auth').hidden = true;
   $('who').textContent = session.user.email || '';
   if (id === userId) return;
-  userId = id;
+  userId = id; library = null;
   STORE = `sahbi-chats-v1-${id}`;
   chats = load(); newChat(); refreshCount();
 }
@@ -380,7 +427,7 @@ function render() {
     msgsEl.appendChild(e);
   }
   for (const m of current.messages) {
-    if (m.kind === 'image') imageBubble(null, m.content, 'Image créée (non enregistrée sur le téléphone)');
+    if (m.kind === 'image') storedImageBubble(m);
     else bubble(m.role, m.content);
   }
   renderHistory();
@@ -431,7 +478,8 @@ async function sendChat(text) {
     if (f.type === 'image') {
       imgLeft = f.remaining; imgLimit = f.limit;
       imageBubble(f.image, f.prompt || 'Image créée par Sahbi', `Il te reste ${f.remaining} image${f.remaining === 1 ? '' : 's'} aujourd’hui`);
-      extra.push({ role: 'assistant', kind: 'image', content: f.prompt || 'image' });
+      extra.push({ role: 'assistant', kind: 'image', content: f.prompt || 'image', id: f.id || null });
+      library = null;
     } else if (f.type === 'image_error') {
       if (f.error === 'limit') limitBubble('Tu as utilisé tes images d’aujourd’hui. Elles reviennent à minuit, ou prends un pack de 50 images pour 2 €.');
       else bubble('bot', f.message || 'Impossible de créer l’image maintenant.', 'err');
@@ -462,6 +510,61 @@ async function sendChat(text) {
   current.messages.push(...extra);
   saveCurrent(); renderHistory();
 }
+
+// ---------- Galleria ----------
+let library = null; // ultime immagini dal server (link validi un'ora)
+async function loadLibrary(force = false) {
+  if (library && !force) return library;
+  const r = await api('/api/library');
+  if (!r.ok) throw new Error('library');
+  library = (await r.json()).images || [];
+  return library;
+}
+function storedImageBubble(m) {
+  const mEl = el('div', 'msg bot'); mEl.appendChild(avatar());
+  const box = el('div', 'gen'); const ph = el('div', 'ph', 'Image'); box.appendChild(ph);
+  mEl.appendChild(box); msgsEl.appendChild(mEl);
+  if (!m.id) { ph.textContent = 'Image non enregistrée'; ph.style.animation = 'none'; return; }
+  loadLibrary().then((list) => {
+    const it = list.find((x) => x.id === m.id);
+    if (!it) { ph.textContent = 'Image supprimée'; ph.style.animation = 'none'; return; }
+    const img = el('img'); img.src = it.url; img.alt = it.prompt; img.addEventListener('click', () => openViewer(it));
+    ph.replaceWith(img);
+  }).catch(() => { ph.textContent = 'Image indisponible'; ph.style.animation = 'none'; });
+}
+async function openLibrary() {
+  closeAll(); $('gallery').hidden = false;
+  const grid = $('grid'), empty = $('gEmpty'); grid.replaceChildren(); empty.hidden = false; empty.textContent = 'Chargement…';
+  let list;
+  try { list = await loadLibrary(true); } catch { empty.textContent = 'Impossible de charger tes images. Vérifie ta connexion.'; return; }
+  if (!list.length) { empty.textContent = 'Tes images apparaîtront ici. Demande à Sahbi : « Fais-moi une image de… »'; return; }
+  empty.hidden = true;
+  for (const it of list) {
+    const b = el('button'); b.type = 'button'; b.setAttribute('aria-label', it.prompt || 'Image');
+    const img = el('img'); img.src = it.url; img.alt = ''; img.loading = 'lazy';
+    b.appendChild(img); b.addEventListener('click', () => openViewer(it)); grid.appendChild(b);
+  }
+}
+let viewing = null;
+function openViewer(it) {
+  viewing = it; $('viewer').hidden = false;
+  $('vImg').src = it.url; $('vImg').alt = it.prompt || 'Image';
+  $('vPrompt').textContent = it.prompt || '';
+  $('vOpen').href = it.url;
+  $('vDelete').textContent = 'Supprimer'; $('vDelete').dataset.confirm = '';
+}
+$('openLib').addEventListener('click', openLibrary);
+$('closeLib').addEventListener('click', () => { $('gallery').hidden = true; });
+$('closeViewer').addEventListener('click', () => { $('viewer').hidden = true; });
+$('vDelete').addEventListener('click', async () => {
+  const b = $('vDelete');
+  if (!b.dataset.confirm) { b.dataset.confirm = '1'; b.textContent = 'Confirmer la suppression'; return; }
+  const r = await api(`/api/library?id=${encodeURIComponent(viewing.id)}`, { method: 'DELETE' }).catch(() => null);
+  if (!r?.ok) { toast('Impossible de supprimer. Réessaie.'); return; }
+  library = (library || []).filter((x) => x.id !== viewing.id);
+  $('viewer').hidden = true; toast('Image supprimée.');
+  if (!$('gallery').hidden) openLibrary();
+});
 
 // ---------- Immagini: quante ne restano oggi ----------
 async function refreshCount() {
@@ -531,7 +634,7 @@ function closeAll() { $('scrim').hidden = true; $('drawer').hidden = true; $('sh
 function openSheet() { closeAll(); $('scrim').hidden = false; $('sheet').hidden = false; $('subscribe').focus(); }
 $('openMenu').addEventListener('click', () => { renderHistory(); $('scrim').hidden = false; $('drawer').hidden = false; $('newChat').focus(); });
 $('scrim').addEventListener('click', closeAll);
-document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeAll(); });
+document.addEventListener('keydown', (e) => { if (e.key !== 'Escape') return; if (!$('viewer').hidden) $('viewer').hidden = true; else if (!$('gallery').hidden) $('gallery').hidden = true; else closeAll(); });
 $('openPlus').addEventListener('click', openSheet);
 $('drawerPlus').addEventListener('click', openSheet);
 $('closeSheet').addEventListener('click', closeAll);
