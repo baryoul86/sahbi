@@ -62,12 +62,11 @@ main.thread .col{display:flex;flex-direction:column;gap:18px;padding-block:20px 
 .gen{display:flex;flex-direction:column;gap:8px;max-width:360px;min-width:0}
 .gen img{width:100%;border-radius:16px;display:block;background:var(--panel)}
 .gen small{color:var(--muted);font-size:13px}
+.ph{width:100%;aspect-ratio:1;border-radius:16px;background:var(--panel);border:1px dashed var(--line);display:grid;place-items:center;color:var(--muted);font-size:14px;animation:glow 1.6s ease-in-out infinite}
+@keyframes glow{50%{background:var(--panel-2)}}
 .inline-cta{margin-top:10px;display:inline-flex;align-items:center;min-height:44px;padding:0 16px;border-radius:12px;border:1px solid var(--mint);background:transparent;color:var(--mint);font-weight:500}
 footer.composer{border-top:1px solid var(--line)}
 footer.composer .col{padding-block:10px 12px;display:flex;flex-direction:column;gap:8px}
-.modes{display:flex;gap:8px;flex-wrap:wrap}
-.mode{height:36px;padding:0 14px;border-radius:999px;border:1px solid var(--line);background:transparent;font-size:14px;display:inline-flex;align-items:center;gap:8px;color:var(--muted)}
-.mode[aria-pressed="true"]{background:var(--panel-2);border-color:var(--mint);color:var(--fg)}
 .count{font-variant-numeric:tabular-nums;color:var(--mint);font-weight:500}
 .box{display:flex;align-items:flex-end;gap:6px;background:var(--panel);border:1px solid var(--line);border-radius:22px;padding:6px 6px 6px 16px}
 .box:focus-within{border-color:var(--mint)}
@@ -120,7 +119,7 @@ footer.composer .col{padding-block:10px 12px;display:flex;flex-direction:column;
 .account{display:flex;align-items:center;justify-content:space-between;gap:8px;border-top:1px solid var(--line);padding-top:12px;font-size:14px;color:var(--muted);min-width:0}
 .account span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .account button{min-height:44px;border:0;background:transparent;color:var(--fg);padding:0 8px;flex:0 0 auto}
-@media (prefers-reduced-motion:reduce){.typing i,.mic.on{animation:none}}
+@media (prefers-reduced-motion:reduce){.typing i,.mic.on,.ph{animation:none}}
 </style>
 </head>
 <body>
@@ -159,13 +158,9 @@ footer.composer .col{padding-block:10px 12px;display:flex;flex-direction:column;
 
   <footer class="composer gutter">
     <form class="col" id="form" autocomplete="off">
-      <div class="modes">
-        <button type="button" class="mode" id="modeChat" aria-pressed="true">Discuter</button>
-        <button type="button" class="mode" id="modeImg" aria-pressed="false">Créer une image <span class="count" id="imgCount"></span></button>
-      </div>
       <div class="box">
         <label for="msg" class="sr">Message</label>
-        <textarea id="msg" rows="1" dir="auto" placeholder="Écris dans ta langue…"></textarea>
+        <textarea id="msg" rows="1" dir="auto" placeholder="Écris ou demande une image…"></textarea>
         <button class="mic" id="mic" type="button" aria-label="Parler au micro" aria-pressed="false">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>
         </button>
@@ -365,6 +360,7 @@ const SUGGESTIONS = [
   'Wach n9der ntayeb l 3cha b batata w bid?',
   'Aide-moi à écrire une lettre de motivation',
   'اشرح لي الذكاء الاصطناعي ببساطة',
+  'Fais-moi une image d’un chat dans la médina de Fès',
   'Give me 5 ideas for a weekend in Tunis',
 ];
 function render() {
@@ -380,7 +376,7 @@ function render() {
       c.addEventListener('click', () => { ta.value = s; grow(); $('form').requestSubmit(); });
       chips.appendChild(c);
     }
-    e.append(logo, el('h1', '', 'Salam, ana Sahbi'), el('p', '', 'Écris ou parle dans ta langue, je te réponds dans la même.'), chips);
+    e.append(logo, el('h1', '', 'Salam, ana Sahbi'), el('p', '', 'Écris ou parle dans ta langue, je te réponds dans la même. Je peux aussi créer des images.'), chips);
     msgsEl.appendChild(e);
   }
   for (const m of current.messages) {
@@ -400,13 +396,21 @@ function renderHistory() {
   }
 }
 
-// ---------- Chat ----------
+// ---------- Chat (testo e immagini nella stessa casella) ----------
+const SEP = '\u001e';
+const toApi = (m) => (m.kind === 'image' ? { role: 'assistant', content: `[Image créée : ${m.content}]` } : { role: m.role, content: m.content });
+function imagePlaceholder() {
+  const m = el('div', 'msg bot'); m.appendChild(avatar());
+  const box = el('div', 'gen'); box.appendChild(el('div', 'ph', 'Je dessine ton image…'));
+  m.appendChild(box); msgsEl.appendChild(m); scroll();
+  return m;
+}
 async function sendChat(text) {
   current.messages.push({ role: 'user', content: text });
   if (current.messages.length === 1) render(); else bubble('user', text);
   saveCurrent();
   const wait = typing();
-  const history = current.messages.filter((m) => m.kind !== 'image').map(({ role, content }) => ({ role, content }));
+  const history = current.messages.map(toApi);
   let res;
   try {
     res = await api('/api/chat', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ messages: history }) });
@@ -420,43 +424,48 @@ async function sendChat(text) {
   }
   wait.remove();
   const out = bubble('assistant', '');
-  const reader = res.body.getReader(); const dec = new TextDecoder(); let full = '';
+  const extra = []; let pending = null, handled = 0, raw = '', reply = '';
+  const onFrame = (f) => {
+    if (f.type === 'image_start') { if (!pending) pending = imagePlaceholder(); return; }
+    if (pending) { pending.remove(); pending = null; }
+    if (f.type === 'image') {
+      imgLeft = f.remaining; imgLimit = f.limit;
+      imageBubble(f.image, f.prompt || 'Image créée par Sahbi', `Il te reste ${f.remaining} image${f.remaining === 1 ? '' : 's'} aujourd’hui`);
+      extra.push({ role: 'assistant', kind: 'image', content: f.prompt || 'image' });
+    } else if (f.type === 'image_error') {
+      if (f.error === 'limit') limitBubble('Tu as utilisé tes images d’aujourd’hui. Elles reviennent à minuit, ou prends un pack de 50 images pour 2 €.');
+      else bubble('bot', f.message || 'Impossible de créer l’image maintenant.', 'err');
+    }
+  };
+  const reader = res.body.getReader(); const dec = new TextDecoder();
   for (;;) {
     const { done, value } = await reader.read();
     if (done) break;
-    full += dec.decode(value, { stream: true });
-    out.textContent = full; scroll();
+    raw += dec.decode(value, { stream: true });
+    const parts = raw.split(SEP);
+    reply = parts.filter((_, i) => i % 2 === 0).join('');
+    out.textContent = reply;
+    for (let i = 1; i < parts.length - 1; i += 2) {
+      if ((i - 1) / 2 < handled) continue;
+      handled++;
+      try { onFrame(JSON.parse(parts[i])); } catch { /* frame non valido */ }
+    }
+    scroll();
   }
-  if (!full.trim()) { out.textContent = 'Je n’ai pas pu répondre. Réessaie.'; out.parentElement.classList.add('err'); return; }
-  current.messages.push({ role: 'assistant', content: full });
+  if (pending) { pending.remove(); bubble('bot', 'Impossible de créer l’image maintenant. Réessaie.', 'err'); }
+  if (!reply.trim()) {
+    out.parentElement.remove();
+    if (!extra.length && !handled) bubble('bot', 'Je n’ai pas pu répondre. Réessaie.', 'err');
+  } else {
+    current.messages.push({ role: 'assistant', content: reply });
+  }
+  current.messages.push(...extra);
   saveCurrent(); renderHistory();
 }
 
-// ---------- Immagini ----------
-function updateCount() { $('imgCount').textContent = imgLeft == null ? '' : `${imgLeft}/${imgLimit}`; }
+// ---------- Immagini: quante ne restano oggi ----------
 async function refreshCount() {
-  try { const r = await api('/api/image'); if (r.ok) { const d = await r.json(); imgLeft = d.remaining; imgLimit = d.limit; updateCount(); } } catch { /* offline */ }
-}
-async function sendImage(prompt) {
-  current.messages.push({ role: 'user', content: prompt });
-  if (current.messages.length === 1) render(); else bubble('user', prompt);
-  saveCurrent();
-  const wait = typing();
-  let res;
-  try {
-    res = await api('/api/image', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ prompt }) });
-  } catch { wait.remove(); bubble('bot', 'Pas de connexion. Vérifie internet et réessaie.', 'err'); return; }
-  const data = await res.json().catch(() => ({}));
-  wait.remove();
-  if (!res.ok) {
-    if (data.error === 'limit') { imgLeft = 0; updateCount(); limitBubble('Tu as utilisé tes images d’aujourd’hui. Elles reviennent à minuit, ou prends un pack de 50 images pour 2 €.'); }
-    else bubble('bot', data.message || 'Impossible de créer l’image maintenant.', 'err');
-    return;
-  }
-  imgLeft = data.remaining; imgLimit = data.limit; updateCount();
-  imageBubble(data.image, prompt, `Il te reste ${imgLeft} image${imgLeft === 1 ? '' : 's'} aujourd’hui`);
-  current.messages.push({ role: 'assistant', kind: 'image', content: prompt });
-  saveCurrent(); renderHistory();
+  try { const r = await api('/api/image'); if (r.ok) { const d = await r.json(); imgLeft = d.remaining; imgLimit = d.limit; } } catch { /* offline */ }
 }
 
 // ---------- Microfono ----------
@@ -500,15 +509,7 @@ mic.addEventListener('click', () => {
 });
 
 // ---------- Interfaccia ----------
-const placeholder = () => (mode === 'img' ? 'Décris l’image… ex : un coucher de soleil sur le Sahara' : 'Écris dans ta langue…');
-function setMode(m) {
-  mode = m;
-  $('modeChat').setAttribute('aria-pressed', String(m === 'chat'));
-  $('modeImg').setAttribute('aria-pressed', String(m === 'img'));
-  ta.placeholder = placeholder(); ta.focus();
-}
-$('modeChat').addEventListener('click', () => setMode('chat'));
-$('modeImg').addEventListener('click', () => setMode('img'));
+const placeholder = () => 'Écris ou demande une image…';
 
 function grow() { ta.style.height = 'auto'; ta.style.height = Math.min(ta.scrollHeight, 140) + 'px'; sendBtn.disabled = busy || !ta.value.trim(); }
 ta.addEventListener('input', grow);
@@ -520,7 +521,7 @@ $('form').addEventListener('submit', async (e) => {
   const v = ta.value.trim();
   if (!v || busy) return;
   ta.value = ''; busy = true; grow();
-  try { await (mode === 'img' ? sendImage(v) : sendChat(v)); }
+  try { await sendChat(v); }
   catch { bubble('bot', 'Une erreur est survenue. Recharge la page et réessaie.', 'err'); }
   busy = false; grow();
 });
