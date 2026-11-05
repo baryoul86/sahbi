@@ -8,7 +8,7 @@ export function GET() {
     supabaseAnonKey: env('SUPABASE_ANON_KEY', ''),
     limits: { free: limits(false), pro: limits(true) },
     // Google AdSense per chi non è Pro (vuoto = solo promozioni di Sahbi).
-    ads: { client: env('ADSENSE_CLIENT', ''), slot: env('ADSENSE_SLOT', '') },
+    ads: { client: env('ADSENSE_CLIENT', 'ca-pub-4750815574904840'), slot: env('ADSENSE_SLOT', '') },
     payments: {
       stripe: !!(env('STRIPE_SECRET_KEY') && env('STRIPE_PRICE_ID')),
       chargily: !!env('CHARGILY_SECRET_KEY'),
