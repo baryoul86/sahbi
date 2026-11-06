@@ -24,14 +24,7 @@ Foto dell'utente:
 - Nella cronologia, "[Photo envoyée]" indica una foto mandata prima: non la vedi più, se serve chiedi di rimandarla.
 - Non identificare mai chi è una persona nella foto dal suo viso.
 
-Video (solo se lo strumento create_video è disponibile):
-- Usa create_video quando l'utente vuole un VIDEO o un'animazione ("fammi un video", "fais une vidéo", "anime ma photo", "dir lia video"). Il video dura 8 secondi.
-- Nel prompt scrivi in inglese la scena, il movimento, la camera, lo stile e i suoni. Con from_photo = true il video parte dalla foto appena inviata (per esempio per animarla).
-- Chiama create_video SUBITO, nella stessa risposta: non chiedere conferme, non proporre opzioni, non scrivere il prompt all'utente. Al massimo una frase breve tipo "Je crée ta vidéo, ça prend environ une minute."
-- I video sono solo per Sahbi Pro (5 al mese).
-- Se lo strumento create_video NON è disponibile, di' in una frase che i video arriveranno presto su Sahbi.
-- Stesse regole delle immagini: niente contenuti sessuali, violenza esplicita, persone reali riconoscibili in situazioni false o umilianti, marchi e personaggi protetti.
-- Nella cronologia, "[Vidéo créée : ...]" indica un video che hai già creato.
+{{VIDEO}}
 
 Stile:
 - Frasi brevi e chiare, tono amichevole e rispettoso. Niente prediche.
@@ -57,11 +50,22 @@ const TOOLS = [{
   },
 }];
 
+const VIDEO_ON = `Video:
+- PUOI creare video di 8 secondi con lo strumento create_video, proprio come crei immagini. Non dire mai che non puoi creare video.
+- Usalo quando l'utente vuole un VIDEO o un'animazione, in qualsiasi lingua: "fammi un video", "fais une vidéo", "make a video", "anime ma photo", "dir lia video", "اعمل لي فيديو".
+- Chiamalo SUBITO, nella stessa risposta: non chiedere conferme, non proporre opzioni, non mostrare il prompt all'utente. Al massimo una frase breve, per esempio "Je crée ta vidéo, ça prend environ une minute."
+- Nel prompt scrivi in inglese la scena, il movimento, la camera, lo stile e i suoni. Con from_photo = true il video parte dalla foto appena inviata (per animarla).
+- Il piano Pro e il limite mensile li controlla il server: tu chiama sempre lo strumento.
+- Persone: va bene una persona generica (un uomo, una donna, una famiglia). Rifiuta solo contenuti sessuali, violenza esplicita, minori in situazioni non adatte, persone reali famose o riconoscibili in situazioni false o umilianti, marchi e personaggi protetti; in quel caso proponi subito un'alternativa.
+- Nella cronologia, "[Vidéo créée : ...]" indica un video che hai già creato.`;
+const VIDEO_OFF = `Video:
+- I video non sono ancora disponibili: se l'utente ne chiede uno, di' in una frase che arriveranno presto su Sahbi e proponi un'immagine.`;
+
 const VIDEO_TOOL = {
   type: 'function',
   function: {
     name: 'create_video',
-    description: "Crea un video di 8 secondi (solo Sahbi Pro) e lo mostra all'utente nella chat.",
+    description: "Crea davvero un video di 8 secondi e lo mostra all'utente nella chat (circa un minuto di attesa).",
     parameters: {
       type: 'object',
       properties: {
@@ -148,7 +152,7 @@ export async function POST(request) {
   const model = env('OPENAI_CHAT_MODEL', 'gpt-5-nano');
   const payload = {
     model, stream: true, tools, tool_choice: 'auto',
-    messages: [{ role: 'system', content: SYSTEM }, ...messages],
+    messages: [{ role: 'system', content: SYSTEM.replace('{{VIDEO}}', videoEnabled() ? VIDEO_ON : VIDEO_OFF) }, ...messages],
   };
   if (model.startsWith('gpt-5')) payload.reasoning_effort = env('OPENAI_REASONING_EFFORT', 'minimal');
 
