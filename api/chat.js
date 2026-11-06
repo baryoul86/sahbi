@@ -195,6 +195,23 @@ export async function POST(request) {
   let buffer = '';
   const tool = { name: '', args: '' };
   let announced = false;
+  let reply = '';
+  // Rete di sicurezza: a volte il modello scrive "je lance la vidéo" senza chiamare lo strumento.
+  // In quel caso chiediamo al modello SOLO i dati del video e lo creiamo davvero.
+  const promisedVideo = () => videoEnabled() && !tool.name
+    && /(vid[ée]o|فيديو)/i.test(reply)
+    && /(je (te )?(la |le )?(lance|crée|cree|fais|prépare|génère)|je lance|ça prend|environ une minute|sto creando|lo creo|creo (il|subito)|ci vuole circa|i'?m (creating|making)|about a minute|جاري|دقيقة)/i.test(reply);
+  async function forcedVideoArgs() {
+    const r = await call({
+      model, stream: false, tools: [VIDEO_TOOL],
+      tool_choice: { type: 'function', function: { name: 'create_video' } },
+      ...(model.startsWith('gpt-5') ? { reasoning_effort: 'minimal' } : {}),
+      messages: [...payload.messages, { role: 'assistant', content: reply }, { role: 'system', content: 'Ora crea davvero il video che hai appena annunciato, chiamando create_video.' }],
+    });
+    const d = await r.json().catch(() => null);
+    const tc = d?.choices?.[0]?.message?.tool_calls?.find((t) => t.function?.name === 'create_video');
+    return tc ? parseArgs(tc.function.arguments) : { prompt: '' };
+  }
   const stream = upstream.body.pipeThrough(new TransformStream({
     transform(chunk, controller) {
       buffer += decoder.decode(chunk, { stream: true });
@@ -205,7 +222,7 @@ export async function POST(request) {
         if (!data || data === '[DONE]') continue;
         let delta;
         try { delta = JSON.parse(data).choices?.[0]?.delta; } catch { continue; }
-        if (delta?.content) controller.enqueue(encoder.encode(delta.content.replaceAll(SEP, '')));
+        if (delta?.content) { reply += delta.content; controller.enqueue(encoder.encode(delta.content.replaceAll(SEP, ''))); }
         for (const tc of delta?.tool_calls || []) {
           if (tc.index && tc.index > 0) continue; // una sola immagine per messaggio
           if (tc.function?.name) tool.name += tc.function.name;
@@ -218,6 +235,14 @@ export async function POST(request) {
       }
     },
     async flush(controller) {
+      if (promisedVideo()) {
+        controller.enqueue(encoder.encode(startFrame('create_video')));
+        const forced = await forcedVideoArgs().catch(() => ({ prompt: '' }));
+        controller.enqueue(encoder.encode(forced.prompt
+          ? await runTool('create_video', forced.prompt, forced.edit)
+          : frame({ type: 'video_error', error: 'bad_request', message: "Je n'ai pas compris la vidéo à créer. Décris-la autrement." })));
+        return;
+      }
       if (!NAMES.includes(tool.name)) return;
       const { prompt, edit } = parseArgs(tool.args);
       if (!prompt) {
