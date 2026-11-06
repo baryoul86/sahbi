@@ -3,6 +3,9 @@
     "api/chat.js": {
       "maxDuration": 60
     },
+    "api/library.js": {
+      "maxDuration": 60
+    },
     "api/transcribe.js": {
       "maxDuration": 30
     },

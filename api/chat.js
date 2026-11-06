@@ -1,4 +1,5 @@
 import { env, fail, getUserId, useCredit, refundCredit, getPlan, openaiHeaders, OPENAI, generateImage, parsePhoto } from './_lib.js';
+import { startVideo, videoEnabled } from './_video.js';
 
 const SYSTEM = `Sei Sahbi (صاحبي), "amico mio": un assistente di intelligenza artificiale caldo, diretto e utile, nato nel Maghreb.
 
@@ -23,6 +24,13 @@ Foto dell'utente:
 - Nella cronologia, "[Photo envoyée]" indica una foto mandata prima: non la vedi più, se serve chiedi di rimandarla.
 - Non identificare mai chi è una persona nella foto dal suo viso.
 
+Video (solo se lo strumento create_video è disponibile):
+- Usa create_video quando l'utente vuole un VIDEO o un'animazione ("fammi un video", "fais une vidéo", "anime ma photo", "dir lia video"). Il video dura 8 secondi.
+- Nel prompt scrivi in inglese la scena, il movimento, la camera, lo stile e i suoni. Con from_photo = true il video parte dalla foto appena inviata (per esempio per animarla).
+- I video sono solo per Sahbi Pro (5 al mese). Prima di crearlo puoi dire in una frase che ci vorrà circa un minuto.
+- Stesse regole delle immagini: niente contenuti sessuali, violenza esplicita, persone reali riconoscibili in situazioni false o umilianti, marchi e personaggi protetti.
+- Nella cronologia, "[Vidéo créée : ...]" indica un video che hai già creato.
+
 Stile:
 - Frasi brevi e chiare, tono amichevole e rispettoso. Niente prediche.
 - Usa elenchi solo quando aiutano (passaggi, ricette, liste).
@@ -46,6 +54,23 @@ const TOOLS = [{
     },
   },
 }];
+
+const VIDEO_TOOL = {
+  type: 'function',
+  function: {
+    name: 'create_video',
+    description: "Crea un video di 8 secondi (solo Sahbi Pro) e lo mostra all'utente nella chat.",
+    parameters: {
+      type: 'object',
+      properties: {
+        prompt: { type: 'string', description: 'Descrizione dettagliata in inglese: scena, movimento, camera, stile, suoni.' },
+        from_photo: { type: 'boolean', description: "true per partire dalla foto che l'utente ha appena inviato; false altrimenti." },
+      },
+      required: ['prompt', 'from_photo'],
+      additionalProperties: false,
+    },
+  },
+};
 
 const MAX_MESSAGES = 20;
 const MAX_CHARS = 4000;
@@ -74,9 +99,16 @@ async function imageFrames(userId, prompt, opts) {
 const parseArgs = (args) => {
   try {
     const a = JSON.parse(args || '{}');
-    return { prompt: String(a.prompt || '').trim(), edit: a.edit_photo === true };
+    return { prompt: String(a.prompt || '').trim(), edit: a.edit_photo === true || a.from_photo === true };
   } catch { return { prompt: '', edit: false }; }
 };
+
+async function videoFrames(userId, prompt, opts) {
+  const r = await startVideo(userId, prompt, opts);
+  return r.ok
+    ? frame({ type: 'video', id: r.id, prompt, remaining: r.remaining, limit: r.limit })
+    : frame({ type: 'video_error', error: r.error, message: r.message });
+}
 
 export async function POST(request) {
   const userId = await getUserId(request);
@@ -93,6 +125,14 @@ export async function POST(request) {
   const left = await useCredit(userId, 'chat', limits.chat);
   if (left < 0) return fail('limit', 429, pro ? 'Limite di messaggi di oggi raggiunto.' : 'Limite gratuito di oggi raggiunto.');
   const imgOpts = (edit) => ({ limit: limits.image, photo: edit ? photo : null });
+  const vidOpts = (fromPhoto) => ({ pro, limit: limits.video, photo: fromPhoto ? photo : null });
+  const tools = videoEnabled() ? [...TOOLS, VIDEO_TOOL] : TOOLS;
+  const NAMES = tools.map((t) => t.function.name);
+  // Esegue lo strumento scelto dal modello e restituisce i messaggi di controllo per il telefono.
+  const runTool = (name, prompt, edit) => (name === 'create_video'
+    ? videoFrames(userId, prompt, vidOpts(edit))
+    : imageFrames(userId, prompt, imgOpts(edit)));
+  const startFrame = (name) => frame({ type: name === 'create_video' ? 'video_start' : 'image_start' });
 
   // La foto va solo nell'ultimo messaggio dell'utente.
   if (photo) {
@@ -105,7 +145,7 @@ export async function POST(request) {
 
   const model = env('OPENAI_CHAT_MODEL', 'gpt-5-nano');
   const payload = {
-    model, stream: true, tools: TOOLS, tool_choice: 'auto',
+    model, stream: true, tools, tool_choice: 'auto',
     messages: [{ role: 'system', content: SYSTEM }, ...messages],
   };
   if (model.startsWith('gpt-5')) payload.reasoning_effort = env('OPENAI_REASONING_EFFORT', 'minimal');
@@ -125,11 +165,11 @@ export async function POST(request) {
       const plain = await call({ ...payload, stream: false });
       const data = await plain.json().catch(() => null);
       const msg = data?.choices?.[0]?.message;
-      const toolCall = msg?.tool_calls?.find((t) => t.function?.name === 'create_image');
+      const toolCall = msg?.tool_calls?.find((t) => NAMES.includes(t.function?.name));
       const { prompt, edit } = toolCall ? parseArgs(toolCall.function.arguments) : { prompt: '' };
       if (plain.ok && (msg?.content || prompt)) {
         let out = msg.content || '';
-        if (prompt) out += frame({ type: 'image_start', prompt }) + await imageFrames(userId, prompt, imgOpts(edit));
+        if (prompt) out += startFrame(toolCall.function.name) + await runTool(toolCall.function.name, prompt, edit);
         return new Response(out, { headers });
       }
     }
@@ -164,18 +204,22 @@ export async function POST(request) {
           if (tc.index && tc.index > 0) continue; // una sola immagine per messaggio
           if (tc.function?.name) tool.name += tc.function.name;
           if (tc.function?.arguments) tool.args += tc.function.arguments;
-          if (!announced && tool.name === 'create_image') {
+          if (!announced && NAMES.includes(tool.name)) {
             announced = true;
-            controller.enqueue(encoder.encode(frame({ type: 'image_start' })));
+            controller.enqueue(encoder.encode(startFrame(tool.name)));
           }
         }
       }
     },
     async flush(controller) {
-      if (tool.name !== 'create_image') return;
+      if (!NAMES.includes(tool.name)) return;
       const { prompt, edit } = parseArgs(tool.args);
-      if (!prompt) { controller.enqueue(encoder.encode(frame({ type: 'image_error', error: 'bad_request', message: "Je n'ai pas compris l'image à créer. Décris-la autrement." }))); return; }
-      controller.enqueue(encoder.encode(await imageFrames(userId, prompt, imgOpts(edit))));
+      if (!prompt) {
+        const video = tool.name === 'create_video';
+        controller.enqueue(encoder.encode(frame({ type: video ? 'video_error' : 'image_error', error: 'bad_request', message: video ? "Je n'ai pas compris la vidéo à créer. Décris-la autrement." : "Je n'ai pas compris l'image à créer. Décris-la autrement." })));
+        return;
+      }
+      controller.enqueue(encoder.encode(await runTool(tool.name, prompt, edit)));
     },
   }));
 

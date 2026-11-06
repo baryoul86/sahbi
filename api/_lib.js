@@ -16,7 +16,7 @@ export function fail(code, status, message) {
   return json({ error: code, message }, status);
 }
 
-function supabaseUrl() {
+export function supabaseUrl() {
   const url = env('SUPABASE_URL');
   if (!url) throw new Error('SUPABASE_URL mancante');
   return url.replace(/\/$/, '');
@@ -43,7 +43,7 @@ export async function getUserId(request) {
 
 // Intestazioni con la chiave segreta del server.
 // Le chiavi nuove (sb_secret_...) vanno solo in "apikey"; quelle vecchie (JWT) anche come Bearer.
-function serviceHeaders(extra = {}) {
+export function serviceHeaders(extra = {}) {
   const key = env('SUPABASE_SERVICE_ROLE_KEY');
   if (!key) throw new Error('SUPABASE_SERVICE_ROLE_KEY mancante');
   return { apikey: key, ...(key.startsWith('eyJ') ? { authorization: `Bearer ${key}` } : {}), ...extra };
@@ -77,12 +77,14 @@ export const limits = (pro = false) => (pro
       image: Number(env('PRO_IMAGE_DAILY_LIMIT', '8')),
       voice: Number(env('PRO_VOICE_DAILY_LIMIT', '100')),
       tts: Number(env('PRO_TTS_DAILY_LIMIT', '100')),
+      video: Number(env('PRO_VIDEO_MONTHLY_LIMIT', '5')), // video al MESE, non al giorno
     }
   : {
       chat: Number(env('FREE_CHAT_DAILY_LIMIT', '30')),
       image: Number(env('FREE_IMAGE_DAILY_LIMIT', '2')),
       voice: Number(env('FREE_VOICE_DAILY_LIMIT', '20')),
       tts: Number(env('FREE_TTS_DAILY_LIMIT', '0')),
+      video: Number(env('FREE_VIDEO_MONTHLY_LIMIT', '0')),
     });
 
 // Profilo dell'utente (creato se manca) con il campo "pro" già calcolato.
@@ -186,8 +188,10 @@ async function saveImage(userId, b64, prompt) {
 
 // Le ultime immagini dell'utente, con un link temporaneo (1 ora) per vederle.
 export async function listImages(userId, limit = 60) {
-  const q = new URLSearchParams({ user_id: `eq.${userId}`, select: 'id,prompt,path,created_at', order: 'created_at.desc', limit: String(limit) });
-  const res = await fetch(`${supabaseUrl()}/rest/v1/images?${q}`, { headers: serviceHeaders() });
+  const query = (select, extra = {}) => new URLSearchParams({ user_id: `eq.${userId}`, select, order: 'created_at.desc', limit: String(limit), ...extra });
+  // Con 003_video.sql ci sono anche i video (solo quelli finiti); senza, solo le immagini.
+  let res = await fetch(`${supabaseUrl()}/rest/v1/images?${query('id,prompt,path,created_at,kind', { status: 'eq.done' })}`, { headers: serviceHeaders() });
+  if (res.status === 400) res = await fetch(`${supabaseUrl()}/rest/v1/images?${query('id,prompt,path,created_at')}`, { headers: serviceHeaders() });
   if (!res.ok) throw new Error(`images ${res.status}`);
   const rows = await res.json();
   if (!rows.length) return [];
@@ -198,8 +202,22 @@ export async function listImages(userId, limit = 60) {
   });
   if (!sign.ok) throw new Error(`sign ${sign.status}`);
   const urls = new Map((await sign.json()).filter((x) => x.signedURL).map((x) => [x.path, `${supabaseUrl()}/storage/v1${x.signedURL}`]));
-  return rows.filter((r) => urls.has(r.path)).map((r) => ({ id: r.id, prompt: r.prompt, created: r.created_at, url: urls.get(r.path) }));
+  return rows.filter((r) => urls.has(r.path)).map((r) => ({ id: r.id, prompt: r.prompt, created: r.created_at, kind: r.kind || 'image', url: urls.get(r.path) }));
 }
+
+// Link temporaneo (1 ora) per un solo file della cartella privata.
+export async function signPath(path, expiresIn = 3600) {
+  const res = await fetch(`${supabaseUrl()}/storage/v1/object/sign/${BUCKET}/${path}`, {
+    method: 'POST',
+    headers: serviceHeaders({ 'content-type': 'application/json' }),
+    body: JSON.stringify({ expiresIn }),
+  });
+  if (!res.ok) throw new Error(`sign ${res.status}`);
+  const d = await res.json();
+  return `${supabaseUrl()}/storage/v1${d.signedURL || d.signedUrl}`;
+}
+
+export { BUCKET, isUuid };
 
 // Cancella un'immagine dell'utente (file e riga).
 export async function deleteImage(userId, id) {
