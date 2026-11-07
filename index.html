@@ -872,7 +872,9 @@ function persist() {
 }
 let chats = load();
 let current = null;
-function newChat() { current = { id: (crypto.randomUUID?.() || Date.now().toString(36) + Math.random().toString(36).slice(2)), title: '', messages: [], updated: Date.now() }; render(); }
+// Ultima foto della discussione: si rimanda per qualche messaggio ("sì", "più colorata"…) così Sahbi può ancora usarla.
+let recentPhoto = null, recentTurns = 0;
+function newChat() { recentPhoto = null; current = { id: (crypto.randomUUID?.() || Date.now().toString(36) + Math.random().toString(36).slice(2)), title: '', messages: [], updated: Date.now() }; render(); }
 function saveCurrent() {
   if (!current.messages.length) return;
   current.updated = Date.now();
@@ -1117,7 +1119,7 @@ function renderHistory() {
   for (const c of chats) {
     const li = el('li'); const b = el('button', '', c.title || 'Discussion'); b.type = 'button'; b.dir = 'auto';
     if (current && c.id === current.id) b.setAttribute('aria-current', 'true');
-    b.addEventListener('click', () => { current = c; closeAll(); render(); });
+    b.addEventListener('click', () => { current = c; recentPhoto = null; closeAll(); render(); });
     li.appendChild(b); hist.appendChild(li);
   }
 }
@@ -1187,9 +1189,11 @@ async function sendChat(text, pic = null, docAtt = null, opts = {}) {
   saveCurrent();
   const wait = typing();
   const history = current.messages.map((m, i, a) => toApi(m, i === a.length - 1));
+  if (pic) { recentPhoto = pic; recentTurns = 3; } else if (recentTurns > 0) recentTurns--;
+  if (recentTurns <= 0 && !pic) recentPhoto = null;
   let res;
   try {
-    res = await api('/api/chat', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ messages: history, ...(pic ? { photo: pic } : {}), ...(docAtt ? { doc: { name: docAtt.name, text: docAtt.text } } : {}), ...(opts.voice ? { voice: true } : {}) }) });
+    res = await api('/api/chat', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ messages: history, ...(pic ? { photo: pic } : (recentPhoto && recentTurns > 0 && !opts.voice ? { photo: recentPhoto, photoEarlier: true } : {})), ...(docAtt ? { doc: { name: docAtt.name, text: docAtt.text } } : {}), ...(opts.voice ? { voice: true } : {}) }) });
   } catch { wait.remove(); bubble('bot', 'Pas de connexion. Vérifie internet et réessaie.', 'err'); return ''; }
   if (!res.ok) {
     wait.remove();

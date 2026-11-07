@@ -26,14 +26,15 @@ Immagini:
 - Puoi creare immagini con lo strumento create_image. Usalo quando l'utente vuole VEDERE un'immagine: "fammi/crea/disegna/genera un'immagine", "dessine", "رسم", "dir lia tswira", oppure quando descrive una scena e chiaramente vuole il disegno. Usalo anche per modificare un'immagine creata prima ("falla più scura", "aggiungi un gatto"): riscrivi la descrizione completa con la modifica.
 - Se l'utente chiede solo un PROMPT (il testo da usare in un altro programma), scrivilo come testo e non usare lo strumento.
 - Nel prompt per lo strumento scrivi una descrizione dettagliata in inglese: soggetto, stile, luce, inquadratura. Rispetta lo stile chiesto.
-- Non creare immagini sessuali, violente in modo esplicito, di persone reali riconoscibili o che imitano marchi e personaggi protetti: spiega gentilmente che non puoi e proponi un'alternativa.
+- NON chiedere mai conferma ("vuoi che proceda?", "ti va?"): se la richiesta è chiara, chiama SUBITO create_image nella stessa risposta, con al massimo una frase breve.
+- Non creare immagini sessuali, violente in modo esplicito, di persone famose o che imitano marchi e personaggi protetti: spiega gentilmente che non puoi e proponi un'alternativa. Puoi però ispirarti a uno stile (es. "yellow-skinned 2D cartoon style" invece del nome di una serie).
 - Nella cronologia, "[Image créée : ...]" indica un'immagine che hai già creato con quella descrizione.
 
 Foto dell'utente:
 - L'utente può inviare una foto insieme al messaggio. Se fa una domanda sulla foto (spiegare un esercizio, tradurre un documento, leggere una bolletta, descrivere), rispondi guardando la foto.
-- Se vuole TRASFORMARE la sua foto (stile cartone animato, anime, 3D, fumetto, acquerello, realistico, cambiare lo sfondo...), usa create_image con edit_photo = true e descrivi in inglese la trasformazione, chiedendo di mantenere riconoscibili persone e composizione.
+- Se vuole TRASFORMARE la sua foto (stile cartone animato, anime, 3D, fumetto, acquerello, realistico, cambiare lo sfondo...), usa SUBITO create_image con edit_photo = true e descrivi in inglese la trasformazione, chiedendo di mantenere riconoscibili persone e composizione. Trasformare la foto che l'utente ti manda è permesso anche se ci sono persone, purché il risultato non sia sessuale, violento o umiliante (vestiti sempre coperti e decenti).
 - Con edit_photo = false l'immagine viene creata da zero, senza la foto.
-- Nella cronologia, "[Photo envoyée]" indica una foto mandata prima: non la vedi più, se serve chiedi di rimandarla.
+- Nella cronologia, "[Photo envoyée]" indica una foto mandata prima. Se il messaggio dice "(photo envoyée juste avant, jointe à nouveau)", la foto è di nuovo allegata: puoi usarla con edit_photo = true.
 - Non identificare mai chi è una persona nella foto dal suo viso.
 
 {{VIDEO}}
@@ -186,7 +187,7 @@ export async function POST(request) {
   if (photo) {
     const last = messages[messages.length - 1];
     last.content = [
-      { type: 'text', text: last.content },
+      { type: 'text', text: body?.photoEarlier === true ? `${last.content}\n(photo envoyée juste avant, jointe à nouveau)` : last.content },
       { type: 'image_url', image_url: { url: photo.dataUrl } },
     ];
   }
@@ -244,18 +245,32 @@ export async function POST(request) {
   let reply = '';
   // Rete di sicurezza: a volte il modello scrive "je lance la vidéo" senza chiamare lo strumento.
   // In quel caso chiediamo al modello SOLO i dati del video e lo creiamo davvero.
-  const promisedVideo = () => videoEnabled() && !tool.name
-    && /(vid[ée]o|فيديو)/i.test(reply)
-    && /(je (te )?(la |le )?(lance|crée|cree|fais|prépare|génère)|je lance|ça prend|environ une minute|sto creando|lo creo|creo (il|subito)|ci vuole circa|i'?m (creating|making)|about a minute|جاري|دقيقة)/i.test(reply);
-  async function forcedVideoArgs() {
+  const PROMISE = /(je (te )?(la |le |l['’])?(lance|crée|cree|fais|prépare|génère|dessine|transforme)|je lance|en cours|ça prend|environ une minute|sto (creando|per|trasformando|disegnando)|in corso|lo (creo|faccio)|la (creo|trasformo|faccio)|procedo|creo (il|la|subito)|ci vuole circa|i'?m (creating|making|drawing|transforming)|about a minute|جاري|دقيقة|دابا)/i;
+  const REFUSAL = /(non posso|je ne peux pas|i can'?t|i cannot|désolé|mi dispiace|sorry|ما نقدرش|لا أستطيع|لا يمكنني)/i;
+  // Rete di sicurezza: a volte il modello scrive "je lance la vidéo / creazione in corso" senza chiamare lo strumento.
+  // In quel caso chiediamo al modello SOLO i dati dello strumento e creiamo davvero l'immagine o il video.
+  // Solo se anche l'utente l'aveva chiesto (nel suo messaggio, o confermando con "sì/oui/ok" dopo una domanda di Sahbi).
+  const lastText = (typeof userText === 'string' ? userText : '').trim();
+  const prevBot = [...messages].reverse().find((m) => m.role === 'assistant')?.content;
+  const confirm = lastText.length < 30 && /^(s[iì]|oui|ok|okay|yes|vas-?y|vai|go|d'?accord|wakha|iyeh|ih|نعم|إيه|واخا|ايوا)\b/i.test(lastText);
+  const asked = (re) => re.test(lastText) || (confirm && typeof prevBot === 'string' && re.test(prevBot));
+  const VIDEO_WORDS = /(vid[ée]o|فيديو|anim)/i;
+  const IMAGE_WORDS = /(image|immagine|imag|foto|photo|dessin|disegn|رسم|صورة|tswira|cartoon|cartone|anime|simpson|stile|style|carte|biglietto|sticker|transform|trasform)/i;
+  const promised = () => {
+    if (tool.name || !PROMISE.test(reply) || REFUSAL.test(reply)) return null;
+    if (videoEnabled() && VIDEO_WORDS.test(reply) && asked(VIDEO_WORDS)) return 'create_video';
+    if (IMAGE_WORDS.test(reply) && asked(IMAGE_WORDS)) return 'create_image';
+    return null;
+  };
+  async function forcedArgs(name) {
     const r = await call({
-      model, stream: false, tools: [VIDEO_TOOL],
-      tool_choice: { type: 'function', function: { name: 'create_video' } },
+      model, stream: false, tools: tools.filter((t) => t.function.name === name),
+      tool_choice: { type: 'function', function: { name } },
       ...(model.startsWith('gpt-5') ? { reasoning_effort: 'minimal' } : {}),
-      messages: [...payload.messages, { role: 'assistant', content: reply }, { role: 'system', content: 'Ora crea davvero il video che hai appena annunciato, chiamando create_video.' }],
+      messages: [...payload.messages, { role: 'assistant', content: reply }, { role: 'system', content: `Ora fai davvero quello che hai appena annunciato, chiamando ${name}.${photo && name === 'create_image' ? ' La foto è allegata: se si tratta di trasformarla usa edit_photo = true.' : ''}` }],
     });
     const d = await r.json().catch(() => null);
-    const tc = d?.choices?.[0]?.message?.tool_calls?.find((t) => t.function?.name === 'create_video');
+    const tc = d?.choices?.[0]?.message?.tool_calls?.find((t) => t.function?.name === name);
     return tc ? parseArgs(tc.function.arguments) : { prompt: '' };
   }
   const stream = upstream.body.pipeThrough(new TransformStream({
@@ -287,12 +302,14 @@ export async function POST(request) {
   }));
 
   async function finishTools(controller) {
-      if (promisedVideo()) {
-        controller.enqueue(encoder.encode(startFrame('create_video')));
-        const forced = await forcedVideoArgs().catch(() => ({ prompt: '' }));
+      const forcedName = promised();
+      if (forcedName) {
+        const video = forcedName === 'create_video';
+        controller.enqueue(encoder.encode(startFrame(forcedName)));
+        const forced = await forcedArgs(forcedName).catch(() => ({ prompt: '' }));
         controller.enqueue(encoder.encode(forced.prompt
-          ? await runTool('create_video', forced.prompt, forced.edit)
-          : frame({ type: 'video_error', error: 'bad_request', message: "Je n'ai pas compris la vidéo à créer. Décris-la autrement." })));
+          ? await runTool(forcedName, forced.prompt, forced.edit)
+          : frame({ type: video ? 'video_error' : 'image_error', error: 'bad_request', message: video ? "Je n'ai pas compris la vidéo à créer. Décris-la autrement." : "Je n'ai pas compris l'image à créer. Décris-la autrement." })));
         return;
       }
       if (!NAMES.includes(tool.name)) return;
