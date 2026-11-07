@@ -6,6 +6,16 @@ const adsenseClient = () => env('ADSENSE_CLIENT', 'ca-pub-4750815574904840');
 // limiti dei piani, pubblicità e quali pagamenti sono attivi.
 // Con ?file=ads.txt restituisce il file ads.txt di Google AdSense (servito su /ads.txt).
 export function GET(request) {
+  // /.well-known/assetlinks.json: collega l'app Android (Google Play) al sito, così si apre a schermo intero.
+  // Su Vercel: ANDROID_PACKAGE (es. bond.sahbi.app) e ANDROID_SHA256 (impronte separate da virgola).
+  if (new URL(request.url).searchParams.get('file') === 'assetlinks') {
+    const pkg = env('ANDROID_PACKAGE', 'bond.sahbi.app');
+    const prints = env('ANDROID_SHA256', '').split(',').map((s) => s.trim().toUpperCase()).filter((s) => /^([0-9A-F]{2}:){31}[0-9A-F]{2}$/.test(s));
+    const body = prints.length
+      ? [{ relation: ['delegate_permission/common.handle_all_urls'], target: { namespace: 'android_app', package_name: pkg, sha256_cert_fingerprints: prints } }]
+      : [];
+    return new Response(JSON.stringify(body), { headers: { 'content-type': 'application/json', 'cache-control': 'public, max-age=3600' } });
+  }
   if (new URL(request.url).searchParams.get('file') === 'ads.txt') {
     const pub = adsenseClient().replace(/^ca-/, '');
     const body = /^pub-\d+$/.test(pub) ? `google.com, ${pub}, DIRECT, f08c47fec0942fa0\n` : '# AdSense non ancora configurato\n';

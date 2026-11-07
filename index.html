@@ -273,6 +273,9 @@ button.s-row.danger{color:var(--danger)}
 .or{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:13px;margin-top:14px}
 .or::before,.or::after{content:"";flex:1;height:1px;background:var(--line)}
 .attach.doc{margin-left:-8px}
+.app-only{display:none}
+.in-app .app-only{display:block}
+.in-app #payCard,.in-app #payDz,.in-app #planSeg{display:none !important}
 .send[hidden],.talk[hidden]{display:none}
 .drawer{overflow-y:auto}
 .tools{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
@@ -487,6 +490,7 @@ button.s-row.danger{color:var(--danger)}
     <div class="pay" id="payBox">
       <button class="cta" id="payCard" type="button">Payer par carte<small id="payCardSub">6,50 € par mois</small></button>
       <button class="alt" id="payDz" type="button">Edahabia ou CIB<small id="payDzSub">1 000 DA pour 30 jours</small></button>
+      <p class="s-note app-only">L’abonnement Sahbi Pro arrive très bientôt directement dans l’application.</p>
     </div>
     <button class="ghost" id="closeSheet" type="button">Plus tard</button>
   </div>
@@ -764,6 +768,25 @@ const msgsEl = $('msgs'), thread = $('thread'), ta = $('msg'), sendBtn = $('send
 let STORE = 'sahbi-chats-v1';
 let supabase = null, busy = false, imgLeft = null, imgLimit = 2, userId = null, cfg = {}, me = null, photo = null;
 
+// ---------- App Android (Google Play) ----------
+// Nell'app del Play Store niente pagamenti del sito e niente AdSense (regole di Google Play).
+const IN_APP = (() => {
+  let v = false;
+  try { v = localStorage.getItem('sahbi-android') === '1'; } catch { /* ignorato */ }
+  if (document.referrer.startsWith('android-app://') || new URLSearchParams(location.search).get('source') === 'android') {
+    v = true; try { localStorage.setItem('sahbi-android', '1'); } catch { /* ignorato */ }
+  }
+  if (v) document.documentElement.classList.add('in-app');
+  return v;
+})();
+// Scorciatoie dell'icona (tenere premuto sull'app): ?action=new | voice | bac
+let pendingAction = new URLSearchParams(location.search).get('action');
+function runPendingAction() {
+  const a = pendingAction; pendingAction = null;
+  if (a === 'voice') openVoice(); else if (a === 'bac') openBac();
+}
+if (pendingAction || new URLSearchParams(location.search).get('source')) history.replaceState(null, '', location.pathname);
+
 // ---------- Account (Supabase) ----------
 const ready = (async () => {
   cfg = await fetch('/api/config').then((r) => r.json());
@@ -798,7 +821,7 @@ function onSession(session) {
   if (id === userId) return;
   userId = id; library = null;
   STORE = `sahbi-chats-v1-${id}`;
-  chats = load(); newChat(); refreshMe().then(applyPendingReferral);
+  chats = load(); newChat(); refreshMe().then(applyPendingReferral).then(runPendingAction);
 }
 
 async function token() {
@@ -1348,7 +1371,7 @@ function updateAds() {
   const show = !!me && !me.pro;
   $('adbar').hidden = !show;
   if (!show) { clearInterval(houseTimer); return; }
-  if (!loadAdsense()) startHouse();
+  if (IN_APP || !loadAdsense()) startHouse();
 }
 
 // ---------- Stato dell'account (piano, limiti, invito) ----------
@@ -1861,7 +1884,7 @@ async function openSettings() {
   const fill = () => {
     const r = me?.remaining || {}, l = me?.limits || {};
     $('sPlan').textContent = me?.pro ? `Pro · jusqu’au ${fmtDate(me.proUntil)}` : 'Gratuit';
-    $('sGoPro').textContent = me?.pro ? (me.canManageBilling ? 'Gérer' : 'Prolonger') : 'Passer à Pro';
+    $('sGoPro').textContent = me?.pro ? (me.canManageBilling && !IN_APP ? 'Gérer' : 'Prolonger') : 'Passer à Pro';
     $('sChat').textContent = me ? `${r.chat} / ${l.chat}` : '…';
     $('sImages').textContent = me ? `${r.image} / ${l.image}` : '…';
     $('sTts').textContent = me ? (l.tts > 0 ? `${r.tts} / ${l.tts}` : 'Avec Pro') : '…';
@@ -1876,7 +1899,7 @@ $('sShareInvite').addEventListener('click', () => shareText(`Salam ! J’utilise
 $('openSettings').addEventListener('click', openSettings);
 $('closeSettings').addEventListener('click', () => { $('settings').hidden = true; });
 $('sGoPro').addEventListener('click', async () => {
-  if (me?.pro && me.canManageBilling) {
+  if (me?.pro && me.canManageBilling && !IN_APP) {
     const r = await api('/api/checkout', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ provider: 'portal' }) }).catch(() => null);
     const d = await r?.json().catch(() => ({})) || {};
     if (r?.ok && d.url) { location.href = d.url; return; }

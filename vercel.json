@@ -42,6 +42,10 @@
     {
       "source": "/ads.txt",
       "destination": "/api/config?file=ads.txt"
+    },
+    {
+      "source": "/.well-known/assetlinks.json",
+      "destination": "/api/config?file=assetlinks"
     }
   ]
 }

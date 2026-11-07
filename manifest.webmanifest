@@ -1,13 +1,14 @@
 {
   "name": "Sahbi – Maghreb AI",
   "short_name": "Sahbi",
-  "description": "L'ami qui te comprend, dans toutes les langues.",
+  "description": "L'ami qui te comprend, dans toutes les langues : darija, arabe, français, anglais. Images, vidéos, Mode Bac, cartes de vœux.",
   "id": "/",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait",
   "lang": "fr",
+  "dir": "auto",
   "background_color": "#FFFFFF",
   "theme_color": "#FFFFFF",
   "categories": ["productivity", "education", "utilities"],
@@ -16,5 +17,10 @@
     { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
     { "src": "/icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
     { "src": "/logo.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ],
+  "shortcuts": [
+    { "name": "Nouvelle discussion", "short_name": "Discuter", "url": "/?action=new", "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Parler avec Sahbi", "short_name": "Parler", "url": "/?action=voice", "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Mode Bac", "short_name": "Bac", "url": "/?action=bac", "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }] }
   ]
 }
