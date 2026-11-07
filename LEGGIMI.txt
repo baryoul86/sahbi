@@ -1,0 +1,3 @@
+Chiave di caricamento di Sahbi (Google Play), CIFRATA.
+Si apre solo con la password salvata nel segreto GitHub SAHBI_KEY_PASSWORD.
+Non cancellare questo ramo.
