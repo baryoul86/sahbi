@@ -572,18 +572,17 @@ button.s-row.danger{color:var(--danger)}
         <label for="email">Ton adresse e-mail</label>
         <input id="email" type="email" inputmode="email" autocomplete="email" placeholder="nom@exemple.com" required>
         <div class="err" id="emailErr" role="alert"></div>
-        <button class="cta" type="submit" id="emailBtn">Recevoir mon code</button>
+        <button class="cta" type="submit" id="emailBtn">Recevoir mon lien de connexion</button>
         <p class="s-note">En continuant, tu acceptes les <a href="/conditions.html" target="_blank" rel="noopener">conditions d'utilisation</a> et la <a href="/confidentialite.html" target="_blank" rel="noopener">politique de confidentialité</a>.</p>
       </form>
 
-      <form id="codeForm" novalidate hidden>
-        <p>On t'a envoyé un e-mail à <b id="sentTo"></b>. Appuie sur le lien dans l'e-mail pour te connecter, ou écris ici le code s'il y en a un.</p>
-        <label for="code">Code (facultatif)</label>
-        <input id="code" class="code" inputmode="numeric" autocomplete="one-time-code" maxlength="8" placeholder="••••••" required>
+      <div id="codeForm" hidden>
+        <p>📩 On t'a envoyé un e-mail à <b id="sentTo"></b>.</p>
+        <p>Ouvre-le et <b>appuie sur le lien</b> : tu seras connecté directement. Pense à regarder dans les spams.</p>
         <div class="err" id="codeErr" role="alert"></div>
-        <button class="cta" type="submit" id="codeBtn">Se connecter</button>
+        <button class="ghost" type="button" id="resendLink">Renvoyer l'e-mail</button>
         <button class="ghost" type="button" id="changeEmail">Changer d'adresse e-mail</button>
-      </form>
+      </div>
     </div>
   </div></div>
 
@@ -809,34 +808,32 @@ async function token() {
   return data.session.access_token;
 }
 
-// Accesso con codice via e-mail
+// Accesso con un link via e-mail (niente codice da copiare)
 let pendingEmail = '';
+async function sendLink(email) {
+  await ready.catch(() => {});
+  const { error } = await supabase.auth.signInWithOtp({ email, options: { shouldCreateUser: true, emailRedirectTo: location.origin } });
+  if (!error) return '';
+  return error.status === 429 ? 'Trop de demandes. Attends une minute et réessaie.' : 'Impossible d’envoyer l’e-mail. Vérifie l’adresse et réessaie.';
+}
 $('emailForm').addEventListener('submit', async (e) => {
   e.preventDefault();
   const email = $('email').value.trim().toLowerCase();
   $('emailErr').textContent = '';
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { $('emailErr').textContent = 'Écris une adresse e-mail valide.'; return; }
   $('emailBtn').disabled = true; $('emailBtn').textContent = 'Envoi…';
-  await ready.catch(() => {});
-  const { error } = await supabase.auth.signInWithOtp({ email, options: { shouldCreateUser: true, emailRedirectTo: location.origin } });
-  $('emailBtn').disabled = false; $('emailBtn').textContent = 'Recevoir mon code';
-  if (error) {
-    $('emailErr').textContent = error.status === 429 ? 'Trop de demandes. Attends quelques minutes et réessaie.' : 'Impossible d’envoyer le code. Vérifie l’adresse et réessaie.';
-    return;
-  }
-  pendingEmail = email; $('sentTo').textContent = email;
-  $('emailForm').hidden = true; $('codeForm').hidden = false; $('code').value = ''; $('code').focus();
+  const err = await sendLink(email);
+  $('emailBtn').disabled = false; $('emailBtn').textContent = 'Recevoir mon lien de connexion';
+  if (err) { $('emailErr').textContent = err; return; }
+  pendingEmail = email; $('sentTo').textContent = email; $('codeErr').textContent = '';
+  $('emailForm').hidden = true; $('codeForm').hidden = false;
 });
-$('codeForm').addEventListener('submit', async (e) => {
-  e.preventDefault();
-  const code = $('code').value.replace(/\D/g, '');
-  $('codeErr').textContent = '';
-  if (code.length < 6) { $('codeErr').textContent = 'Écris le code à 6 chiffres reçu par e-mail.'; return; }
-  $('codeBtn').disabled = true; $('codeBtn').textContent = 'Vérification…';
-  const { error } = await supabase.auth.verifyOtp({ email: pendingEmail, token: code, type: 'email' });
-  $('codeBtn').disabled = false; $('codeBtn').textContent = 'Se connecter';
-  if (error) { $('codeErr').textContent = 'Code incorrect ou expiré. Vérifie-le ou demande un nouveau code.'; return; }
-  $('codeForm').hidden = true; $('emailForm').hidden = false;
+$('resendLink').addEventListener('click', async () => {
+  const b = $('resendLink'); b.disabled = true; b.textContent = 'Envoi…';
+  const err = await sendLink(pendingEmail);
+  $('codeErr').textContent = err;
+  b.textContent = err ? 'Renvoyer l’e-mail' : 'E-mail renvoyé ✓';
+  setTimeout(() => { b.disabled = false; b.textContent = 'Renvoyer l’e-mail'; }, 30000);
 });
 $('changeEmail').addEventListener('click', () => { $('codeForm').hidden = true; $('emailForm').hidden = false; $('email').focus(); });
 async function logout() { closeAll(); $('settings').hidden = true; await supabase.auth.signOut(); userId = null; document.documentElement.classList.remove('has-session'); $('auth').hidden = false; }
