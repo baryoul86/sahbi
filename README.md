@@ -20,7 +20,10 @@ Assistente di intelligenza artificiale che risponde nella lingua dell'utente (da
   - `library.js` galleria · `referral.js` inviti · `account.js` cancellazione account · `config.js` dati pubblici
   - `checkout.js` (pagamento e gestione abbonamento), `stripe-webhook.js`, `chargily-webhook.js`: pagamenti
   - Limite del piano gratuito di Vercel: massimo 12 file in `api/` (quelli che iniziano con `_` non contano)
-- `supabase/schema.sql`, `supabase/002_pro.sql` e `supabase/003_video.sql`: il database (da eseguire in quest'ordine)
+- `supabase/schema.sql`, `002_pro.sql`, `003_video.sql`, `004_memory.sql`: il database (da eseguire in quest'ordine)
+- Memoria di Sahbi (`api/_memory.js`): ricordi visibili e cancellabili in Paramètres
+- Mode Bac, biglietti di auguri, orari di preghiera (AlAdhan.com, dal telefono), conversazione a voce (Pro),
+  documenti PDF/Word letti sul telefono (Pro), PDF di CV e lettere con la stampa del telefono, abbonamento annuale
 - Video di 8 secondi (solo Pro, 5 al mese) con Pruna P-Video: `api/_video.js`, attivi solo con `PRUNA_API_KEY` su Vercel
 
 Nessuna libreria da installare. Variabili: vedi `.env.example`. Guida al lancio: `LANCIO.md`.

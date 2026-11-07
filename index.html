@@ -266,7 +266,81 @@ button.s-row.danger{color:var(--danger)}
 .s-note{margin:0;font-size:13px;color:var(--muted)}
 .s-note a{color:var(--mint-text)}
 .s-pro{min-height:40px;padding:0 14px;border-radius:12px;border:0;background:var(--mint);color:var(--mint-ink);font-weight:500;font-size:14px;flex:0 0 auto}
-@media (prefers-reduced-motion:reduce){.typing i,.mic.on,.ph{animation:none}}
+/* Documenti allegati */
+.attach.doc{margin-left:-8px}
+.send[hidden],.talk[hidden]{display:none}
+.drawer{overflow-y:auto}
+.tools{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.tools .lib-btn{padding:0 12px;font-size:14px;gap:8px}
+.doc-chip{display:flex;align-items:center;gap:10px;min-height:48px;padding:6px 6px 6px 12px;border:1px solid var(--line);border-radius:14px;background:var(--panel);max-width:100%;min-width:0}
+.doc-chip .dn{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14px}
+.doc-chip .ds{font-size:12px;color:var(--muted);white-space:nowrap}
+.doc-chip button{width:36px;height:36px;border-radius:50%;border:0;background:transparent;color:var(--muted);font-size:20px;flex:0 0 36px}
+.msg.me .doc-tag{display:block;font-size:13px;opacity:.85;margin-bottom:4px}
+/* Pulsante conversazione vocale (al posto di "envoyer" quando la casella è vuota) */
+.talk{width:44px;height:44px;border-radius:50%;border:0;display:grid;place-items:center;flex:0 0 44px;background:var(--fg);color:var(--night)}
+/* Schede: Bac, prières */
+.sheet{max-height:92vh;overflow-y:auto}
+.sheet .row2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.field{display:flex;flex-direction:column;gap:6px;min-width:0}
+.field label{font-size:13px;color:var(--muted)}
+.field select,.field input{min-height:48px;border-radius:12px;border:1px solid var(--line);background:var(--night);color:var(--fg);padding:0 12px;font:inherit;font-size:16px;min-width:0;width:100%}
+.field select:focus,.field input:focus{outline:none;border-color:var(--mint)}
+.choice{display:flex;flex-wrap:wrap;gap:8px}
+.choice button{min-height:44px;padding:0 14px;border-radius:999px;border:1px solid var(--line);background:var(--night);font-size:14px}
+.choice button[aria-pressed="true"]{background:var(--mint);border-color:var(--mint);color:var(--mint-ink);font-weight:500}
+.sheet .seg{align-self:flex-start}
+.times{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.times div{border:1px solid var(--line);border-radius:14px;padding:10px;background:var(--night);display:flex;flex-direction:column;gap:2px;min-width:0}
+.times span{font-size:12px;color:var(--muted)}
+.times b{font-size:20px;font-variant-numeric:tabular-nums}
+.times .hl{border-color:var(--mint);background:var(--panel-2)}
+.iftar{border-radius:16px;background:var(--mint);color:var(--mint-ink);padding:14px 16px;display:flex;flex-direction:column;gap:2px}
+.iftar b{font-family:var(--brand);font-weight:800;font-size:28px;font-variant-numeric:tabular-nums}
+.save-badge{display:inline-block;margin-left:6px;padding:1px 8px;border-radius:999px;background:var(--mint);color:var(--mint-ink);font-size:12px;font-weight:500}
+/* Schermata iniziale: biglietti, consiglio del giorno */
+.occasions{display:flex;gap:6px;overflow-x:auto;width:100%;max-width:520px;padding-bottom:2px;scrollbar-width:none}
+.occasions button{flex:0 0 auto;min-height:40px;padding:0 14px;border-radius:999px;border:1px solid var(--line);background:var(--panel);font-size:14px;white-space:nowrap}
+.occasions button:hover{border-color:var(--mint)}
+.tip{width:100%;max-width:520px;text-align:left;border:1px dashed var(--line);border-radius:14px;padding:10px 12px;font-size:14px;color:var(--muted);background:transparent}
+.tip b{color:var(--fg);font-weight:500}
+.label-sm{width:100%;max-width:520px;text-align:left;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-top:4px}
+.mem-note{font-size:12px;color:var(--muted)}
+.mem-list{list-style:none;margin:0;padding:0}
+.mem-list li{display:flex;align-items:center;gap:8px;min-height:52px;padding:6px 6px 6px 16px;border-top:1px solid var(--line)}
+.mem-list li:first-child{border-top:0}
+.mem-list li span{flex:1;min-width:0;overflow-wrap:anywhere}
+.mem-list li button{width:40px;height:40px;border:0;border-radius:10px;background:transparent;color:var(--muted);font-size:18px;flex:0 0 40px}
+.mem-list li button:hover{background:var(--panel-2);color:var(--danger)}
+/* Conversazione a voce */
+.voice{position:fixed;inset:0;z-index:35;background:var(--night);display:flex;flex-direction:column;align-items:center;justify-content:space-between;padding:calc(16px + env(safe-area-inset-top,0px)) 16px calc(24px + env(safe-area-inset-bottom,0px))}
+.voice .vt{align-self:stretch;display:flex;justify-content:space-between;align-items:center}
+.voice .vt b{font-family:var(--brand);font-weight:800;font-size:20px}
+.orb{width:min(56vw,240px);aspect-ratio:1;border-radius:50%;border:0;background:radial-gradient(circle at 35% 30%,#7FE0B0,var(--mint) 55%,#187A4F);box-shadow:0 0 0 0 rgba(47,174,116,.35);transition:transform .12s ease-out;color:transparent}
+.orb.listening{animation:breathe 1.8s ease-in-out infinite}
+.orb.thinking{animation:spinGlow 1.2s linear infinite;opacity:.8}
+.orb.speaking{animation:talkPulse .5s ease-in-out infinite alternate}
+@keyframes breathe{0%,100%{box-shadow:0 0 0 0 rgba(47,174,116,.35)}50%{box-shadow:0 0 0 22px rgba(47,174,116,0)}}
+@keyframes spinGlow{to{filter:hue-rotate(40deg)}}
+@keyframes talkPulse{from{transform:scale(.96)}to{transform:scale(1.04)}}
+.voice .vs{font-size:18px;font-weight:500;text-align:center;min-height:1.4em}
+.voice .vl{font-size:15px;color:var(--muted);text-align:center;max-width:36ch;min-height:3em;overflow-wrap:anywhere}
+.voice .vb{display:flex;gap:12px}
+.voice .vb button{min-height:52px;padding:0 22px;border-radius:999px;border:1px solid var(--line);background:var(--panel);font-weight:500}
+.voice .vb .end{background:var(--danger);border-color:var(--danger);color:#fff}
+/* Stampa (CV, lettere, fiches in PDF) */
+#printArea{display:none}
+@media print{
+  body > *:not(#printArea){display:none !important}
+  #printArea{display:block;color:#000;background:#fff;font:12pt/1.45 Georgia,'Times New Roman',serif;padding:0}
+  #printArea h1{font:700 20pt/1.2 Arial,sans-serif;margin:0 0 6pt}
+  #printArea h2{font:700 12pt/1.3 Arial,sans-serif;text-transform:uppercase;letter-spacing:.06em;border-bottom:1px solid #2FAE74;padding-bottom:2pt;margin:14pt 0 6pt}
+  #printArea p{margin:0 0 6pt}
+  #printArea ul{margin:0 0 6pt;padding-left:16pt}
+  #printArea .foot{margin-top:18pt;font:9pt Arial,sans-serif;color:#777}
+  @page{margin:16mm}
+}
+@media (prefers-reduced-motion:reduce){.typing i,.mic.on,.ph,.orb{animation:none}}
 </style>
 </head>
 <body>
@@ -318,20 +392,32 @@ button.s-row.danger{color:var(--danger)}
   <footer class="composer gutter">
     <form class="col" id="form" autocomplete="off">
       <div class="attach-bar" id="attachBar" hidden>
-        <div class="thumb"><img id="thumb" alt="Photo jointe"><button type="button" id="removePhoto" aria-label="Retirer la photo">×</button></div>
+        <div class="thumb" id="thumbBox"><img id="thumb" alt="Photo jointe"><button type="button" id="removePhoto" aria-label="Retirer la photo">×</button></div>
         <div class="styles" id="styles" aria-label="Transformer la photo"></div>
+        <div class="doc-chip" id="docChip" hidden>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h5"/></svg>
+          <span class="dn" id="docName" dir="auto"></span><span class="ds" id="docSize"></span>
+          <button type="button" id="removeDoc" aria-label="Retirer le document">×</button>
+        </div>
       </div>
       <div class="box">
         <button class="attach" id="attach" type="button" aria-label="Ajouter une photo">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
         </button>
         <input type="file" id="file" accept="image/*" hidden>
+        <button class="attach doc" id="attachDoc" type="button" aria-label="Ajouter un document PDF ou Word">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21.4 11.1l-9.2 9.2a6 6 0 0 1-8.5-8.5l9.2-9.2a4 4 0 0 1 5.7 5.7l-9.2 9.2a2 2 0 0 1-2.8-2.8l8.5-8.5"/></svg>
+        </button>
+        <input type="file" id="docFile" accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document" hidden>
         <label for="msg" class="sr">Message</label>
         <textarea id="msg" rows="1" dir="auto" placeholder="Écris, envoie une photo…"></textarea>
         <button class="mic" id="mic" type="button" aria-label="Parler au micro" aria-pressed="false">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>
         </button>
-        <button class="send" id="send" type="submit" aria-label="Envoyer" disabled>
+        <button class="talk" id="talk" type="button" aria-label="Conversation vocale avec Sahbi" title="Conversation vocale">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M4 10v4M8 7v10M12 4v16M16 8v8M20 11v2"/></svg>
+        </button>
+        <button class="send" id="send" type="submit" aria-label="Envoyer" disabled hidden>
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
         </button>
       </div>
@@ -349,8 +435,18 @@ button.s-row.danger{color:var(--danger)}
   </button>
   <button class="lib-btn" id="openLib" type="button">
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5L5 21"/></svg>
-    Images
+    Images et vidéos
   </button>
+  <div class="tools">
+    <button class="lib-btn" id="openBac" type="button">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 10L12 5 2 10l10 5 10-5z"/><path d="M6 12v5c3 2 9 2 12 0v-5"/></svg>
+      Mode Bac
+    </button>
+    <button class="lib-btn" id="openPrayer" type="button">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+      Prières
+    </button>
+  </div>
   <h2>Récents</h2>
   <ul class="hist" id="hist"></ul>
   <button class="plus-card" id="drawerPlus" type="button">
@@ -366,13 +462,19 @@ button.s-row.danger{color:var(--danger)}
 <section class="sheet" id="sheet" hidden role="dialog" aria-modal="true" aria-labelledby="plusTitle">
   <div class="col">
     <h2 id="plusTitle">Sahbi Pro</h2>
-    <div class="price"><b id="priceEur">6,50 €</b> / mois</div>
+    <div class="seg" role="group" aria-label="Durée de l’abonnement" id="planSeg" hidden>
+      <button type="button" id="planMonth" aria-pressed="true">Mensuel</button>
+      <button type="button" id="planYear" aria-pressed="false">Annuel <span class="save-badge" id="saveBadge">−25 %</span></button>
+    </div>
+    <div class="price"><b id="priceEur">6,50 €</b> <span id="pricePer">/ mois</span></div>
+    <p class="s-note" id="priceNote" hidden></p>
     <ul class="feats">
       <li><svg width="20" height="20" aria-hidden="true"><use href="#check"/></svg><span><span id="fChat">300</span> messages par jour, dans toutes les langues</span></li>
       <li><svg width="20" height="20" aria-hidden="true"><use href="#check"/></svg><span><span id="fImg">8</span> images par jour, rechargées chaque nuit</span></li>
       <li><svg width="20" height="20" aria-hidden="true"><use href="#check"/></svg><span><span id="fVid">5</span> vidéos de 8 secondes par mois</span></li>
       <li><svg width="20" height="20" aria-hidden="true"><use href="#check"/></svg>Transforme tes photos : cartoon, anime, 3D, aquarelle…</li>
-      <li><svg width="20" height="20" aria-hidden="true"><use href="#check"/></svg>Sahbi lit ses réponses à voix haute</li>
+      <li><svg width="20" height="20" aria-hidden="true"><use href="#check"/></svg>Conversation vocale : tu parles, Sahbi te répond à voix haute</li>
+      <li><svg width="20" height="20" aria-hidden="true"><use href="#check"/></svg>Lecture de tes documents PDF et Word</li>
       <li><svg width="20" height="20" aria-hidden="true"><use href="#check"/></svg>Sans publicité</li>
       <li><svg width="20" height="20" aria-hidden="true"><use href="#check"/></svg>Sans engagement, résiliable à tout moment</li>
     </ul>
@@ -383,6 +485,60 @@ button.s-row.danger{color:var(--danger)}
     </div>
     <button class="ghost" id="closeSheet" type="button">Plus tard</button>
   </div>
+</section>
+
+<section class="sheet" id="bacSheet" hidden role="dialog" aria-modal="true" aria-labelledby="bacTitle">
+  <div class="col">
+    <h2 id="bacTitle">Mode Bac</h2>
+    <p class="s-note">Quiz, fiches et exercices selon le programme de ton pays.</p>
+    <div class="row2">
+      <div class="field"><label for="bacCountry">Pays</label>
+        <select id="bacCountry"><option>Algérie</option><option>Maroc</option><option>Tunisie</option></select></div>
+      <div class="field"><label for="bacBranch">Filière</label>
+        <select id="bacBranch"><option>Sciences expérimentales</option><option>Mathématiques</option><option>Technique</option><option>Gestion et économie</option><option>Lettres et philosophie</option><option>Langues étrangères</option></select></div>
+    </div>
+    <div class="field"><label for="bacSubject">Matière</label>
+      <select id="bacSubject"><option>Mathématiques</option><option>Physique-Chimie</option><option>Sciences naturelles (SVT)</option><option>Philosophie</option><option>Arabe</option><option>Français</option><option>Anglais</option><option>Histoire-Géographie</option><option>Économie et gestion</option><option>Sciences islamiques</option><option>Informatique</option></select></div>
+    <div class="field"><label for="bacChapter">Chapitre (facultatif)</label>
+      <input id="bacChapter" type="text" dir="auto" placeholder="Ex. : les suites numériques" maxlength="120"></div>
+    <div class="choice" role="group" aria-label="Activité" id="bacMode">
+      <button type="button" data-mode="quiz" aria-pressed="true">Quiz de 5 questions</button>
+      <button type="button" data-mode="fiche" aria-pressed="false">Fiche de révision</button>
+      <button type="button" data-mode="exo" aria-pressed="false">Exercice corrigé</button>
+      <button type="button" data-mode="cours" aria-pressed="false">Explique-moi le cours</button>
+    </div>
+    <button class="cta" id="bacGo" type="button">Commencer</button>
+    <button class="ghost" id="bacClose" type="button">Fermer</button>
+  </div>
+</section>
+
+<section class="sheet" id="prayerSheet" hidden role="dialog" aria-modal="true" aria-labelledby="prTitle">
+  <div class="col">
+    <h2 id="prTitle">Horaires de prière</h2>
+    <div class="row2">
+      <div class="field"><label for="prCity">Ville</label><input id="prCity" type="text" dir="auto" placeholder="Ex. : Oran" maxlength="60" autocomplete="address-level2"></div>
+      <div class="field"><label for="prCountry">Pays</label>
+        <select id="prCountry"><option value="DZ">Algérie</option><option value="MA">Maroc</option><option value="TN">Tunisie</option><option value="FR">France</option><option value="BE">Belgique</option><option value="LY">Libye</option><option value="EG">Égypte</option><option value="SA">Arabie saoudite</option><option value="AE">Émirats</option><option value="QA">Qatar</option></select></div>
+    </div>
+    <button class="cta" id="prGo" type="button">Afficher les horaires</button>
+    <div id="prOut" aria-live="polite"></div>
+    <p class="s-note" id="prNote">Horaires calculés par AlAdhan.com pour ta ville. Ils peuvent varier de quelques minutes selon la mosquée.</p>
+    <div class="choice" id="prIdeas">
+      <button type="button" data-p="Donne-moi une recette facile pour l’iftar de ce soir, avec ce que j’ai : ">Recette pour l’iftar</button>
+      <button type="button" data-p="Fais-moi une carte de vœux « Ramadan Moubarak » pour ">Carte Ramadan Moubarak</button>
+      <button type="button" data-p="Écris un joli message de vœux pour le Ramadan à envoyer à ">Message de vœux</button>
+    </div>
+    <button class="ghost" id="prClose" type="button">Fermer</button>
+  </div>
+</section>
+
+<section class="voice" id="voice" hidden role="dialog" aria-modal="true" aria-labelledby="voiceTitle">
+  <div class="vt"><b id="voiceTitle">Conversation</b><button class="icon-btn" id="voiceX" type="button" aria-label="Fermer la conversation vocale">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+  <button class="orb" id="orb" type="button" aria-label="Appuie pour parler ou interrompre Sahbi"></button>
+  <div class="vs" id="voiceState" aria-live="polite">Je t’écoute…</div>
+  <div class="vl" id="voiceLine" dir="auto"></div>
+  <div class="vb"><button type="button" id="voicePause">Pause</button><button type="button" class="end" id="voiceEnd">Terminer</button></div>
 </section>
 
 <section class="auth" id="auth" aria-labelledby="authTitle">
@@ -427,7 +583,10 @@ button.s-row.danger{color:var(--danger)}
       <div><h3>Il crée des images</h3><p>Décris une scène et Sahbi la dessine : un coucher de soleil sur le Sahara, une affiche pour ton commerce, une illustration pour un exposé.</p></div>
       <div><h3>Il transforme tes photos</h3><p>Envoie une photo et choisis un style : cartoon, anime, 3D animé, bande dessinée, aquarelle ou réaliste.</p></div>
       <div><h3>Il comprend les photos</h3><p>Photographie un exercice, une lettre en français ou une facture : Sahbi t'explique, traduit ou résume.</p></div>
-      <div><h3>Il t'écoute et te parle</h3><p>Appuie sur le micro et parle. Avec Sahbi Pro, il lit aussi ses réponses à voix haute.</p></div>
+      <div><h3>Il t'écoute et te parle</h3><p>Appuie sur le micro et parle. Avec Sahbi Pro, discute à voix haute avec lui comme au téléphone.</p></div>
+      <div><h3>Mode Bac</h3><p>Quiz de 5 questions, fiches de révision et exercices corrigés selon le programme d'Algérie, du Maroc ou de Tunisie.</p></div>
+      <div><h3>Cartes de vœux</h3><p>Aïd, Ramadan, mariage, anniversaire : Sahbi crée la carte avec le prénom, tu la partages sur WhatsApp.</p></div>
+      <div><h3>Il lit tes documents</h3><p>Envoie un PDF ou un Word (Pro) : résumé, traduction ou réponse à rédiger. Ton CV s'enregistre en PDF.</p></div>
       <div><h3>Il t'aide au quotidien</h3><p>Révisions du Bac, CV, lettres administratives, traductions, recettes, idées de sorties : il suffit de demander.</p></div>
     </div>
   </div></div>
@@ -455,7 +614,7 @@ button.s-row.danger{color:var(--danger)}
     <h2>Gratuit ou Pro</h2>
     <div class="plans">
       <div class="plan"><h3>Gratuit</h3><div class="pr">0 €</div><ul><li>30 messages par jour</li><li>2 images par jour</li><li>Photos et micro</li><li>Avec publicité</li></ul></div>
-      <div class="plan pro"><h3>Sahbi Pro</h3><div class="pr">6,50 € / mois</div><ul><li>300 messages par jour</li><li>8 images par jour</li><li>5 vidéos de 8 secondes par mois</li><li>Sahbi lit ses réponses à voix haute</li><li>Sans publicité</li><li>Aussi en Edahabia / CIB : 1 000 DA pour 30 jours</li></ul></div>
+      <div class="plan pro"><h3>Sahbi Pro</h3><div class="pr">6,50 € / mois</div><ul><li>300 messages par jour</li><li>8 images par jour</li><li>5 vidéos de 8 secondes par mois</li><li>Conversation vocale et documents PDF</li><li>Sahbi lit ses réponses à voix haute</li><li>Sans publicité</li><li>Aussi en Edahabia / CIB : 1 000 DA pour 30 jours</li></ul></div>
     </div>
   </div></div>
 
@@ -556,6 +715,15 @@ button.s-row.danger{color:var(--danger)}
       </div>
 
       <div class="s-group">
+        <h3>Ce que Sahbi retient</h3>
+        <div class="s-card">
+          <ul class="mem-list" id="memList"><li><span class="mem-note">Rien pour l’instant.</span></li></ul>
+          <button class="s-row danger" type="button" id="memClear" hidden>Tout oublier</button>
+        </div>
+        <p class="s-note">Quand tu dis ton prénom, ta ville ou ce que tu étudies, Sahbi s’en souvient pour mieux t’aider. Appuie sur × pour effacer un souvenir.</p>
+      </div>
+
+      <div class="s-group">
         <h3>Langue</h3>
         <p class="s-note">Sahbi te répond dans la langue que tu utilises : darija, arabe, français, anglais ou toute autre langue. Il n'y a rien à régler.</p>
       </div>
@@ -575,6 +743,7 @@ button.s-row.danger{color:var(--danger)}
 </section>
 
 <div class="toast" id="toast" hidden role="status"></div>
+<div id="printArea" aria-hidden="true"></div>
 
 <script type="module">
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/+esm';
@@ -696,7 +865,52 @@ const ICONS = {
   copy: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>',
   share: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/></svg>',
   open: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3h7v7M10 14L21 3M21 14v7H3V3h7"/></svg>',
+  pdf: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M12 18v-6M9 15l3 3 3-3"/></svg>',
 };
+
+// ---------- PDF: CV, lettere, fiches pronte da stampare o salvare ----------
+function printText(text) {
+  const area = $('printArea'); area.replaceChildren();
+  // Via le frasi di servizio ("enregistre-le en PDF avec le bouton…"): nel PDF non servono.
+  const lines = text.replace(/\*\*(.+?)\*\*/g, '$1').split('\n').filter((l) => !/(bouton|button|pulsante|زر).{0,40}PDF|PDF.{0,40}(bouton|button|pulsante|زر)/i.test(l));
+  let list = null, first = true;
+  for (const raw of lines) {
+    const line = raw.trim();
+    if (!line) { list = null; continue; }
+    const bullet = /^[-•*]\s+/.test(line);
+    if (bullet) {
+      if (!list) { list = el('ul'); area.appendChild(list); }
+      list.appendChild(el('li', '', line.replace(/^[-•*]\s+/, '')));
+      continue;
+    }
+    list = null;
+    const heading = line.replace(/^#+\s*/, '');
+    if (first && (/^#/.test(line) || line.length < 60)) { area.appendChild(el('h1', '', heading)); first = false; continue; }
+    first = false;
+    // Titoli: righe con # oppure brevi in MAIUSCOLO oppure che finiscono con ":".
+    if (/^#/.test(line) || (line.length < 50 && (line === line.toUpperCase() && /[A-ZÀ-Ü]/.test(line) || /:$/.test(line)))) area.appendChild(el('h2', '', heading.replace(/:$/, '')));
+    else area.appendChild(el('p', '', line));
+  }
+  area.appendChild(el('div', 'foot', 'Préparé avec Sahbi · sahbi.bond'));
+  toast('Choisis « Enregistrer en PDF » dans la fenêtre d’impression.');
+  setTimeout(() => window.print(), 300);
+}
+
+// Firma discreta "sahbi.bond" sulle immagini condivise: ogni biglietto fa conoscere Sahbi.
+async function withSignature(blob) {
+  try {
+    const bmp = await createImageBitmap(blob);
+    const c = document.createElement('canvas'); c.width = bmp.width; c.height = bmp.height;
+    const g = c.getContext('2d'); g.drawImage(bmp, 0, 0);
+    const s = Math.max(14, Math.round(bmp.width / 42));
+    g.font = `600 ${s}px system-ui, sans-serif`;
+    const label = 'sahbi.bond'; const w = g.measureText(label).width;
+    const x = bmp.width - w - s, y = bmp.height - s;
+    g.fillStyle = 'rgba(0,0,0,.35)'; g.beginPath(); g.roundRect?.(x - s * 0.5, y - s * 1.1, w + s, s * 1.6, s * 0.8); g.fill();
+    g.fillStyle = '#fff'; g.fillText(label, x, y);
+    return await new Promise((ok) => c.toBlob((b) => ok(b || blob), 'image/jpeg', 0.92));
+  } catch { return blob; }
+}
 function actBtn(icon, label, onClick, showLabel = false) {
   const b = el('button', 'act'); b.type = 'button'; b.setAttribute('aria-label', label); b.title = label;
   b.innerHTML = ICONS[icon] + (showLabel ? `<span>${label}</span>` : '');
@@ -710,8 +924,8 @@ async function shareText(text) {
 }
 async function shareImage(src, caption) {
   try {
-    const blob = await (await fetch(src)).blob();
-    const file = new File([blob], 'sahbi.jpg', { type: blob.type || 'image/jpeg' });
+    const blob = await withSignature(await (await fetch(src)).blob());
+    const file = new File([blob], 'sahbi.jpg', { type: 'image/jpeg' });
     if (navigator.canShare?.({ files: [file] })) { await navigator.share({ files: [file], text: `Créé avec Sahbi : ${location.origin}` }); return; }
   } catch (e) { if (e?.name === 'AbortError') return; }
   window.open(src, '_blank', 'noopener');
@@ -750,6 +964,8 @@ function addTextActions(textEl, text) {
     }),
     actBtn('share', 'Partager', () => shareText(text)),
   );
+  // PDF per le risposte lunghe o strutturate (CV, lettere, fiches).
+  if (text.length > 400 || text.split('\n').length >= 6) row.appendChild(actBtn('pdf', 'PDF', () => printText(text), true));
   st.appendChild(row);
 }
 function typing() {
@@ -778,14 +994,36 @@ function limitBubble(message) {
   d.appendChild(b); m.appendChild(d); msgsEl.appendChild(m); scroll();
 }
 
+const OCCASIONS = [
+  ['🌙 Ramadan', 'Fais-moi une carte de vœux « Ramadan Moubarak » pour '],
+  ['🐑 Aïd', 'Fais-moi une carte de vœux « Aïd Moubarak » pour '],
+  ['💍 Mariage', 'Fais-moi une carte de félicitations pour le mariage de '],
+  ['🎂 Anniversaire', 'Fais-moi une carte d’anniversaire pour '],
+  ['👶 Naissance', 'Fais-moi une carte de félicitations pour la naissance de '],
+  ['🎓 Réussite au Bac', 'Fais-moi une carte « Félicitations pour le Bac » pour '],
+  ['😄 Sticker', 'Fais-moi un sticker WhatsApp drôle de '],
+];
+const TIPS = [
+  ['Mode Bac', 'ouvre le menu ☰ puis « Mode Bac » pour un quiz de 5 questions.'],
+  ['Cartes de vœux', 'choisis une fête ci-dessus : Sahbi crée la carte, tu la partages sur WhatsApp.'],
+  ['Photo', 'envoie la photo d’un exercice ou d’une lettre : Sahbi t’explique ou traduit.'],
+  ['PDF', 'demande ton CV puis appuie sur « PDF » sous la réponse pour l’enregistrer.'],
+  ['Conversation vocale', 'appuie sur le bouton à ondes à côté du micro et parle avec Sahbi.'],
+  ['Documents', 'avec le trombone, envoie un PDF ou un Word : Sahbi le résume ou le traduit.'],
+  ['Prières', 'menu ☰ puis « Prières » : horaires de ta ville et heure de l’iftar.'],
+  ['Mémoire', 'dis ton prénom et ce que tu étudies : Sahbi s’en souviendra.'],
+  ['Invite tes amis', 'Paramètres → partage ton lien : 7 jours de Pro pour vous deux.'],
+];
 const SHORTCUTS = [
-  { t: 'Aide au Bac', d: 'Cours, exercices, révisions', p: 'Aide-moi à réviser pour le Bac. Matière et chapitre : ' },
+  { t: 'Aide au Bac', d: 'Quiz, fiches, exercices', bac: true },
   { t: 'Mon CV', d: 'Un CV clair et pro', p: 'Aide-moi à écrire mon CV. Voici mon parcours : ' },
   { t: 'Lettre administrative', d: 'Mairie, banque, employeur', p: 'Écris une lettre administrative pour ' },
   { t: 'Traduire', d: 'Darija ↔ français ↔ arabe', p: 'Traduis en français : ' },
   { t: 'Transformer une photo', d: 'Cartoon, anime, 3D…', photo: true },
   { t: 'Créer une image', d: 'Décris, Sahbi dessine', p: 'Fais-moi une image de ' },
   { t: 'Créer une vidéo', d: '8 secondes, avec Sahbi Pro', p: 'Fais-moi une vidéo de ' },
+  { t: 'Lire un document', d: 'PDF ou Word, avec Sahbi Pro', doc: true },
+  { t: 'Parler avec Sahbi', d: 'Conversation à voix haute', voice: true },
 ];
 function render() {
   msgsEl.replaceChildren();
@@ -800,17 +1038,27 @@ function render() {
       c.append(el('b', '', s.t), el('span', '', s.d));
       c.addEventListener('click', () => {
         if (s.photo) { $('file').click(); return; }
-        ta.value = s.p; grow(); ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length);
+        if (s.doc) { pickDoc(); return; }
+        if (s.voice) { openVoice(); return; }
+        if (s.bac) { openBac(); return; }
+        prefill(s.p);
       });
       chips.appendChild(c);
     }
-    e.append(logo, el('h1', '', 'Salam, ana Sahbi'), el('p', '', 'Écris, parle ou envoie une photo, dans ta langue. Je peux aussi créer des images.'), chips);
+    const occ = el('div', 'occasions'); occ.setAttribute('aria-label', 'Cartes de vœux');
+    for (const [label, p] of OCCASIONS) {
+      const b = el('button', '', label); b.type = 'button'; b.addEventListener('click', () => prefill(p)); occ.appendChild(b);
+    }
+    const [tt, td] = TIPS[Math.floor(Date.now() / 864e5) % TIPS.length];
+    const tip = el('div', 'tip'); tip.append(el('b', '', `Astuce du jour · ${tt} : `), document.createTextNode(td));
+    e.append(logo, el('h1', '', 'Salam, ana Sahbi'), el('p', '', 'Écris, parle ou envoie une photo, dans ta langue. Je crée aussi des images, des vidéos et des cartes de vœux.'), chips, el('div', 'label-sm', 'Cartes de vœux à partager'), occ, tip);
     msgsEl.appendChild(e);
   }
   for (const m of current.messages) {
     if (m.kind === 'image') storedImageBubble(m);
     else if (m.kind === 'video') videoBubble(m.id, m.content);
     else if (m.role === 'user' && m.photo) userPhotoBubble(null, `📷 ${m.content}`);
+    else if (m.role === 'user' && m.doc) bubble('user', `📄 ${m.doc}\n${m.content}`);
     else { const t = bubble(m.role, m.content); if (m.role === 'assistant') addTextActions(t, m.content); }
   }
   renderHistory();
@@ -832,6 +1080,7 @@ const toApi = (m, isLast) => {
   if (m.kind === 'image') return { role: 'assistant', content: `[Image créée : ${m.content}]` };
   if (m.kind === 'video') return { role: 'assistant', content: `[Vidéo créée : ${m.content}]` };
   if (m.photo && !isLast) return { role: m.role, content: `${m.content}\n[Photo envoyée]` };
+  if (m.doc && !isLast) return { role: m.role, content: `${m.content}\n[Document envoyé : ${m.doc}]` };
   return { role: m.role, content: m.content };
 };
 function imagePlaceholder(video = false) {
@@ -879,29 +1128,35 @@ async function shareVideo(url, caption) {
   } catch (e) { if (e?.name === 'AbortError') return; }
   window.open(url, '_blank', 'noopener');
 }
-async function sendChat(text, pic = null) {
-  current.messages.push(pic ? { role: 'user', content: text, photo: true } : { role: 'user', content: text });
+async function sendChat(text, pic = null, docAtt = null, opts = {}) {
+  const msg = { role: 'user', content: text };
+  if (pic) msg.photo = true;
+  if (docAtt) msg.doc = docAtt.name;
+  current.messages.push(msg);
   if (current.messages.length === 1) { render(); if (pic) msgsEl.lastElementChild?.remove(); }
-  if (pic) userPhotoBubble(pic, text); else if (current.messages.length > 1) bubble('user', text);
+  else if (!pic) bubble('user', docAtt ? `📄 ${docAtt.name}\n${text}` : text);
+  if (pic) userPhotoBubble(pic, text);
   saveCurrent();
   const wait = typing();
   const history = current.messages.map((m, i, a) => toApi(m, i === a.length - 1));
   let res;
   try {
-    res = await api('/api/chat', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ messages: history, ...(pic ? { photo: pic } : {}) }) });
-  } catch { wait.remove(); bubble('bot', 'Pas de connexion. Vérifie internet et réessaie.', 'err'); return; }
+    res = await api('/api/chat', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ messages: history, ...(pic ? { photo: pic } : {}), ...(docAtt ? { doc: { name: docAtt.name, text: docAtt.text } } : {}), ...(opts.voice ? { voice: true } : {}) }) });
+  } catch { wait.remove(); bubble('bot', 'Pas de connexion. Vérifie internet et réessaie.', 'err'); return ''; }
   if (!res.ok) {
     wait.remove();
     const err = await res.json().catch(() => ({}));
-    if (err.error === 'limit') limitBubble(me?.pro ? 'Tu as atteint la limite de messages pour aujourd’hui. Ça se recharge à minuit.' : 'Tu as utilisé tes messages gratuits d’aujourd’hui. Passe à Sahbi Pro pour continuer, ou reviens demain.');
+    if (err.error === 'pro') limitBubble(err.message || 'Cette fonction est incluse dans Sahbi Pro.');
+    else if (err.error === 'limit') limitBubble(me?.pro ? 'Tu as atteint la limite de messages pour aujourd’hui. Ça se recharge à minuit.' : 'Tu as utilisé tes messages gratuits d’aujourd’hui. Passe à Sahbi Pro pour continuer, ou reviens demain.');
     else bubble('bot', err.message || 'Sahbi ne peut pas répondre maintenant. Réessaie.', 'err');
-    return;
+    return '';
   }
   wait.remove();
   const out = bubble('assistant', '');
   const outMsg = out.closest('.msg'); outMsg.hidden = true;
   const extra = []; let pending = null, handled = 0, raw = '', reply = '';
   const onFrame = (f) => {
+    if (f.type === 'memory') { toast('🧠 Sahbi s’en souviendra.'); if (me) me.memoryStale = true; return; }
     if (f.type === 'image_start' || f.type === 'video_start') { if (!pending) pending = imagePlaceholder(f.type === 'video_start'); return; }
     if (pending) { pending.remove(); pending = null; }
     if (f.type === 'video') {
@@ -951,6 +1206,7 @@ async function sendChat(text, pic = null) {
   }
   current.messages.push(...extra);
   saveCurrent(); renderHistory();
+  return reply;
 }
 
 // ---------- Galleria ----------
@@ -1106,21 +1362,33 @@ async function applyPendingReferral() {
 const inviteLink = () => (me?.referralCode ? `${location.origin}/?ref=${me.referralCode}` : location.origin);
 
 // ---------- Abbonamento Pro ----------
+let plan = 'month';
 function renderSheet() {
   const pay = cfg.payments || {};
-  $('priceEur').textContent = pay.priceEur || '6,50 €';
-  $('payCardSub').textContent = pay.stripe ? `${pay.priceEur || '6,50 €'} par mois` : 'Bientôt disponible';
-  $('payDzSub').textContent = pay.chargily ? `${(pay.priceDzd || 1000).toLocaleString('fr-FR')} DA pour 30 jours` : 'Bientôt disponible';
-  $('payCard').disabled = !pay.stripe; $('payDz').disabled = !pay.chargily;
+  const year = plan === 'year';
+  // L'annuale si mostra quando almeno un pagamento annuale è attivo.
+  $('planSeg').hidden = !(pay.stripeYear || pay.chargily);
+  $('planMonth').setAttribute('aria-pressed', String(!year)); $('planYear').setAttribute('aria-pressed', String(year));
+  $('priceEur').textContent = year ? (pay.priceYearEur || '59 €') : (pay.priceEur || '6,50 €');
+  $('pricePer').textContent = year ? '/ an' : '/ mois';
+  const monthly = parseFloat(String(pay.priceEur || '6,50').replace(',', '.')), yearly = parseFloat(String(pay.priceYearEur || '59').replace(',', '.'));
+  const save = monthly && yearly ? Math.round((1 - yearly / (monthly * 12)) * 100) : 0;
+  $('saveBadge').textContent = save > 0 ? `−${save} %` : '';
+  $('priceNote').hidden = !year;
+  $('priceNote').textContent = year ? `Soit ${(yearly / 12).toFixed(2).replace('.', ',')} € par mois, payé en une fois.` : '';
+  const cardOk = year ? pay.stripeYear : pay.stripe;
+  $('payCardSub').textContent = cardOk ? (year ? `${pay.priceYearEur || '59 €'} par an` : `${pay.priceEur || '6,50 €'} par mois`) : 'Bientôt disponible';
+  $('payDzSub').textContent = pay.chargily ? (year ? `${(pay.priceYearDzd || 10000).toLocaleString('fr-FR')} DA pour 1 an` : `${(pay.priceDzd || 1000).toLocaleString('fr-FR')} DA pour 30 jours`) : 'Bientôt disponible';
+  $('payCard').disabled = !cardOk; $('payDz').disabled = !pay.chargily;
   $('fChat').textContent = cfg.limits?.pro?.chat ?? 300; $('fImg').textContent = cfg.limits?.pro?.image ?? 8;
   $('fVid').textContent = cfg.limits?.pro?.video ?? 5;
   const st = $('proStatus');
-  if (me?.pro) { st.hidden = false; st.textContent = `Tu es Pro jusqu’au ${fmtDate(me.proUntil)}. Un paiement Edahabia / CIB ajoute 30 jours.`; }
+  if (me?.pro) { st.hidden = false; st.textContent = `Tu es Pro jusqu’au ${fmtDate(me.proUntil)}. Un paiement Edahabia / CIB ajoute ${year ? '1 an' : '30 jours'}.`; }
   else st.hidden = true;
 }
 async function startCheckout(provider, b) {
   b.disabled = true;
-  const r = await api('/api/checkout', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ provider }) }).catch(() => null);
+  const r = await api('/api/checkout', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ provider, plan }) }).catch(() => null);
   const d = await r?.json().catch(() => ({})) || {};
   if (r?.ok && d.url) { location.href = d.url; return; }
   b.disabled = false; toast(d.message || 'Le paiement n’a pas pu démarrer. Réessaie.');
@@ -1135,10 +1403,9 @@ for (const st of STYLES) {
 }
 function setPhoto(dataUrl) {
   photo = dataUrl;
-  $('attachBar').hidden = !dataUrl;
   if (dataUrl) $('thumb').src = dataUrl; else $('thumb').removeAttribute('src');
   ta.placeholder = dataUrl ? 'Pose une question ou choisis un style…' : placeholder();
-  grow();
+  updateAttachBar(); grow();
 }
 async function shrink(file, max = 1280) {
   const url = URL.createObjectURL(file);
@@ -1159,6 +1426,81 @@ $('file').addEventListener('change', async () => {
   try { setPhoto(await shrink(f)); ta.focus(); } catch { toast('Impossible de lire cette photo.'); }
 });
 $('removePhoto').addEventListener('click', () => setPhoto(null));
+
+// ---------- Documenti PDF e Word (Pro): il testo viene letto qui sul telefono ----------
+let doc = null; // { name, text }
+const MAX_DOC = 60000;
+function updateAttachBar() {
+  $('attachBar').hidden = !photo && !doc;
+  $('thumbBox').hidden = !photo; $('styles').hidden = !photo;
+  $('docChip').hidden = !doc;
+}
+function setDoc(d) {
+  doc = d;
+  if (d) { $('docName').textContent = d.name; $('docSize').textContent = `${Math.max(1, Math.round(d.text.length / 1000))}k car.`; }
+  ta.placeholder = d ? 'Que veux-tu faire ? Résumer, traduire, expliquer…' : placeholder();
+  updateAttachBar(); grow();
+}
+function pickDoc() {
+  if (me && !me.pro) { openSheet(); toast('La lecture de documents est incluse dans Sahbi Pro.'); return; }
+  $('docFile').click();
+}
+async function pdfText(buf) {
+  const base = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.4.168/build/';
+  const pdfjs = await import(`${base}pdf.min.mjs`);
+  pdfjs.GlobalWorkerOptions.workerSrc = `${base}pdf.worker.min.mjs`;
+  const pdf = await pdfjs.getDocument({ data: buf }).promise;
+  let out = '';
+  for (let p = 1; p <= Math.min(pdf.numPages, 80) && out.length < MAX_DOC; p++) {
+    const page = await pdf.getPage(p);
+    const tc = await page.getTextContent();
+    out += tc.items.map((i) => (i.str || '') + (i.hasEOL ? '\n' : ' ')).join('') + '\n\n';
+  }
+  return out;
+}
+// Un .docx è uno zip: si cerca word/document.xml e si tiene solo il testo.
+async function docxText(buf) {
+  const v = new DataView(buf); const u8 = new Uint8Array(buf);
+  let eocd = -1;
+  for (let i = buf.byteLength - 22; i >= Math.max(0, buf.byteLength - 66000); i--) if (v.getUint32(i, true) === 0x06054b50) { eocd = i; break; }
+  if (eocd < 0) throw new Error('zip');
+  let p = v.getUint32(eocd + 16, true); const n = v.getUint16(eocd + 10, true);
+  for (let k = 0; k < n && p < buf.byteLength; k++) {
+    if (v.getUint32(p, true) !== 0x02014b50) break;
+    const method = v.getUint16(p + 10, true), size = v.getUint32(p + 20, true);
+    const nl = v.getUint16(p + 28, true), el2 = v.getUint16(p + 30, true), cl = v.getUint16(p + 32, true), off = v.getUint32(p + 42, true);
+    const name = new TextDecoder().decode(u8.subarray(p + 46, p + 46 + nl));
+    if (name === 'word/document.xml') {
+      const start = off + 30 + v.getUint16(off + 26, true) + v.getUint16(off + 28, true);
+      let data = u8.subarray(start, start + size);
+      if (method === 8) data = new Uint8Array(await new Response(new Blob([data]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).arrayBuffer());
+      const xml = new TextDecoder().decode(data)
+        .replace(/<w:tab\/>/g, '\t').replace(/<w:br[^>]*\/>/g, '\n').replace(/<\/w:p>/g, '\n').replace(/<[^>]+>/g, '');
+      return new DOMParser().parseFromString(`<!doctype html><body>${xml.replace(/</g, '&lt;')}`, 'text/html').body.textContent || '';
+    }
+    p += 46 + nl + el2 + cl;
+  }
+  throw new Error('docx');
+}
+$('attachDoc').addEventListener('click', pickDoc);
+$('docFile').addEventListener('change', async () => {
+  const f = $('docFile').files?.[0]; $('docFile').value = '';
+  if (!f) return;
+  if (f.size > 15 * 1024 * 1024) { toast('Document trop lourd (15 Mo maximum).'); return; }
+  const isPdf = /pdf$/i.test(f.type) || /\.pdf$/i.test(f.name), isDocx = /\.docx$/i.test(f.name) || /wordprocessingml/.test(f.type);
+  if (!isPdf && !isDocx) { toast('Choisis un PDF ou un fichier Word (.docx).'); return; }
+  toast('Lecture du document…');
+  try {
+    const buf = await f.arrayBuffer();
+    const text = (isPdf ? await pdfText(buf) : await docxText(buf)).replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim();
+    if (text.length < 20) { toast(isPdf ? 'Ce PDF est une image scannée : envoie plutôt une photo de la page.' : 'Ce document est vide.'); return; }
+    setDoc({ name: f.name.slice(0, 120), text: text.slice(0, MAX_DOC) });
+    if (text.length > MAX_DOC) toast('Document long : Sahbi lira le début.');
+    else $('toast').hidden = true;
+    ta.focus();
+  } catch { toast(isDocx ? 'Impossible de lire ce fichier Word. Essaie de l’enregistrer en PDF.' : 'Impossible de lire ce document.'); }
+});
+$('removeDoc').addEventListener('click', () => setDoc(null));
 
 // ---------- Microfono ----------
 let recorder = null, chunks = [], stopTimer = null;
@@ -1203,28 +1545,263 @@ mic.addEventListener('click', () => {
 // ---------- Interfaccia ----------
 const placeholder = () => 'Écris, envoie une photo…';
 
-function grow() { ta.style.height = 'auto'; ta.style.height = Math.min(ta.scrollHeight, 140) + 'px'; sendBtn.disabled = busy || (!ta.value.trim() && !photo); }
+function grow() {
+  ta.style.height = 'auto'; ta.style.height = Math.min(ta.scrollHeight, 140) + 'px';
+  const empty = !ta.value.trim() && !photo && !doc;
+  sendBtn.disabled = busy || empty;
+  // Casella vuota: al posto di "envoyer" c'è il pulsante della conversazione vocale.
+  sendBtn.hidden = empty && !busy; $('talk').hidden = !(empty && !busy);
+}
+function prefill(p) { ta.value = p; grow(); ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); }
 ta.addEventListener('input', grow);
 ta.addEventListener('keydown', (e) => {
   if (e.key === 'Enter' && !e.shiftKey && !matchMedia('(pointer:coarse)').matches) { e.preventDefault(); $('form').requestSubmit(); }
 });
 $('form').addEventListener('submit', async (e) => {
   e.preventDefault();
-  const pic = photo;
-  const v = ta.value.trim() || (pic ? 'Explique-moi cette photo.' : '');
+  const pic = photo, att = doc;
+  const v = ta.value.trim() || (pic ? 'Explique-moi cette photo.' : att ? 'Résume-moi ce document.' : '');
   if (!v || busy) return;
-  ta.value = ''; setPhoto(null); busy = true; grow();
-  try { await sendChat(v, pic); }
+  ta.value = ''; busy = true; setPhoto(null); setDoc(null);
+  try { await sendChat(v, pic, att); }
   catch { bubble('bot', 'Une erreur est survenue. Recharge la page et réessaie.', 'err'); }
   busy = false; grow();
 });
 
 function toast(t) { const x = $('toast'); x.textContent = t; x.hidden = false; clearTimeout(toast.t); toast.t = setTimeout(() => { x.hidden = true; }, 3000); }
-function closeAll() { $('scrim').hidden = true; $('drawer').hidden = true; $('sheet').hidden = true; }
+function closeAll() { $('scrim').hidden = true; $('drawer').hidden = true; $('sheet').hidden = true; $('bacSheet').hidden = true; $('prayerSheet').hidden = true; }
+const store = { get(k, d = null) { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch { return d; } }, set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* ignorato */ } } };
+
+// ---------- Mode Bac ----------
+let bacMode = 'quiz';
+function openBac() {
+  closeAll();
+  const s = store.get('sahbi-bac', {});
+  if (s.country) $('bacCountry').value = s.country;
+  if (s.branch) $('bacBranch').value = s.branch;
+  if (s.subject) $('bacSubject').value = s.subject;
+  $('scrim').hidden = false; $('bacSheet').hidden = false; $('bacGo').focus();
+}
+for (const b of $('bacMode').querySelectorAll('button')) {
+  b.addEventListener('click', () => {
+    bacMode = b.dataset.mode;
+    for (const x of $('bacMode').querySelectorAll('button')) x.setAttribute('aria-pressed', String(x === b));
+  });
+}
+$('bacGo').addEventListener('click', () => {
+  const country = $('bacCountry').value, branch = $('bacBranch').value, subject = $('bacSubject').value, chapter = $('bacChapter').value.trim();
+  store.set('sahbi-bac', { country, branch, subject });
+  const what = { quiz: 'Fais-moi un quiz de 5 questions, une question à la fois.', fiche: 'Fais-moi une fiche de révision.', exo: 'Donne-moi un exercice type Bac, puis attends ma réponse avant la correction.', cours: 'Explique-moi le cours simplement, avec un exemple.' }[bacMode];
+  closeAll(); newChat();
+  ta.value = `Mode Bac — ${country}, filière ${branch}, ${subject}${chapter ? `, chapitre : ${chapter}` : ''}. ${what}`;
+  grow(); $('form').requestSubmit();
+});
+$('bacClose').addEventListener('click', closeAll);
+$('openBac').addEventListener('click', openBac);
+
+// ---------- Horaires de prière (AlAdhan.com, dal telefono) ----------
+const PRAYER_METHOD = { DZ: 19, MA: 21, TN: 18, FR: 12, BE: 3, LY: 3, EG: 5, SA: 4, AE: 16, QA: 10 };
+function openPrayer() {
+  closeAll();
+  const s = store.get('sahbi-prayer', {});
+  if (s.city) $('prCity').value = s.city;
+  if (s.country) $('prCountry').value = s.country;
+  $('scrim').hidden = false; $('prayerSheet').hidden = false;
+  if (s.city) showPrayer(); else $('prCity').focus();
+}
+let iftarTimer = null;
+async function showPrayer() {
+  const city = $('prCity').value.trim(), country = $('prCountry').value;
+  if (!city) { toast('Écris le nom de ta ville.'); $('prCity').focus(); return; }
+  store.set('sahbi-prayer', { city, country });
+  const out = $('prOut'); out.replaceChildren(el('p', 's-note', 'Chargement…'));
+  try {
+    const q = new URLSearchParams({ city, country, method: String(PRAYER_METHOD[country] ?? 3) });
+    const r = await fetch(`https://api.aladhan.com/v1/timingsByCity?${q}`);
+    const d = (await r.json())?.data;
+    if (!r.ok || !d?.timings) throw new Error('aladhan');
+    const t = d.timings, hijri = d.date?.hijri;
+    const ramadan = Number(hijri?.month?.number) === 9;
+    out.replaceChildren();
+    if (ramadan) {
+      const box = el('div', 'iftar'); const cd = el('b', '', '');
+      box.append(el('span', '', `Ramadan, jour ${hijri.day} · Iftar à ${t.Maghrib}`), cd, el('span', '', `Imsak ${t.Imsak} · Fajr ${t.Fajr}`));
+      out.appendChild(box);
+      const tick = () => {
+        const [h, m] = t.Maghrib.split(':').map(Number); const now = new Date(); const at = new Date(); at.setHours(h, m, 0, 0);
+        const ms = at - now;
+        cd.textContent = ms > 0 ? `Iftar dans ${Math.floor(ms / 36e5)} h ${String(Math.floor(ms / 6e4) % 60).padStart(2, '0')} min` : 'Saha ftourkoum !';
+      };
+      tick(); clearInterval(iftarTimer); iftarTimer = setInterval(() => { if ($('prayerSheet').hidden) clearInterval(iftarTimer); else tick(); }, 30000);
+    }
+    const grid = el('div', 'times');
+    const nowMin = new Date().getHours() * 60 + new Date().getMinutes();
+    const list = [['Fajr', 'Fajr'], ['Lever du soleil', 'Sunrise'], ['Dhuhr', 'Dhuhr'], ['Asr', 'Asr'], ['Maghrib', 'Maghrib'], ['Isha', 'Isha']];
+    const next = list.find(([, k]) => { const [h, m] = t[k].split(':').map(Number); return h * 60 + m > nowMin && k !== 'Sunrise'; });
+    for (const [label, k] of list) {
+      const c = el('div', next?.[1] === k ? 'hl' : ''); c.append(el('span', '', label), el('b', '', t[k])); grid.appendChild(c);
+    }
+    out.append(grid, el('p', 's-note', `${city} · ${d.date?.readable || ''}${hijri ? ` · ${hijri.day} ${hijri.month?.ar || ''} ${hijri.year}` : ''}`));
+  } catch {
+    out.replaceChildren(el('p', 's-note', 'Impossible de trouver les horaires. Vérifie le nom de la ville (ex. : Alger, Casablanca, Sfax).'));
+  }
+}
+$('prGo').addEventListener('click', showPrayer);
+$('prCity').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); showPrayer(); } });
+for (const b of $('prIdeas').querySelectorAll('button')) b.addEventListener('click', () => { closeAll(); prefill(b.dataset.p); });
+$('prClose').addEventListener('click', closeAll);
+$('openPrayer').addEventListener('click', openPrayer);
+
+// ---------- Conversazione a voce (Pro): ascolta → capisce → risponde a voce → riascolta ----------
+const V = { on: false, paused: false, stream: null, ctx: null, analyser: null, rec: null, audio: null, raf: 0, phase: '' };
+function vState(phase, text, line) {
+  V.phase = phase; $('orb').className = `orb ${phase}`; $('voiceState').textContent = text;
+  if (line !== undefined) $('voiceLine').textContent = line;
+}
+function level() {
+  const a = new Uint8Array(V.analyser.fftSize); V.analyser.getByteTimeDomainData(a);
+  let s = 0; for (const x of a) { const d = (x - 128) / 128; s += d * d; }
+  return Math.sqrt(s / a.length);
+}
+async function openVoice() {
+  closeAll();
+  if (me && !me.pro) { openSheet(); toast('La conversation vocale est incluse dans Sahbi Pro.'); return; }
+  if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === 'undefined') { toast('Le micro n’est pas disponible sur ce navigateur.'); return; }
+  try { V.stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } }); }
+  catch { toast('Autorise le micro dans les réglages du navigateur.'); return; }
+  V.ctx = new (window.AudioContext || window.webkitAudioContext)();
+  V.analyser = V.ctx.createAnalyser(); V.analyser.fftSize = 1024;
+  V.ctx.createMediaStreamSource(V.stream).connect(V.analyser);
+  V.on = true; V.paused = false; $('voicePause').textContent = 'Pause'; $('voiceLine').textContent = '';
+  $('voice').hidden = false;
+  listen();
+}
+function listen() {
+  if (!V.on || V.paused) return;
+  vState('listening', 'Je t’écoute…');
+  const type = ['audio/webm', 'audio/mp4'].find((t) => MediaRecorder.isTypeSupported(t)) || '';
+  const rec = new MediaRecorder(V.stream, type ? { mimeType: type } : undefined);
+  V.rec = rec;
+  const parts = []; let spoke = false, lastLoud = 0, floor = 0, n = 0;
+  const t0 = performance.now();
+  rec.ondataavailable = (e) => { if (e.data.size) parts.push(e.data); };
+  rec.onstop = () => {
+    cancelAnimationFrame(V.raf); $('orb').style.transform = '';
+    if (V.rec === rec) V.rec = null;
+    if (!V.on || rec.cancelled) return;
+    if (!spoke) { V.paused = true; $('voicePause').textContent = 'Reprendre'; vState('', 'Touche le cercle pour parler'); return; }
+    turn(new Blob(parts, { type: rec.mimeType || 'audio/webm' }));
+  };
+  rec.manual = () => { spoke = true; rec.stop(); };
+  rec.start(250);
+  const tick = () => {
+    if (!V.on || V.rec !== rec || rec.state !== 'recording') return;
+    const lv = level(), now = performance.now();
+    if (now - t0 < 500) { floor = (floor * n + lv) / (n + 1); n++; }
+    const thr = Math.max(0.025, floor * 2.5);
+    $('orb').style.transform = `scale(${1 + Math.min(lv * 3, 0.2)})`;
+    if (now - t0 > 500 && lv > thr) { spoke = true; lastLoud = now; }
+    if (spoke && now - lastLoud > 1300) { rec.stop(); return; }          // pausa dopo aver parlato: tocca a Sahbi
+    if ((!spoke && now - t0 > 15000) || now - t0 > 60000) { rec.stop(); return; } // silenzio lungo o messaggio troppo lungo
+    V.raf = requestAnimationFrame(tick);
+  };
+  V.raf = requestAnimationFrame(tick);
+}
+async function turn(blob) {
+  vState('thinking', 'Je réfléchis…');
+  if (blob.size < 1500) { listen(); return; }
+  let text = '';
+  try {
+    const fd = new FormData(); fd.append('audio', blob, 'audio');
+    const r = await api('/api/transcribe', { method: 'POST', body: fd });
+    const d = await r.json().catch(() => ({}));
+    if (r.ok) text = (d.text || '').trim();
+    else if (d.error === 'limit') { toast(d.message || 'Limite du micro atteinte pour aujourd’hui.'); closeVoice(); return; }
+  } catch { /* rete */ }
+  if (!V.on) return;
+  if (!text) { vState('listening', 'Je n’ai pas compris, répète…'); setTimeout(listen, 700); return; }
+  $('voiceLine').textContent = `« ${text} »`;
+  busy = true; grow();
+  const reply = await sendChat(text, null, null, { voice: true }).catch(() => '');
+  busy = false; grow();
+  if (!V.on) return;
+  if (!reply) { vState('', 'Sahbi n’a pas pu répondre.'); setTimeout(listen, 1200); return; }
+  vState('speaking', 'Sahbi parle… touche le cercle pour l’interrompre', reply.length > 220 ? `${reply.slice(0, 220)}…` : reply);
+  await say(reply);
+  if (V.on && !V.paused) listen();
+}
+async function say(text) {
+  const r = await api('/api/speak', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ text: text.slice(0, 1500) }) }).catch(() => null);
+  if (!r?.ok) {
+    const d = await r?.json().catch(() => ({})) || {};
+    if (d.error === 'pro') { closeVoice(); openSheet(); toast('La voix de Sahbi est incluse dans Sahbi Pro.'); }
+    else toast(d.message || 'Lecture impossible pour le moment.');
+    return;
+  }
+  const url = URL.createObjectURL(await r.blob());
+  if (!V.on) { URL.revokeObjectURL(url); return; }
+  V.audio = new Audio(url);
+  await new Promise((ok) => { V.audio.onended = ok; V.audio.onerror = ok; V.audio.onpause = ok; V.audio.play().catch(ok); });
+  URL.revokeObjectURL(url); V.audio = null;
+}
+function stopTurn() {
+  if (V.rec) { V.rec.cancelled = true; if (V.rec.state === 'recording') V.rec.stop(); V.rec = null; }
+  if (V.audio) V.audio.pause();
+}
+function closeVoice() {
+  V.on = false; stopTurn(); cancelAnimationFrame(V.raf);
+  V.stream?.getTracks().forEach((t) => t.stop()); V.stream = null;
+  V.ctx?.close().catch(() => {}); V.ctx = null;
+  $('voice').hidden = true;
+}
+$('orb').addEventListener('click', () => {
+  if (!V.on) return;
+  if (V.phase === 'speaking') { V.audio?.pause(); return; }               // interrompe Sahbi e riascolta
+  if (V.paused) { V.paused = false; $('voicePause').textContent = 'Pause'; listen(); return; }
+  if (V.phase === 'listening' && V.rec) V.rec.manual();                     // "ho finito di parlare"
+});
+$('voicePause').addEventListener('click', () => {
+  if (!V.on) return;
+  if (V.paused) { V.paused = false; $('voicePause').textContent = 'Pause'; listen(); return; }
+  V.paused = true; stopTurn(); $('voicePause').textContent = 'Reprendre'; vState('', 'En pause');
+});
+$('voiceEnd').addEventListener('click', closeVoice);
+$('voiceX').addEventListener('click', closeVoice);
+$('talk').addEventListener('click', openVoice);
+
+// ---------- Abbonamento: mensile o annuale ----------
+$('planMonth').addEventListener('click', () => { plan = 'month'; renderSheet(); });
+$('planYear').addEventListener('click', () => { plan = 'year'; renderSheet(); });
+
+// ---------- Ricordi di Sahbi (Paramètres) ----------
+function renderMemory() {
+  const list = $('memList'); list.replaceChildren();
+  const facts = me?.memory || [];
+  $('memClear').hidden = !facts.length;
+  if (!facts.length) { list.appendChild(el('li', '', '')).appendChild(el('span', 'mem-note', 'Rien pour l’instant.')); return; }
+  facts.forEach((f, i) => {
+    const li = el('li'); li.appendChild(el('span', '', f));
+    const x = el('button', '', '×'); x.type = 'button'; x.setAttribute('aria-label', `Oublier : ${f}`);
+    x.addEventListener('click', () => forget(String(i)));
+    li.appendChild(x); list.appendChild(li);
+  });
+}
+async function forget(which) {
+  const r = await api(`/api/me?memory=${encodeURIComponent(which)}`, { method: 'DELETE' }).catch(() => null);
+  const d = await r?.json().catch(() => ({})) || {};
+  if (!r?.ok) { toast(d.message || 'Impossible d’effacer maintenant.'); return; }
+  if (me) me.memory = d.memory || [];
+  renderMemory(); toast(which === 'all' ? 'Sahbi a tout oublié.' : 'Souvenir effacé.');
+}
+$('memClear').addEventListener('click', () => {
+  const b = $('memClear');
+  if (!b.dataset.confirm) { b.dataset.confirm = '1'; b.textContent = 'Appuie encore pour tout oublier'; return; }
+  b.dataset.confirm = ''; b.textContent = 'Tout oublier'; forget('all');
+});
 function openSheet() { closeAll(); renderSheet(); $('scrim').hidden = false; $('sheet').hidden = false; $('closeSheet').focus(); }
 $('openMenu').addEventListener('click', () => { renderHistory(); $('scrim').hidden = false; $('drawer').hidden = false; $('newChat').focus(); });
 $('scrim').addEventListener('click', closeAll);
-document.addEventListener('keydown', (e) => { if (e.key !== 'Escape') return; if (!$('viewer').hidden) $('viewer').hidden = true; else if (!$('gallery').hidden) $('gallery').hidden = true; else if (!$('settings').hidden) $('settings').hidden = true; else closeAll(); });
+document.addEventListener('keydown', (e) => { if (e.key !== 'Escape') return; if (!$('voice').hidden) closeVoice(); else if (!$('viewer').hidden) $('viewer').hidden = true; else if (!$('gallery').hidden) $('gallery').hidden = true; else if (!$('settings').hidden) $('settings').hidden = true; else closeAll(); });
 $('openPlus').addEventListener('click', openSheet);
 $('drawerPlus').addEventListener('click', openSheet);
 $('closeSheet').addEventListener('click', closeAll);
@@ -1266,6 +1843,7 @@ async function openSettings() {
     $('sVideos').textContent = me ? (!me.videoEnabled ? 'Bientôt' : l.video > 0 ? `${r.video ?? 0} / ${l.video}` : 'Avec Pro') : '…';
     $('sCode').textContent = me?.referralCode || '–';
     $('sRefs').textContent = String(me?.referrals ?? 0);
+    renderMemory();
   };
   fill(); await refreshMe(); fill();
 }

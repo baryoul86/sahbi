@@ -1,5 +1,17 @@
 import { env, fail, getUserId, useCredit, refundCredit, getPlan, openaiHeaders, OPENAI, generateImage, parsePhoto } from './_lib.js';
 import { startVideo, videoEnabled } from './_video.js';
+import { getMemory, learnFromMessage, memoryPrompt } from './_memory.js';
+
+const VOICE_STYLE = `\n\nModalità conversazione a voce: l'utente ti PARLA e la tua risposta verrà letta ad alta voce. Rispondi come in una telefonata tra amici: 1-3 frasi brevi e naturali, niente elenchi, niente emoji, niente simboli o markdown, niente link. Se serve una spiegazione lunga, dai l'essenziale e chiedi se vuole continuare.`;
+const MAX_DOC_CHARS = 60000;
+// Documento allegato (testo già estratto dal telefono, da PDF o Word): { name, text }.
+function parseDoc(value) {
+  if (!value || typeof value !== 'object') return null;
+  const text = typeof value.text === 'string' ? value.text.replace(/\u0000/g, '').trim() : '';
+  if (!text) return null;
+  const name = (typeof value.name === 'string' ? value.name : 'document').replace(/[\r\n"«»]/g, ' ').slice(0, 120);
+  return { name, text: text.slice(0, MAX_DOC_CHARS), cut: text.length > MAX_DOC_CHARS };
+}
 
 const SYSTEM = `Sei Sahbi (صاحبي), "amico mio": un assistente di intelligenza artificiale caldo, diretto e utile, nato nel Maghreb.
 
@@ -25,6 +37,26 @@ Foto dell'utente:
 - Non identificare mai chi è una persona nella foto dal suo viso.
 
 {{VIDEO}}
+
+Biglietti di auguri e sticker:
+- Se l'utente vuole un biglietto, una carta di auguri o uno sticker (Aïd, Ramadan, matrimonio, compleanno, nascita, successo al Bac, guarigione...), usa create_image subito.
+- Nel prompt metti il testo da scrivere sul biglietto tra virgolette, ESATTO e corto (massimo 5-6 parole), indicando l'alfabeto (arabo o latino) e "the text must be spelled exactly". Se ha dato un nome, scrivilo così com'è.
+- Stile festoso e curato, adatto alla festa (lanterne e mezzaluna per Ramadan, motivi geometrici e dorati per l'Aïd, fiori per matrimoni...). Per uno sticker: "sticker style, thick white outline, plain white background".
+- Dopo, ricorda in una frase che può condividerlo su WhatsApp con il pulsante Partager.
+
+Modalità Bac:
+- Se il messaggio inizia con "Mode Bac", sei un professore paziente che segue il programma ufficiale del paese indicato (Algérie, Maroc o Tunisie) e la filiera indicata. Rispondi nella lingua del messaggio; per le materie scientifiche usa la lingua in cui si insegnano in quel paese se l'utente non chiede altro.
+- Quiz: UNA domanda alla volta, con 4 scelte A, B, C, D. Aspetta la risposta, correggi in 2-3 frasi spiegando perché, poi fai la domanda successiva. Alla fine dai il punteggio (es. 4/5) e i punti da ripassare.
+- Fiche de révision: definizioni, formule o date chiave, metodo, un mini esempio, errori frequenti. Breve e ordinata.
+- Exercice corrigé: prima l'enunciato, poi aspetta che l'utente provi; se chiede la soluzione, correggi passo per passo.
+- Se non sei sicuro che un capitolo sia nel programma di quel paese, dillo.
+
+Documenti:
+- L'utente può allegare un documento (PDF o Word): il testo arriva tra le righe [Document « nome »] e """ ... """. Rispondi alla sua domanda sul documento (riassunto, traduzione, spiegazione, risposta da scrivere). Non inventare cose che non ci sono.
+- Nella cronologia, "[Document envoyé : ...]" indica un documento mandato prima: se serve di nuovo, chiedi di rimandarlo.
+
+CV e lettere:
+- Per un CV usa sezioni chiare in righe separate (Nom, Contact, Profil, Expérience, Formation, Compétences, Langues), con titoli in maiuscolo e punti elenco con "- ". Niente tabelle. Dopo, ricorda che può scaricarlo in PDF con il pulsante PDF sotto la risposta.
 
 Stile:
 - Frasi brevi e chiare, tono amichevole e rispettoso. Niente prediche.
@@ -127,7 +159,12 @@ export async function POST(request) {
   const photo = body?.photo ? parsePhoto(body.photo) : null;
   if (body?.photo && !photo) return fail('bad_request', 400, 'Photo non valide ou trop grande.');
 
-  const { limits, pro } = await getPlan(userId);
+  const doc = body?.doc ? parseDoc(body.doc) : null;
+  if (body?.doc && !doc) return fail('bad_request', 400, 'Document vide ou illisible.');
+
+  const [{ limits, pro }, memory] = await Promise.all([getPlan(userId), getMemory(userId)]);
+  if (doc && !pro) return fail('pro', 402, 'La lecture de documents est incluse dans Sahbi Pro.');
+  const userText = messages[messages.length - 1].content;
   const left = await useCredit(userId, 'chat', limits.chat);
   if (left < 0) return fail('limit', 429, pro ? 'Limite di messaggi di oggi raggiunto.' : 'Limite gratuito di oggi raggiunto.');
   const imgOpts = (edit) => ({ limit: limits.image, photo: edit ? photo : null });
@@ -140,6 +177,11 @@ export async function POST(request) {
     : imageFrames(userId, prompt, imgOpts(edit)));
   const startFrame = (name) => frame({ type: name === 'create_video' ? 'video_start' : 'image_start' });
 
+  // Il documento va solo nell'ultimo messaggio dell'utente.
+  if (doc) {
+    const last = messages[messages.length - 1];
+    last.content = `${last.content}\n\n[Document « ${doc.name} »]${doc.cut ? ' (document long : seul le début est inclus)' : ''}\n"""\n${doc.text}\n"""`;
+  }
   // La foto va solo nell'ultimo messaggio dell'utente.
   if (photo) {
     const last = messages[messages.length - 1];
@@ -152,7 +194,7 @@ export async function POST(request) {
   const model = env('OPENAI_CHAT_MODEL', 'gpt-5-nano');
   const payload = {
     model, stream: true, tools, tool_choice: 'auto',
-    messages: [{ role: 'system', content: SYSTEM.replace('{{VIDEO}}', videoEnabled() ? VIDEO_ON : VIDEO_OFF) }, ...messages],
+    messages: [{ role: 'system', content: SYSTEM.replace('{{VIDEO}}', videoEnabled() ? VIDEO_ON : VIDEO_OFF) + memoryPrompt(memory) + (body?.voice === true ? VOICE_STYLE : '') }, ...messages],
   };
   if (model.startsWith('gpt-5')) payload.reasoning_effort = env('OPENAI_REASONING_EFFORT', 'minimal');
 
@@ -162,6 +204,9 @@ export async function POST(request) {
     body: JSON.stringify(p),
   });
   const headers = { 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'no-store', 'x-remaining': String(left) };
+  // La memoria si aggiorna in parallelo alla risposta (solo se il messaggio parla dell'utente).
+  const learning = learnFromMessage(userId, userText, memory);
+  const memoryFrame = async () => { const saved = await learning; return saved ? frame({ type: 'memory', count: saved.length }) : ''; };
   const upstream = await call(payload);
 
   // Account OpenAI non verificati non possono usare lo streaming: rispondiamo tutto in una volta.
@@ -176,6 +221,7 @@ export async function POST(request) {
       if (plain.ok && (msg?.content || prompt)) {
         let out = msg.content || '';
         if (prompt) out += startFrame(toolCall.function.name) + await runTool(toolCall.function.name, prompt, edit);
+        out += await memoryFrame();
         return new Response(out, { headers });
       }
     }
@@ -235,6 +281,12 @@ export async function POST(request) {
       }
     },
     async flush(controller) {
+      await finishTools(controller);
+      controller.enqueue(encoder.encode(await memoryFrame()));
+    },
+  }));
+
+  async function finishTools(controller) {
       if (promisedVideo()) {
         controller.enqueue(encoder.encode(startFrame('create_video')));
         const forced = await forcedVideoArgs().catch(() => ({ prompt: '' }));
@@ -251,8 +303,7 @@ export async function POST(request) {
         return;
       }
       controller.enqueue(encoder.encode(await runTool(tool.name, prompt, edit)));
-    },
-  }));
+  }
 
   return new Response(stream, { headers });
 }

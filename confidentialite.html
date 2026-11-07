@@ -33,9 +33,11 @@ a{color:var(--mint)}
 <table>
   <tr><th>Donnée</th><th>Pourquoi</th><th>Où et combien de temps</th></tr>
   <tr><td>Adresse e-mail</td><td>Créer ton compte et te connecter</td><td>Supabase (Europe), jusqu'à la suppression du compte</td></tr>
-  <tr><td>Messages, photos et enregistrements vocaux envoyés</td><td>Produire la réponse, l'image ou la transcription</td><td>Transmis à OpenAI (et à Pruna AI pour les vidéos) pour le traitement, non conservés par Sahbi</td></tr>
+  <tr><td>Messages, photos, documents (texte des PDF et Word) et enregistrements vocaux envoyés</td><td>Produire la réponse, l'image ou la transcription</td><td>Transmis à OpenAI (et à Pruna AI pour les vidéos) pour le traitement, non conservés par Sahbi</td></tr>
   <tr><td>Historique des discussions</td><td>Te permettre de reprendre une discussion</td><td>Uniquement sur ton téléphone ; tu peux l'effacer dans Paramètres</td></tr>
-  <tr><td>Images créées</td><td>Ta galerie « Images »</td><td>Supabase (Europe), jusqu'à ce que tu les supprimes ou supprimes ton compte</td></tr>
+  <tr><td>Images et vidéos créées</td><td>Ta galerie « Images et vidéos »</td><td>Supabase (Europe), jusqu'à ce que tu les supprimes ou supprimes ton compte</td></tr>
+  <tr><td>Souvenirs de Sahbi (prénom, ville, études, préférences que tu lui dis)</td><td>Personnaliser les réponses d'une discussion à l'autre</td><td>Supabase (Europe) ; tu les vois et les effaces dans Paramètres → « Ce que Sahbi retient ». Aucune donnée sensible (santé, religion, opinions…) n'est retenue.</td></tr>
+  <tr><td>Ville choisie pour les horaires de prière</td><td>Afficher les horaires</td><td>Enregistrée sur ton téléphone ; envoyée directement par ton téléphone à AlAdhan.com pour calculer les horaires</td></tr>
   <tr><td>Compteurs d'utilisation, statut Pro, code d'invitation</td><td>Appliquer les limites et l'abonnement</td><td>Supabase (Europe), jusqu'à la suppression du compte</td></tr>
   <tr><td>Paiements</td><td>Activer Sahbi Pro</td><td>Gérés par Stripe ou Chargily ; Sahbi ne voit ni ne stocke ton numéro de carte</td></tr>
 </table>
@@ -46,6 +48,7 @@ a{color:var(--mint)}
   <li><b>Supabase</b> : comptes, base de données et stockage des images (serveurs en Europe).</li>
   <li><b>Vercel</b> : hébergement de l'application.</li>
   <li><b>OpenAI</b> : production des réponses, des images, de la voix et des transcriptions. Selon ses conditions pour les services professionnels, les données envoyées par l'API ne servent pas à entraîner ses modèles par défaut.</li>
+  <li><b>AlAdhan.com</b> : horaires de prière. Reçoit uniquement le nom de la ville et le pays que tu choisis, directement depuis ton téléphone.</li>
   <li><b>Pruna AI</b> : création des vidéos de 8 secondes (abonnés Pro). Reçoit la description de la vidéo et, si tu le demandes, la photo à animer. Les vidéos créées sont ensuite enregistrées dans ton compte Sahbi.</li>
   <li><b>Stripe</b> et <b>Chargily Pay</b> : paiements.</li>
 </ul>
