@@ -1,0 +1,30 @@
+== Chiave di firma
+Prima volta: creo la chiave di caricamento e la salvo cifrata nel ramo android-key.
+Generating 2,048 bit RSA key pair and self-signed certificate (SHA256withRSA) with a validity of 10,000 days
+	for: CN=Sahbi, O=Sahbi, C=FR
+remote: 
+remote: Create a pull request for 'android-key' on GitHub by visiting:        
+remote:      https://github.com/baryoul86/sahbi/pull/new/android-key        
+remote: 
+Impronta SHA-256 della chiave di caricamento: 83:94:D6:76:C5:D8:38:99:04:62:4B:3C:4C:B3:F6:6A:E1:98:3E:08:99:9F:29:11:A9:FB:97:95:B8:B6:D7:D9
+== Progetto Android (Bubblewrap)
+,-----.        ,--.  ,--.  ,--.
+|  |) /_,--.,--|  |-.|  |-.|  |,---.,--.   ,--,--.--.,--,--.,---.
+|  .-.  |  ||  | .-. | .-. |  | .-. |  |.'.|  |  .--' ,-.  | .-. |
+|  '--' '  ''  | `-' | `-' |  \   --|   .'.   |  |  \ '-'  | '-' '
+`------' `----' `---' `---'`--'`----'--'   '--`--'   `--`--|  |-'
+                                                           `--'    
+Generating Android Project.
+
+Project updated successfully.
+Build it by running bubblewrap build
+== Compilazione
+== Firma
+total 2584
+drwxr-xr-x 2 runner runner    4096 Nov  7 14:47 .
+drwxr-xr-x 9 runner runner    4096 Nov  7 14:41 ..
+-rw-r--r-- 1 runner runner 1340708 Nov  7 14:47 sahbi-3.aab
+-rw-r--r-- 1 runner runner 1268592 Nov  7 14:47 sahbi-3.apk
+-rw-r--r-- 1 runner runner   17823 Nov  7 14:47 sahbi-3.apk.idsig
+-rw-r--r-- 1 runner runner      96 Nov  7 14:41 sha256.txt
+== FATTO
