@@ -82,4 +82,26 @@ export function verifyLemon(raw, signature, secret) {
   if (!signature || !secret) return false;
   return safeEqual(signature, hmacHex(secret, raw));
 }
-export const lemonReady = (year = false) => !!(env('LEMONSQUEEZY_API_KEY') && env('LEMONSQUEEZY_STORE_ID') && env(year ? 'LEMONSQUEEZY_VARIANT_ID_YEAR' : 'LEMONSQUEEZY_VARIANT_ID'));
+// Basta la chiave API: negozio e prezzo (mensile / annuale) si trovano da soli, se non sono indicati su Vercel.
+export const lemonReady = (year = false) => !!(env('LEMONSQUEEZY_API_KEY') && (!year || env('LEMONSQUEEZY_VARIANT_ID_YEAR')));
+const lemonCache = {};
+export async function lemonIds(year = false) {
+  const key = year ? 'year' : 'month';
+  if (lemonCache[key]) return lemonCache[key];
+  let variant = env(year ? 'LEMONSQUEEZY_VARIANT_ID_YEAR' : 'LEMONSQUEEZY_VARIANT_ID');
+  let store = env('LEMONSQUEEZY_STORE_ID');
+  let product = null;
+  if (!variant) {
+    const list = (await lemon('variants?page[size]=100'))?.data || [];
+    const ok = list.filter((v) => v.attributes?.is_subscription && v.attributes?.interval === key && v.attributes?.status !== 'draft');
+    const pick = ok.find((v) => v.attributes.status === 'published') || ok[0];
+    if (!pick) return null;
+    variant = pick.id; product = pick.attributes.product_id;
+  }
+  if (!store) {
+    if (product) store = (await lemon(`products/${product}`))?.data?.attributes?.store_id;
+    if (!store) store = (await lemon('stores'))?.data?.[0]?.id;
+    if (!store) return null;
+  }
+  return (lemonCache[key] = { store: String(store), variant: String(variant) });
+}
