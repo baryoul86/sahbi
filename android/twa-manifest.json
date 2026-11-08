@@ -17,19 +17,43 @@
   "iconUrl": "https://www.sahbi.bond/icons/icon-512.png",
   "maskableIconUrl": "https://www.sahbi.bond/icons/maskable-512.png",
   "splashScreenFadeOutDuration": 300,
-  "signingKey": { "path": "./upload.jks", "alias": "sahbi" },
+  "signingKey": {
+    "path": "./upload.jks",
+    "alias": "sahbi"
+  },
   "appVersionName": "1.0.0",
   "appVersionCode": 1,
   "shortcuts": [
-    { "name": "Nouvelle discussion", "shortName": "Discuter", "url": "https://www.sahbi.bond/?action=new", "chosenIconUrl": "https://www.sahbi.bond/icons/icon-192.png" },
-    { "name": "Parler avec Sahbi", "shortName": "Parler", "url": "https://www.sahbi.bond/?action=voice", "chosenIconUrl": "https://www.sahbi.bond/icons/icon-192.png" },
-    { "name": "Mode Bac", "shortName": "Bac", "url": "https://www.sahbi.bond/?action=bac", "chosenIconUrl": "https://www.sahbi.bond/icons/icon-192.png" }
+    {
+      "name": "Nouvelle discussion",
+      "shortName": "Discuter",
+      "url": "https://www.sahbi.bond/?action=new",
+      "chosenIconUrl": "https://www.sahbi.bond/icons/icon-192.png"
+    },
+    {
+      "name": "Parler avec Sahbi",
+      "shortName": "Parler",
+      "url": "https://www.sahbi.bond/?action=voice",
+      "chosenIconUrl": "https://www.sahbi.bond/icons/icon-192.png"
+    },
+    {
+      "name": "Mode Bac",
+      "shortName": "Bac",
+      "url": "https://www.sahbi.bond/?action=bac",
+      "chosenIconUrl": "https://www.sahbi.bond/icons/icon-192.png"
+    }
   ],
   "generatorApp": "bubblewrap-cli",
   "webManifestUrl": "https://www.sahbi.bond/manifest.webmanifest",
   "fallbackType": "customtabs",
-  "features": {},
-  "alphaDependencies": { "enabled": false },
+  "features": {
+    "playBilling": {
+      "enabled": true
+    }
+  },
+  "alphaDependencies": {
+    "enabled": false
+  },
   "enableSiteSettingsShortcut": true,
   "isChromeOSOnly": false,
   "isMetaQuest": false,

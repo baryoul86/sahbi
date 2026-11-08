@@ -1,4 +1,5 @@
 import { json, env, limits } from './_lib.js';
+import { playReady, playSku } from './_play.js';
 
 const adsenseClient = () => env('ADSENSE_CLIENT', 'ca-pub-4750815574904840');
 
@@ -36,6 +37,8 @@ export function GET(request) {
       stripeYear: !!(env('STRIPE_SECRET_KEY') && env('STRIPE_PRICE_ID_YEAR')),
       // Lemon Squeezy (carta e PayPal, IVA gestita da loro): se è configurato, il pulsante "Carte" usa lui.
       lemonsqueezy: !!env('LEMONSQUEEZY_API_KEY'),
+      // App Android: abbonamento con Google Play Billing.
+      googleplay: playReady(), playSku: playSku(),
       lemonsqueezyYear: !!(env('LEMONSQUEEZY_API_KEY') && env('LEMONSQUEEZY_VARIANT_ID_YEAR')),
       priceYearEur: env('PRO_PRICE_YEAR_LABEL', '59 €'),
       priceYearDzd: Number(env('CHARGILY_PRICE_YEAR_DZD', '10000')),

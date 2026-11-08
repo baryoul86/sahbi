@@ -46,7 +46,7 @@ async function health(deep) {
     db, openai,
     video: { ok: videoEnabled() ? true : null, detail: videoEnabled() ? '' : 'pas de clé Pruna' },
     email: { ok: env('RESEND_API_KEY') && adminEmails().length ? true : null, detail: env('RESEND_API_KEY') ? '' : 'RESEND_API_KEY manquante (pas d’e-mails d’alerte)' },
-    payments: { stripe: !!env('STRIPE_SECRET_KEY'), lemonsqueezy: !!env('LEMONSQUEEZY_API_KEY'), chargily: !!env('CHARGILY_SECRET_KEY') },
+    payments: { stripe: !!env('STRIPE_SECRET_KEY'), lemonsqueezy: !!env('LEMONSQUEEZY_API_KEY'), googleplay: !!env('GOOGLE_PLAY_SERVICE_ACCOUNT'), chargily: !!env('CHARGILY_SECRET_KEY') },
   };
 }
 const allOk = (h) => h.db.ok && h.openai.ok;

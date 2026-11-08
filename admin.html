@@ -145,7 +145,7 @@ function render(d) {
   // Stato dei servizi
   const sv = el('div', 'card'); sv.append(el('h2', '', 'État des services'));
   sv.append(statusRow('Base de données (Supabase)', h.db), statusRow(deep ? 'OpenAI (réponse test + crédit)' : 'OpenAI (clé)', h.openai), statusRow('Vidéos (Pruna)', h.video), statusRow('E-mails d’alerte', h.email, 'Actifs'));
-  const pay = el('div', 'row'); pay.append(el('span', `dot ${h.payments?.stripe || h.payments?.lemonsqueezy || h.payments?.chargily ? 'ok' : 'na'}`), el('div', 'k', 'Paiements'), el('span', 'state', [h.payments?.lemonsqueezy && 'Lemon Squeezy', h.payments?.stripe && 'Stripe', h.payments?.chargily && 'Chargily'].filter(Boolean).join(' + ') || 'Pas configurés'));
+  const pay = el('div', 'row'); pay.append(el('span', `dot ${h.payments?.stripe || h.payments?.lemonsqueezy || h.payments?.googleplay || h.payments?.chargily ? 'ok' : 'na'}`), el('div', 'k', 'Paiements'), el('span', 'state', [h.payments?.lemonsqueezy && 'Lemon Squeezy', h.payments?.googleplay && 'Google Play', h.payments?.stripe && 'Stripe', h.payments?.chargily && 'Chargily'].filter(Boolean).join(' + ') || 'Pas configurés'));
   sv.append(pay);
   const b = el('button', 'btn main', 'Contrôle complet'); b.type = 'button'; b.style.marginTop = '10px';
   b.addEventListener('click', () => { deep = true; load(); });

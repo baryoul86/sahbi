@@ -1,5 +1,6 @@
 import { env, json, fail, getUser, getProfile } from './_lib.js';
 import { publicUrl, stripe, chargily, lemon, lemonReady, lemonIds } from './_pay.js';
+import { playReady, verifyPlay } from './_play.js';
 
 // Crea una pagina di pagamento per Sahbi Pro. POST { provider: 'stripe' | 'chargily' } -> { url }
 // POST { provider: 'portal' } -> pagina Stripe per cambiare carta o disdire l'abbonamento.
@@ -18,6 +19,16 @@ export async function POST(request) {
       if (!profile.stripe_customer_id) return fail('not_found', 404, 'Aucun abonnement par carte.');
       const portal = await stripe('billing_portal/sessions', { customer: profile.stripe_customer_id, return_url: `${base}/` });
       return json({ url: portal.url });
+    }
+
+    // App Android: l'acquisto è già fatto con Google Play, qui lo si controlla e si attiva il Pro.
+    if (body?.provider === 'googleplay') {
+      if (!playReady()) return fail('unavailable', 503, 'L’abonnement Google Play n’est pas encore disponible.');
+      let v;
+      try { v = await verifyPlay(user.id, body.token, body.sku); }
+      catch (e) { if ([400, 404, 410].includes(e.status)) return fail('bad_request', 400, 'Achat Google Play introuvable.'); throw e; }
+      if (!v.ok) return fail(v.code, v.code === 'taken' ? 409 : 400, v.message);
+      return json({ ok: true, proUntil: v.until });
     }
 
     if (body?.provider === 'lemonsqueezy') {

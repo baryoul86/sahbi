@@ -287,6 +287,7 @@ a.s-row[hidden]{display:none}
 .app-only{display:none}
 .in-app .app-only{display:block}
 .in-app #payCard,.in-app #payDz,.in-app #planSeg{display:none !important}
+.in-app .pay .cta.app-only{display:flex}
 .send[hidden],.talk[hidden]{display:none}
 .drawer{overflow-y:auto}
 .tools{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
@@ -501,7 +502,8 @@ a.s-row[hidden]{display:none}
     <div class="pay" id="payBox">
       <button class="cta" id="payCard" type="button"><span id="payCardLabel">Payer par carte</span><small id="payCardSub">6,50 € par mois</small></button>
       <button class="alt" id="payDz" type="button">Edahabia ou CIB<small id="payDzSub">1 000 DA pour 30 jours</small></button>
-      <p class="s-note app-only">L’abonnement Sahbi Pro arrive très bientôt directement dans l’application.</p>
+      <button class="cta app-only" id="payPlay" type="button"><span>S’abonner avec Google Play</span><small id="payPlaySub">6,50 € par mois</small></button>
+      <p class="s-note app-only" id="appNote">L’abonnement Sahbi Pro arrive très bientôt directement dans l’application.</p>
     </div>
     <button class="ghost" id="closeSheet" type="button">Plus tard</button>
   </div>
@@ -835,7 +837,7 @@ function onSession(session) {
   if (id === userId) return;
   userId = id; library = null;
   STORE = `sahbi-chats-v1-${id}`;
-  chats = load(); newChat(); refreshMe().then(applyPendingReferral).then(runPendingAction);
+  chats = load(); newChat(); refreshMe().then(applyPendingReferral).then(runPendingAction).then(initPlay);
 }
 
 async function token() {
@@ -1500,9 +1502,46 @@ function renderSheet() {
   $('payCard').disabled = !cardOk; $('payDz').disabled = !pay.chargily;
   $('fChat').textContent = cfg.limits?.pro?.chat ?? 300; $('fImg').textContent = cfg.limits?.pro?.image ?? 8;
   $('fVid').textContent = cfg.limits?.pro?.video ?? 5;
+  // App Android: Google Play Billing (il pulsante appare solo se l'app lo supporta).
+  $('payPlay').hidden = !playOk; $('appNote').hidden = playOk;
+  if (playPrice) $('payPlaySub').textContent = `${playPrice} par mois`;
   const st = $('proStatus');
-  if (me?.pro) { st.hidden = false; st.textContent = `Tu es Pro jusqu’au ${fmtDate(me.proUntil)}. Un paiement Edahabia / CIB ajoute ${year ? '1 an' : '30 jours'}.`; }
+  if (me?.pro && IN_APP) { st.hidden = false; st.textContent = `Tu es Pro jusqu’au ${fmtDate(me.proUntil)}.`; }
+  else if (me?.pro) { st.hidden = false; st.textContent = `Tu es Pro jusqu’au ${fmtDate(me.proUntil)}. Un paiement Edahabia / CIB ajoute ${year ? '1 an' : '30 jours'}.`; }
   else st.hidden = true;
+}
+// ---------- Google Play Billing (solo nell'app Android del Play Store) ----------
+let playOk = false, playPrice = '', playSvc = null;
+async function initPlay() {
+  if (!IN_APP || !cfg.payments?.googleplay || !('getDigitalGoodsService' in window)) return;
+  try {
+    playSvc = await window.getDigitalGoodsService('https://play.google.com/billing');
+    const [d] = await playSvc.getDetails([cfg.payments.playSku]);
+    if (!d) return;
+    playOk = true;
+    try { playPrice = new Intl.NumberFormat('fr-FR', { style: 'currency', currency: d.price.currency }).format(d.price.value); } catch { /* ignorato */ }
+    // Abbonamenti già comprati (anche rinnovi): si ricontrollano per tenere il Pro aggiornato.
+    for (const p of await playSvc.listPurchases()) await sendPlay(p.purchaseToken, p.itemId);
+  } catch { /* Play Billing non disponibile */ }
+}
+async function sendPlay(token, sku) {
+  const r = await api('/api/checkout', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ provider: 'googleplay', token, sku }) }).catch(() => null);
+  const d = await r?.json().catch(() => ({})) || {};
+  if (r?.ok) await refreshMe();
+  return { ok: !!r?.ok, message: d.message };
+}
+async function payWithPlay(b) {
+  if (!playSvc) { toast('Mets à jour Sahbi depuis Google Play pour t’abonner.'); return; }
+  b.disabled = true;
+  try {
+    const sku = cfg.payments.playSku;
+    const req = new PaymentRequest([{ supportedMethods: 'https://play.google.com/billing', data: { sku } }], { total: { label: 'Total', amount: { currency: 'EUR', value: '0' } } });
+    const res = await req.show();
+    const v = await sendPlay(res.details.purchaseToken, sku);
+    await res.complete(v.ok ? 'success' : 'fail');
+    if (v.ok) { closeAll(); toast('Bienvenue dans Sahbi Pro ! 🎉'); } else toast(v.message || 'Le paiement n’a pas pu être confirmé. Réessaie.');
+  } catch (e) { if (e?.name !== 'AbortError') toast('Le paiement Google Play n’a pas pu démarrer.'); }
+  b.disabled = false;
 }
 async function startCheckout(provider, b) {
   b.disabled = true;
@@ -1925,6 +1964,7 @@ $('drawerPlus').addEventListener('click', openSheet);
 $('closeSheet').addEventListener('click', closeAll);
 $('payCard').addEventListener('click', () => startCheckout(cfg.payments?.lemonsqueezy ? 'lemonsqueezy' : 'stripe', $('payCard')));
 $('payDz').addEventListener('click', () => startCheckout('chargily', $('payDz')));
+$('payPlay').addEventListener('click', () => payWithPlay($('payPlay')));
 $('newChat').addEventListener('click', () => { closeAll(); newChat(); ta.focus(); });
 
 // ---------- Tema chiaro / scuro ----------
