@@ -781,7 +781,7 @@ let STORE = 'sahbi-chats-v1';
 let supabase = null, busy = false, imgLeft = null, imgLimit = 2, userId = null, cfg = {}, me = null, photo = null;
 
 // ---------- App Android (Google Play) ----------
-// Nell'app del Play Store niente pagamenti del sito e niente AdSense (regole di Google Play).
+// Nell'app del Play Store niente pagamenti del sito (regole di Google Play); la pubblicità AdSense invece resta.
 // sessionStorage (non localStorage): Chrome e l'app condividono i dati del sito, quindi un segno permanente
 // nasconderebbe i pagamenti anche nel browser normale dopo aver aperto l'app una volta.
 const IN_APP = (() => {
@@ -1438,7 +1438,8 @@ function updateAds() {
   const show = !!me && !me.pro;
   $('adbar').hidden = !show;
   if (!show) { clearInterval(houseTimer); return; }
-  if (IN_APP || !loadAdsense()) startHouse();
+  // Anche nell'app Android: AdSense funziona dentro una Trusted Web Activity (su Play Console: "Contiene annunci" = Sì).
+  if (!loadAdsense()) startHouse();
 }
 
 // ---------- Stato dell'account (piano, limiti, invito) ----------
