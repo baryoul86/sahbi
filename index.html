@@ -123,6 +123,15 @@ footer.composer .col{padding-block:10px 12px;display:flex;flex-direction:column;
 .hist button[aria-current="true"]{background:var(--panel-2)}
 .hist button:hover{background:var(--panel-2)}
 .hist-empty{color:var(--muted);font-size:14px;padding:0 12px}
+.hist li{display:flex;align-items:center;gap:2px;position:relative}
+.hist li .title{flex:1;min-width:0}
+.hist li .more{width:40px;min-height:40px;flex:0 0 40px;padding:0;text-align:center;border-radius:10px;color:var(--muted);font-size:20px;line-height:1}
+.hist li .pin{font-size:12px;margin-right:4px}
+.hist .sec{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);padding:10px 12px 4px}
+.hmenu{position:absolute;right:4px;top:42px;z-index:5;background:var(--night);border:1px solid var(--line);border-radius:14px;box-shadow:0 8px 24px rgba(0,0,0,.18);padding:6px;display:flex;flex-direction:column;min-width:190px}
+.hist .hmenu button{min-height:44px;text-align:left;white-space:nowrap;padding:0 12px;border-radius:10px;display:flex;align-items:center;gap:10px}
+.hist .hmenu button.danger{color:var(--danger)}
+.hist li input{flex:1;min-width:0;min-height:40px;border-radius:10px;border:1px solid var(--mint);background:var(--night);color:var(--fg);padding:0 10px;font:inherit;font-size:16px}
 .plus-card{border:1px solid var(--line);border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:6px;background:var(--night);text-align:left}
 .plus-card b{font-family:var(--brand);font-size:20px;font-weight:800}
 .plus-card span{color:var(--muted);font-size:14px}
@@ -871,7 +880,9 @@ async function api(path, options = {}) {
 // ---------- Discussioni salvate sul telefono ----------
 function load() { try { return JSON.parse(localStorage.getItem(STORE) || '[]'); } catch { return []; } }
 function persist() {
-  try { localStorage.setItem(STORE, JSON.stringify(chats.slice(0, 50))); } catch { /* memoria piena: ignorato */ }
+  // Le discussioni fissate non vengono mai tolte; delle altre si tengono le 50 più recenti.
+  const pinned = chats.filter((c) => c.pinned), rest = chats.filter((c) => !c.pinned).slice(0, 50);
+  try { localStorage.setItem(STORE, JSON.stringify([...pinned, ...rest])); } catch { /* memoria piena: ignorato */ }
 }
 let chats = load();
 let current = null;
@@ -1116,16 +1127,60 @@ function render() {
   }
   renderHistory();
 }
+// Elenco delle discussioni: fissare 📌, rinominare, cancellare (menu ⋯ accanto a ogni discussione).
+let openMenu = null;
+function closeHistMenu() { openMenu?.remove(); openMenu = null; }
+function deleteChat(c) {
+  chats = chats.filter((x) => x.id !== c.id); persist();
+  if (current && current.id === c.id) newChat(); else renderHistory();
+  toast('Discussion supprimée.');
+}
+function renameChat(c, li) {
+  closeHistMenu();
+  const input = el('input'); input.value = c.title || ''; input.maxLength = 60; input.dir = 'auto'; input.setAttribute('aria-label', 'Nouveau nom');
+  li.replaceChildren(input); input.focus(); input.select();
+  const done = (save) => {
+    if (done.ran) return; done.ran = true;
+    if (save && input.value.trim()) { c.title = input.value.trim().slice(0, 60); persist(); }
+    renderHistory();
+  };
+  input.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); done(true); } if (e.key === 'Escape') done(false); });
+  input.addEventListener('blur', () => done(true));
+}
+function histItem(c) {
+  const li = el('li');
+  const b = el('button', 'title'); b.type = 'button'; b.dir = 'auto';
+  if (c.pinned) b.appendChild(el('span', 'pin', '📌'));
+  b.appendChild(document.createTextNode(c.title || 'Discussion'));
+  if (current && c.id === current.id) b.setAttribute('aria-current', 'true');
+  b.addEventListener('click', () => { closeHistMenu(); current = c; recentPhoto = null; closeAll(); render(); });
+  const more = el('button', 'more', '⋯'); more.type = 'button'; more.setAttribute('aria-label', `Options : ${c.title || 'Discussion'}`);
+  more.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const was = openMenu?.parentElement === li; closeHistMenu(); if (was) return;
+    const m = el('div', 'hmenu'); m.setAttribute('role', 'menu');
+    const item = (label, fn, cls) => { const x = el('button', cls || '', label); x.type = 'button'; x.setAttribute('role', 'menuitem'); x.addEventListener('click', (ev) => { ev.stopPropagation(); fn(x); }); m.appendChild(x); };
+    item(c.pinned ? '📌 Désépingler' : '📌 Épingler', () => { c.pinned = !c.pinned; persist(); closeHistMenu(); renderHistory(); });
+    item('✏️ Renommer', () => renameChat(c, li));
+    item('🗑️ Supprimer', (x) => {
+      if (!x.dataset.sure) { x.dataset.sure = '1'; x.textContent = '🗑️ Appuie encore pour supprimer'; return; }
+      closeHistMenu(); deleteChat(c);
+    }, 'danger');
+    li.appendChild(m); openMenu = m; m.querySelector('button').focus();
+  });
+  li.append(b, more);
+  return li;
+}
 function renderHistory() {
+  closeHistMenu();
   const hist = $('hist'); hist.replaceChildren();
   if (!chats.length) { hist.appendChild(el('li', 'hist-empty', 'Tes discussions apparaîtront ici.')); return; }
-  for (const c of chats) {
-    const li = el('li'); const b = el('button', '', c.title || 'Discussion'); b.type = 'button'; b.dir = 'auto';
-    if (current && c.id === current.id) b.setAttribute('aria-current', 'true');
-    b.addEventListener('click', () => { current = c; recentPhoto = null; closeAll(); render(); });
-    li.appendChild(b); hist.appendChild(li);
-  }
+  const pinned = chats.filter((c) => c.pinned), rest = chats.filter((c) => !c.pinned);
+  if (pinned.length) { hist.appendChild(el('li', 'sec', 'Épinglées')); pinned.forEach((c) => hist.appendChild(histItem(c))); }
+  if (pinned.length && rest.length) hist.appendChild(el('li', 'sec', 'Récentes'));
+  rest.forEach((c) => hist.appendChild(histItem(c)));
 }
+document.addEventListener('click', (e) => { if (openMenu && !openMenu.contains(e.target)) closeHistMenu(); });
 
 // ---------- Chat (testo e immagini nella stessa casella) ----------
 const SEP = '\u001e';
