@@ -782,11 +782,13 @@ let supabase = null, busy = false, imgLeft = null, imgLimit = 2, userId = null, 
 
 // ---------- App Android (Google Play) ----------
 // Nell'app del Play Store niente pagamenti del sito e niente AdSense (regole di Google Play).
+// sessionStorage (non localStorage): Chrome e l'app condividono i dati del sito, quindi un segno permanente
+// nasconderebbe i pagamenti anche nel browser normale dopo aver aperto l'app una volta.
 const IN_APP = (() => {
   let v = false;
-  try { v = localStorage.getItem('sahbi-android') === '1'; } catch { /* ignorato */ }
+  try { localStorage.removeItem('sahbi-android'); v = sessionStorage.getItem('sahbi-android') === '1'; } catch { /* ignorato */ }
   if (document.referrer.startsWith('android-app://') || new URLSearchParams(location.search).get('source') === 'android') {
-    v = true; try { localStorage.setItem('sahbi-android', '1'); } catch { /* ignorato */ }
+    v = true; try { sessionStorage.setItem('sahbi-android', '1'); } catch { /* ignorato */ }
   }
   if (v) document.documentElement.classList.add('in-app');
   return v;
