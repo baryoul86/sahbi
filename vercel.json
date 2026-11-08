@@ -17,6 +17,9 @@
     },
     "api/chargily-webhook.js": {
       "maxDuration": 30
+    },
+    "api/admin.js": {
+      "maxDuration": 60
     }
   },
   "headers": [
@@ -46,6 +49,12 @@
     {
       "source": "/.well-known/assetlinks.json",
       "destination": "/api/config?file=assetlinks"
+    }
+  ],
+  "crons": [
+    {
+      "path": "/api/admin?cron=1",
+      "schedule": "30 6 * * *"
     }
   ]
 }

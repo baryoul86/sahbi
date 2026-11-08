@@ -273,6 +273,8 @@ button.s-row.danger{color:var(--danger)}
 .or{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:13px;margin-top:14px}
 .or::before,.or::after{content:"";flex:1;height:1px;background:var(--line)}
 .attach.doc{margin-left:-8px}
+a.s-row{text-decoration:none;color:inherit}
+a.s-row[hidden]{display:none}
 .app-only{display:none}
 .in-app .app-only{display:block}
 .in-app #payCard,.in-app #payDz,.in-app #planSeg{display:none !important}
@@ -693,6 +695,7 @@ button.s-row.danger{color:var(--danger)}
         <div class="s-card">
           <div class="s-row"><span class="k">E-mail</span><span class="v" id="sEmail" dir="auto"></span></div>
           <div class="s-row"><span class="k">Abonnement</span><span class="v" id="sPlan">Gratuit</span><button class="s-pro" id="sGoPro" type="button">Passer à Pro</button></div>
+          <a class="s-row" id="sAdmin" href="/admin.html" hidden><span class="k">Panneau administrateur</span><span class="v">Argent, utilisateurs, alertes →</span></a>
         </div>
       </div>
 
@@ -1891,6 +1894,7 @@ async function openSettings() {
   const fill = () => {
     const r = me?.remaining || {}, l = me?.limits || {};
     $('sPlan').textContent = me?.pro ? `Pro · jusqu’au ${fmtDate(me.proUntil)}` : 'Gratuit';
+    $('sAdmin').hidden = !me?.admin;
     $('sGoPro').textContent = me?.pro ? (me.canManageBilling && !IN_APP ? 'Gérer' : 'Prolonger') : 'Passer à Pro';
     $('sChat').textContent = me ? `${r.chat} / ${l.chat}` : '…';
     $('sImages').textContent = me ? `${r.image} / ${l.image}` : '…';

@@ -7,6 +7,8 @@ const isUuid = (v) => typeof v === 'string' && /^[0-9a-f-]{36}$/i.test(v);
 export async function POST(request) {
   const raw = await request.text();
   if (!verifyStripe(raw, request.headers.get('stripe-signature'), env('STRIPE_WEBHOOK_SECRET'))) {
+    const { alert } = await import('./_alert.js');
+    await alert('stripe_webhook', 'Un avis de paiement a été refusé (signature invalide). Si ça se répète, vérifie le secret du webhook sur Vercel.', 360);
     return fail('signature', 400, 'Firma non valida.');
   }
   const event = JSON.parse(raw);

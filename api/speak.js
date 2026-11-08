@@ -29,6 +29,8 @@ export async function POST(request) {
   if (!upstream.ok || !upstream.body) {
     await refundCredit(userId, 'tts').catch(() => {});
     console.error('OpenAI speech error', upstream.status);
+    const { openaiAlert, alert } = await import('./_alert.js');
+    await (openaiAlert(upstream.status, await upstream.text().catch(() => '')) || alert('speech_fail', `La voix a échoué (${upstream.status}).`, 180));
     return fail('upstream', 502, 'Impossible de lire ce message maintenant.');
   }
   return new Response(upstream.body, { headers: { 'content-type': 'audio/mpeg', 'cache-control': 'no-store' } });

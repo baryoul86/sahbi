@@ -155,6 +155,10 @@ export async function generateImage(userId, rawPrompt, { limit, photo = null } =
   if (!upstream.ok || !b64) {
     await refundCredit(userId, 'image').catch(() => {});
     console.error('OpenAI image error', upstream.status, data?.error?.code);
+    if (data?.error?.code !== 'moderation_blocked') {
+      const { openaiAlert, alert } = await import('./_alert.js');
+      await (openaiAlert(upstream.status, JSON.stringify(data?.error || {})) || alert('image_fail', `La création d'image a échoué (${upstream.status} ${data?.error?.code || ''}).`, 120));
+    }
     return data?.error?.code === 'moderation_blocked'
       ? { ok: false, error: 'blocked', status: 400, message: "Je ne peux pas créer cette image. Essaie une autre description." }
       : { ok: false, error: 'upstream', status: 502, message: "Impossible de créer l'image maintenant. Réessaie dans un instant." };

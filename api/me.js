@@ -1,6 +1,7 @@
 import { json, fail, getUser, getPlan, remainingCredit } from './_lib.js';
 import { remainingVideo, videoEnabled } from './_video.js';
 import { getMemory, setMemory } from './_memory.js';
+import { isAdmin } from './_alert.js';
 
 // Stato dell'utente: piano, scadenza del Pro, invito, quanto resta oggi, ricordi di Sahbi.
 export async function GET(request) {
@@ -26,6 +27,7 @@ export async function GET(request) {
     remaining: { ...Object.fromEntries(kinds.map((k, i) => [k, left[i]])), video: videoLeft },
     videoEnabled: videoEnabled(),
     memory,
+    admin: isAdmin(user.email),
   });
 }
 

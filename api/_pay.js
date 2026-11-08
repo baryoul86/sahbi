@@ -21,12 +21,14 @@ function form(obj, prefix = '', out = new URLSearchParams()) {
   return out;
 }
 
-export async function stripe(path, params) {
-  const res = await fetch(`${env('STRIPE_API_URL', 'https://api.stripe.com/v1')}/${path}`, {
-    method: 'POST',
-    headers: { authorization: `Bearer ${env('STRIPE_SECRET_KEY')}`, 'content-type': 'application/x-www-form-urlencoded' },
-    body: form(params),
-  });
+export async function stripe(path, params, method = 'POST') {
+  const res = await fetch(`${env('STRIPE_API_URL', 'https://api.stripe.com/v1')}/${path}`, method === 'GET'
+    ? { headers: { authorization: `Bearer ${env('STRIPE_SECRET_KEY')}` } }
+    : {
+      method: 'POST',
+      headers: { authorization: `Bearer ${env('STRIPE_SECRET_KEY')}`, 'content-type': 'application/x-www-form-urlencoded' },
+      body: form(params),
+    });
   const data = await res.json().catch(() => null);
   if (!res.ok) throw new Error(`Stripe ${path}: ${res.status} ${data?.error?.message || ''}`);
   return data;

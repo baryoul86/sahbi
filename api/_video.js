@@ -73,6 +73,11 @@ export async function startVideo(userId, rawPrompt, { pro, limit, photo = null }
       await refund();
       const blocked = res.status === 422 || !!d?.moderation;
       console.error('Pruna video', res.status, blocked ? 'moderation' : JSON.stringify(d)?.slice(0, 300));
+      if (!blocked) {
+        const { alert } = await import('./_alert.js');
+        const credit = res.status === 402 || /credit|balance|insufficient|payment/i.test(JSON.stringify(d || ''));
+        await alert(credit ? 'pruna_credit' : 'video_fail', credit ? 'Le crédit Pruna est épuisé : les vidéos ne marchent plus. Recharge sur dashboard.pruna.ai.' : `La création de vidéo a échoué (${res.status}).`, credit ? 60 : 120);
+      }
       return { ok: false, error: blocked ? 'blocked' : 'upstream', message: blocked ? MSG.blocked : MSG.upstream };
     }
 

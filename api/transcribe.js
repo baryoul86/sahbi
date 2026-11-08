@@ -31,6 +31,7 @@ export async function POST(request) {
   if (!upstream.ok || typeof data?.text !== 'string') {
     await refundCredit(userId, 'voice').catch(() => {});
     console.error('OpenAI transcribe error', upstream.status, data?.error?.code);
+    if (upstream.status !== 400) { const { openaiAlert } = await import('./_alert.js'); await openaiAlert(upstream.status, JSON.stringify(data?.error || {})); }
     return fail('upstream', 502, 'Non ho capito l’audio. Riprova.');
   }
   return json({ text: data.text.trim() });

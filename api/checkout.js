@@ -55,6 +55,8 @@ export async function POST(request) {
     }
   } catch (e) {
     console.error('Checkout', e.message);
+    const { alert } = await import('./_alert.js');
+    await alert('checkout_fail', `Le paiement n'a pas pu s'ouvrir : ${e.message}`.slice(0, 300), 120);
     return fail('upstream', 502, 'Le paiement n’a pas pu démarrer. Réessaie dans un instant.');
   }
   return fail('bad_request', 400, 'Moyen de paiement inconnu.');

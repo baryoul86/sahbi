@@ -1,6 +1,7 @@
 import { env, fail, getUserId, useCredit, refundCredit, getPlan, openaiHeaders, OPENAI, generateImage, parsePhoto } from './_lib.js';
 import { startVideo, videoEnabled } from './_video.js';
 import { getMemory, learnFromMessage, memoryPrompt } from './_memory.js';
+import { openaiAlert } from './_alert.js';
 
 const VOICE_STYLE = `\n\nModalità conversazione a voce: l'utente ti PARLA e la tua risposta verrà letta ad alta voce. Rispondi come in una telefonata tra amici: 1-3 frasi brevi e naturali, niente elenchi, niente emoji, niente simboli o markdown, niente link. Se serve una spiegazione lunga, dai l'essenziale e chiedi se vuole continuare.`;
 const MAX_DOC_CHARS = 60000;
@@ -232,7 +233,9 @@ export async function POST(request) {
   }
   if (!upstream.ok || !upstream.body) {
     await refundCredit(userId, 'chat').catch(() => {});
-    console.error('OpenAI chat error', upstream.status, await upstream.text().catch(() => ''));
+    const errBody = await upstream.text().catch(() => '');
+    console.error('OpenAI chat error', upstream.status, errBody.slice(0, 300));
+    await openaiAlert(upstream.status, errBody);
     return fail('upstream', 502, 'Sahbi non riesce a rispondere ora. Riprova tra poco.');
   }
 

@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Sahbi Admin</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" href="/icons/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@800&family=Rubik:wght@400;500&display=swap">
+<style>
+:root{
+  --night:#FFFFFF; --panel:#F2F7F4; --panel-2:#E2EEE7; --line:#D3E3DA;
+  --fg:#0F2E24; --muted:#4D675C; --mint:#2FAE74; --mint-text:#187A4F; --mint-ink:#0B2219; --danger:#B3401F; --warn:#9A6A00;
+  --brand:'Baloo 2', system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --night:#0B1F18; --panel:#123026; --panel-2:#183B2F; --line:#21483A;
+    --fg:#E8F5EE; --muted:#9CB8AB; --mint:#3CC587; --mint-text:#5FD69F; --mint-ink:#062016; --danger:#F08A6C; --warn:#E8B84A;
+  }
+}
+:root[data-theme="dark"]{
+  --night:#0B1F18; --panel:#123026; --panel-2:#183B2F; --line:#21483A;
+  --fg:#E8F5EE; --muted:#9CB8AB; --mint:#3CC587; --mint-text:#5FD69F; --mint-ink:#062016; --danger:#F08A6C; --warn:#E8B84A;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--night);color:var(--fg);font:16px/1.5 Rubik,system-ui,sans-serif}
+button,a{font:inherit;color:inherit}
+.wrap{max-width:880px;margin:0 auto;padding:16px 16px 48px}
+header{display:flex;align-items:center;gap:10px;justify-content:space-between;padding:4px 0 16px}
+header .brand{display:flex;align-items:center;gap:10px;text-decoration:none}
+header img{width:36px;height:36px;border-radius:10px}
+header b{font-family:var(--brand);font-size:22px}
+header span{font-size:13px;color:var(--muted)}
+.btn{min-height:44px;padding:0 16px;border-radius:999px;border:1px solid var(--line);background:var(--panel);cursor:pointer}
+.btn.main{background:var(--mint);border-color:var(--mint);color:var(--mint-ink);font-weight:500}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+@media (max-width:640px){.grid{grid-template-columns:minmax(0,1fr)}}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:16px;min-width:0}
+.card h2{margin:0 0 10px;font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:500}
+.big{font-family:var(--brand);font-size:34px;line-height:1.1;font-variant-numeric:tabular-nums}
+.kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.kpi{background:var(--night);border:1px solid var(--line);border-radius:14px;padding:10px;min-width:0}
+.kpi span{display:block;font-size:12px;color:var(--muted)}
+.kpi b{font-size:22px;font-variant-numeric:tabular-nums}
+.row{display:flex;align-items:center;gap:10px;min-height:44px;border-top:1px solid var(--line);padding:6px 0}
+.row:first-of-type{border-top:0}
+.row .k{flex:1;min-width:0}
+.row small{display:block;color:var(--muted);font-size:13px;overflow-wrap:anywhere}
+.dot{width:12px;height:12px;border-radius:50%;flex:0 0 12px;background:var(--muted)}
+.dot.ok{background:var(--mint)} .dot.ko{background:var(--danger)} .dot.na{background:var(--line)}
+.state{font-size:14px;font-weight:500}
+.state.ok{color:var(--mint-text)} .state.ko{color:var(--danger)} .state.na{color:var(--muted)}
+.alert{border-left:3px solid var(--danger);padding:8px 10px;background:var(--night);border-radius:8px;margin-top:8px;font-size:14px}
+.alert b{display:block}
+.alert small{color:var(--muted)}
+.links{display:flex;flex-wrap:wrap;gap:8px}
+.links a{min-height:40px;display:inline-flex;align-items:center;padding:0 14px;border-radius:999px;border:1px solid var(--line);background:var(--night);text-decoration:none;font-size:14px}
+.full{grid-column:1/-1}
+.msg{padding:40px 0;text-align:center;color:var(--muted)}
+.banner{border-radius:16px;padding:14px 16px;margin-bottom:12px;font-weight:500}
+.banner.ok{background:var(--mint);color:var(--mint-ink)}
+.banner.ko{background:var(--danger);color:#fff}
+table{width:100%;border-collapse:collapse;font-size:14px}
+td{padding:6px 0;border-top:1px solid var(--line)}
+td:last-child{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <a class="brand" href="/"><img src="/icons/icon-192.png" alt=""><div><b>Sahbi</b><br><span>Panneau administrateur</span></div></a>
+    <button class="btn" id="refresh" type="button">Actualiser</button>
+  </header>
+  <div id="app"><p class="msg">Chargement…</p></div>
+</div>
+<script type="module">
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/+esm';
+const $ = (id) => document.getElementById(id);
+const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+const app = $('app');
+let supabase, deep = false;
+
+const eur = (cents, cur = 'eur') => cur === 'dzd' ? `${Number(cents).toLocaleString('fr-FR')} DA` : `${(cents / 100).toLocaleString('fr-FR', { minimumFractionDigits: 2 })} ${String(cur).toUpperCase()}`;
+const when = (iso) => new Date(iso).toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+const TITLES = { openai_quota: 'Crédit OpenAI épuisé', openai_auth: 'Clé OpenAI refusée', openai_down: 'OpenAI ne répond pas', image_fail: 'Images en échec', video_fail: 'Vidéos en échec', pruna_credit: 'Crédit Pruna épuisé', db_down: 'Base de données', stripe_webhook: 'Paiements Stripe', chargily_webhook: 'Paiements Chargily', checkout_fail: 'Paiement impossible', speech_fail: 'Voix en échec', daily_report: 'Résumé du jour envoyé' };
+
+function statusRow(label, s, okText = 'OK') {
+  const r = el('div', 'row');
+  const cls = s?.ok === true ? 'ok' : s?.ok === false ? 'ko' : 'na';
+  const k = el('div', 'k'); k.append(el('div', '', label)); if (s?.detail) k.append(el('small', '', s.detail));
+  r.append(el('span', `dot ${cls}`), k, el('span', `state ${cls}`, cls === 'ok' ? okText : cls === 'ko' ? 'Problème' : 'Pas configuré'));
+  return r;
+}
+function kpi(label, value) { const d = el('div', 'kpi'); d.append(el('span', '', label), el('b', '', String(value ?? '–'))); return d; }
+
+async function load() {
+  app.replaceChildren(el('p', 'msg', deep ? 'Contrôle complet en cours…' : 'Chargement…'));
+  const { data } = await supabase.auth.getSession();
+  const token = data.session?.access_token;
+  if (!token) { const p = el('p', 'msg', 'Connecte-toi d’abord sur Sahbi avec ton compte administrateur. '); const a = el('a', '', 'Aller sur Sahbi'); a.href = '/'; p.append(a); app.replaceChildren(p); return; }
+  const r = await fetch(`/api/admin${deep ? '?deep=1' : ''}`, { headers: { authorization: `Bearer ${token}` } });
+  const d = await r.json().catch(() => ({}));
+  if (!r.ok) { app.replaceChildren(el('p', 'msg', d.message || 'Accès impossible.')); return; }
+  render(d);
+}
+
+function render(d) {
+  const s = d.stats || {}, h = d.health || {}, st = d.stripe || {};
+  const ok = h.db?.ok && h.openai?.ok;
+  const frag = document.createDocumentFragment();
+  frag.append(el('div', `banner ${ok ? 'ok' : 'ko'}`, ok ? '✅ Sahbi fonctionne.' : '⚠️ Un service a un problème : regarde « État des services ».'));
+  if (s.error) frag.append(el('div', 'banner ko', `Statistiques indisponibles : exécute supabase/005_admin.sql (${s.error}).`));
+  const grid = el('div', 'grid');
+
+  // Soldi
+  const money = el('div', 'card');
+  money.append(el('h2', '', 'Argent'));
+  if (st.ok) {
+    money.append(el('div', 'big', st.available), el('small', '', `disponible sur Stripe${st.live ? '' : ' (mode test)'} · en attente : ${st.pending}`));
+  } else money.append(el('p', '', st.detail === 'pas encore configuré' ? 'Stripe n’est pas encore connecté.' : `Stripe : ${st.detail || 'indisponible'}`));
+  const t = el('table');
+  for (const p of s.payments_month || []) { const tr = el('tr'); tr.append(el('td', '', `Ce mois · ${p.provider} (${p.count})`), el('td', '', eur(p.amount, p.currency))); t.append(tr); }
+  for (const p of s.payments_total || []) { const tr = el('tr'); tr.append(el('td', '', `Depuis le début · ${p.provider} (${p.count})`), el('td', '', eur(p.amount, p.currency))); t.append(tr); }
+  if (!t.childElementCount) { const tr = el('tr'); tr.append(el('td', '', 'Aucun paiement pour l’instant'), el('td', '', '')); t.append(tr); }
+  money.append(t);
+  grid.append(money);
+
+  // Utenti
+  const users = el('div', 'card'); users.append(el('h2', '', 'Utilisateurs'));
+  const k1 = el('div', 'kpis'); k1.append(kpi('Total', s.users), kpi('Nouveaux 24 h', s.users_today), kpi('Nouveaux 7 j', s.users_week), kpi('Pro actifs', s.pro), kpi('Actifs aujourd’hui', s.active_today), kpi('Images créées', s.images_total));
+  users.append(k1); grid.append(users);
+
+  // Consumo di oggi
+  const use = el('div', 'card'); use.append(el('h2', '', 'Aujourd’hui'));
+  const u = s.usage_today || {};
+  const k2 = el('div', 'kpis'); k2.append(kpi('Messages', u.chat || 0), kpi('Images', u.image || 0), kpi('Micro', u.voice || 0), kpi('Voix', u.tts || 0), kpi('Vidéos (mois)', s.videos_month || 0));
+  use.append(k2); grid.append(use);
+
+  // Stato dei servizi
+  const sv = el('div', 'card'); sv.append(el('h2', '', 'État des services'));
+  sv.append(statusRow('Base de données (Supabase)', h.db), statusRow(deep ? 'OpenAI (réponse test + crédit)' : 'OpenAI (clé)', h.openai), statusRow('Vidéos (Pruna)', h.video), statusRow('E-mails d’alerte', h.email, 'Actifs'));
+  const pay = el('div', 'row'); pay.append(el('span', `dot ${h.payments?.stripe || h.payments?.chargily ? 'ok' : 'na'}`), el('div', 'k', 'Paiements'), el('span', 'state', [h.payments?.stripe && 'Stripe', h.payments?.chargily && 'Chargily'].filter(Boolean).join(' + ') || 'Pas configurés'));
+  sv.append(pay);
+  const b = el('button', 'btn main', 'Contrôle complet'); b.type = 'button'; b.style.marginTop = '10px';
+  b.addEventListener('click', () => { deep = true; load(); });
+  sv.append(b); grid.append(sv);
+
+  // Avvisi
+  const al = el('div', 'card full'); al.append(el('h2', '', 'Problèmes des 7 derniers jours'));
+  const list = (s.alerts || []).filter((a) => a.kind !== 'daily_report');
+  if (!list.length) al.append(el('p', '', 'Aucun problème. 👍'));
+  for (const a of list) { const x = el('div', 'alert'); x.append(el('b', '', `${TITLES[a.kind] || a.kind} · ${a.count}×`), el('div', '', a.message), el('small', '', `Dernière fois : ${when(a.last_at)}`)); al.append(x); }
+  if (!d.config?.alertsByEmail) al.append(el('p', '', 'Pour recevoir ces problèmes par e-mail, ajoute RESEND_API_KEY sur Vercel.'));
+  grid.append(al);
+
+  // Ultimi pagamenti
+  const lp = el('div', 'card'); lp.append(el('h2', '', 'Derniers paiements'));
+  const t2 = el('table');
+  for (const p of s.last_payments || []) { const tr = el('tr'); tr.append(el('td', '', `${when(p.at)} · ${p.provider}`), el('td', '', p.amount != null ? eur(p.amount, p.currency) : '–')); t2.append(tr); }
+  if (!t2.childElementCount) { const tr = el('tr'); tr.append(el('td', '', 'Aucun'), el('td', '', '')); t2.append(tr); }
+  lp.append(t2); grid.append(lp);
+
+  // Link utili
+  const ln = el('div', 'card'); ln.append(el('h2', '', 'Liens'));
+  const links = el('div', 'links');
+  for (const [label, href] of [['Stripe : argent et virements', 'https://dashboard.stripe.com/balance'], ['Crédit OpenAI', 'https://platform.openai.com/settings/organization/billing/overview'], ['Crédit Pruna', 'https://dashboard.pruna.ai/billing'], ['Supabase', 'https://supabase.com/dashboard/projects'], ['Vercel', 'https://vercel.com/dashboard'], ['AdSense', 'https://adsense.google.com'], ['Google Play Console', 'https://play.google.com/console']]) {
+    const a = el('a', '', label); a.href = href; a.target = '_blank'; a.rel = 'noopener'; links.append(a);
+  }
+  ln.append(links); grid.append(ln);
+
+  frag.append(grid);
+  app.replaceChildren(frag);
+}
+
+$('refresh').addEventListener('click', () => { deep = false; load(); });
+const cfg = await (await fetch('/api/config')).json();
+supabase = createClient(cfg.supabaseUrl, cfg.supabaseAnonKey, { auth: { persistSession: true, autoRefreshToken: true } });
+load();
+</script>
+</body>
+</html>
