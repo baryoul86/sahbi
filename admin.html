@@ -85,7 +85,7 @@ let supabase, deep = false;
 
 const eur = (cents, cur = 'eur') => cur === 'dzd' ? `${Number(cents).toLocaleString('fr-FR')} DA` : `${(cents / 100).toLocaleString('fr-FR', { minimumFractionDigits: 2 })} ${String(cur).toUpperCase()}`;
 const when = (iso) => new Date(iso).toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
-const TITLES = { openai_quota: 'Crédit OpenAI épuisé', openai_auth: 'Clé OpenAI refusée', openai_down: 'OpenAI ne répond pas', image_fail: 'Images en échec', video_fail: 'Vidéos en échec', pruna_credit: 'Crédit Pruna épuisé', db_down: 'Base de données', stripe_webhook: 'Paiements Stripe', chargily_webhook: 'Paiements Chargily', checkout_fail: 'Paiement impossible', speech_fail: 'Voix en échec', daily_report: 'Résumé du jour envoyé' };
+const TITLES = { openai_quota: 'Crédit OpenAI épuisé', openai_auth: 'Clé OpenAI refusée', openai_down: 'OpenAI ne répond pas', image_fail: 'Images en échec', video_fail: 'Vidéos en échec', pruna_credit: 'Crédit Pruna épuisé', db_down: 'Base de données', stripe_webhook: 'Paiements Stripe', lemon_webhook: 'Paiements Lemon Squeezy', chargily_webhook: 'Paiements Chargily', checkout_fail: 'Paiement impossible', speech_fail: 'Voix en échec', daily_report: 'Résumé du jour envoyé' };
 
 function statusRow(label, s, okText = 'OK') {
   const r = el('div', 'row');
@@ -120,6 +120,9 @@ function render(d) {
   money.append(el('h2', '', 'Argent'));
   if (st.ok) {
     money.append(el('div', 'big', st.available), el('small', '', `disponible sur Stripe${st.live ? '' : ' (mode test)'} · en attente : ${st.pending}`));
+  } else if (h.payments?.lemonsqueezy && st.detail === 'pas encore configuré') {
+    const a = el('a', '', 'Voir le solde sur Lemon Squeezy'); a.href = 'https://app.lemonsqueezy.com/payouts'; a.target = '_blank'; a.rel = 'noopener';
+    const p = el('p', '', 'Les paiements par carte et PayPal passent par Lemon Squeezy. '); p.append(a); money.append(p);
   } else money.append(el('p', '', st.detail === 'pas encore configuré' ? 'Stripe n’est pas encore connecté.' : `Stripe : ${st.detail || 'indisponible'}`));
   const t = el('table');
   for (const p of s.payments_month || []) { const tr = el('tr'); tr.append(el('td', '', `Ce mois · ${p.provider} (${p.count})`), el('td', '', eur(p.amount, p.currency))); t.append(tr); }
@@ -142,7 +145,7 @@ function render(d) {
   // Stato dei servizi
   const sv = el('div', 'card'); sv.append(el('h2', '', 'État des services'));
   sv.append(statusRow('Base de données (Supabase)', h.db), statusRow(deep ? 'OpenAI (réponse test + crédit)' : 'OpenAI (clé)', h.openai), statusRow('Vidéos (Pruna)', h.video), statusRow('E-mails d’alerte', h.email, 'Actifs'));
-  const pay = el('div', 'row'); pay.append(el('span', `dot ${h.payments?.stripe || h.payments?.chargily ? 'ok' : 'na'}`), el('div', 'k', 'Paiements'), el('span', 'state', [h.payments?.stripe && 'Stripe', h.payments?.chargily && 'Chargily'].filter(Boolean).join(' + ') || 'Pas configurés'));
+  const pay = el('div', 'row'); pay.append(el('span', `dot ${h.payments?.stripe || h.payments?.lemonsqueezy || h.payments?.chargily ? 'ok' : 'na'}`), el('div', 'k', 'Paiements'), el('span', 'state', [h.payments?.lemonsqueezy && 'Lemon Squeezy', h.payments?.stripe && 'Stripe', h.payments?.chargily && 'Chargily'].filter(Boolean).join(' + ') || 'Pas configurés'));
   sv.append(pay);
   const b = el('button', 'btn main', 'Contrôle complet'); b.type = 'button'; b.style.marginTop = '10px';
   b.addEventListener('click', () => { deep = true; load(); });
@@ -166,7 +169,7 @@ function render(d) {
   // Link utili
   const ln = el('div', 'card'); ln.append(el('h2', '', 'Liens'));
   const links = el('div', 'links');
-  for (const [label, href] of [['Stripe : argent et virements', 'https://dashboard.stripe.com/balance'], ['Crédit OpenAI', 'https://platform.openai.com/settings/organization/billing/overview'], ['Crédit Pruna', 'https://dashboard.pruna.ai/billing'], ['Supabase', 'https://supabase.com/dashboard/projects'], ['Vercel', 'https://vercel.com/dashboard'], ['AdSense', 'https://adsense.google.com'], ['Google Play Console', 'https://play.google.com/console']]) {
+  for (const [label, href] of [['Lemon Squeezy : ventes et virements', 'https://app.lemonsqueezy.com/payouts'], ['Stripe : argent et virements', 'https://dashboard.stripe.com/balance'], ['Crédit OpenAI', 'https://platform.openai.com/settings/organization/billing/overview'], ['Crédit Pruna', 'https://dashboard.pruna.ai/billing'], ['Supabase', 'https://supabase.com/dashboard/projects'], ['Vercel', 'https://vercel.com/dashboard'], ['AdSense', 'https://adsense.google.com'], ['Google Play Console', 'https://play.google.com/console']]) {
     const a = el('a', '', label); a.href = href; a.target = '_blank'; a.rel = 'noopener'; links.append(a);
   }
   ln.append(links); grid.append(ln);
