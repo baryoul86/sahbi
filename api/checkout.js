@@ -1,5 +1,5 @@
 import { env, json, fail, getUser, getProfile } from './_lib.js';
-import { publicUrl, stripe, chargily } from './_pay.js';
+import { publicUrl, stripe, chargily, lemon, lemonReady } from './_pay.js';
 
 // Crea una pagina di pagamento per Sahbi Pro. POST { provider: 'stripe' | 'chargily' } -> { url }
 // POST { provider: 'portal' } -> pagina Stripe per cambiare carta o disdire l'abbonamento.
@@ -18,6 +18,25 @@ export async function POST(request) {
       if (!profile.stripe_customer_id) return fail('not_found', 404, 'Aucun abonnement par carte.');
       const portal = await stripe('billing_portal/sessions', { customer: profile.stripe_customer_id, return_url: `${base}/` });
       return json({ url: portal.url });
+    }
+
+    if (body?.provider === 'lemonsqueezy') {
+      if (!lemonReady(year)) return fail('unavailable', 503, year ? 'L’abonnement annuel n’est pas encore disponible.' : 'Le paiement n’est pas encore disponible.');
+      const c = await lemon('checkouts', {
+        data: {
+          type: 'checkouts',
+          attributes: {
+            checkout_data: { email: user.email || undefined, custom: { user_id: user.id } },
+            product_options: { redirect_url: `${base}/?paid=1` },
+            checkout_options: { embed: false },
+          },
+          relationships: {
+            store: { data: { type: 'stores', id: String(env('LEMONSQUEEZY_STORE_ID')) } },
+            variant: { data: { type: 'variants', id: String(env(year ? 'LEMONSQUEEZY_VARIANT_ID_YEAR' : 'LEMONSQUEEZY_VARIANT_ID')) } },
+          },
+        },
+      });
+      return json({ url: c?.data?.attributes?.url });
     }
 
     if (body?.provider === 'stripe') {

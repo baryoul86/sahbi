@@ -34,6 +34,9 @@ export function GET(request) {
       priceDzd: Number(env('CHARGILY_PRICE_DZD', '1000')),
       // Abbonamento annuale (facoltativo): carta con un secondo prezzo Stripe, Edahabia/CIB per 365 giorni.
       stripeYear: !!(env('STRIPE_SECRET_KEY') && env('STRIPE_PRICE_ID_YEAR')),
+      // Lemon Squeezy (carta e PayPal, IVA gestita da loro): se è configurato, il pulsante "Carte" usa lui.
+      lemonsqueezy: !!(env('LEMONSQUEEZY_API_KEY') && env('LEMONSQUEEZY_STORE_ID') && env('LEMONSQUEEZY_VARIANT_ID')),
+      lemonsqueezyYear: !!(env('LEMONSQUEEZY_API_KEY') && env('LEMONSQUEEZY_STORE_ID') && env('LEMONSQUEEZY_VARIANT_ID_YEAR')),
       priceYearEur: env('PRO_PRICE_YEAR_LABEL', '59 €'),
       priceYearDzd: Number(env('CHARGILY_PRICE_YEAR_DZD', '10000')),
     },

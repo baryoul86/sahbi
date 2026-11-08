@@ -65,3 +65,21 @@ export function verifyChargily(raw, signature, secret) {
   if (!signature || !secret) return false;
   return safeEqual(signature, hmacHex(secret, raw));
 }
+
+// ---------- Lemon Squeezy ("Merchant of Record": vende al posto tuo e gestisce l'IVA di tutti i paesi) ----------
+export async function lemon(path, body) {
+  const res = await fetch(`${env('LEMONSQUEEZY_API_URL', 'https://api.lemonsqueezy.com/v1')}/${path}`, {
+    method: body ? 'POST' : 'GET',
+    headers: { accept: 'application/vnd.api+json', 'content-type': 'application/vnd.api+json', authorization: `Bearer ${env('LEMONSQUEEZY_API_KEY')}` },
+    ...(body ? { body: JSON.stringify(body) } : {}),
+  });
+  const data = await res.json().catch(() => null);
+  if (!res.ok) throw new Error(`Lemon Squeezy ${path}: ${res.status} ${data?.errors?.[0]?.detail || ''}`);
+  return data;
+}
+// Firma del webhook: intestazione X-Signature = HMAC-SHA256 esadecimale del corpo con il segreto.
+export function verifyLemon(raw, signature, secret) {
+  if (!signature || !secret) return false;
+  return safeEqual(signature, hmacHex(secret, raw));
+}
+export const lemonReady = (year = false) => !!(env('LEMONSQUEEZY_API_KEY') && env('LEMONSQUEEZY_STORE_ID') && env(year ? 'LEMONSQUEEZY_VARIANT_ID_YEAR' : 'LEMONSQUEEZY_VARIANT_ID'));

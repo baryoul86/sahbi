@@ -37,6 +37,7 @@ export const TITLES = {
   pruna_credit: 'crédit Pruna (vidéos) épuisé',
   db_down: 'la base de données ne répond pas',
   stripe_webhook: 'problème avec les paiements Stripe',
+  lemon_webhook: 'problème avec les paiements Lemon Squeezy',
   chargily_webhook: 'problème avec les paiements Chargily',
   checkout_fail: 'le paiement ne s’ouvre pas',
   speech_fail: 'la voix ne marche pas',

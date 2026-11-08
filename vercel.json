@@ -49,6 +49,10 @@
     {
       "source": "/.well-known/assetlinks.json",
       "destination": "/api/config?file=assetlinks"
+    },
+    {
+      "source": "/api/lemonsqueezy-webhook",
+      "destination": "/api/stripe-webhook?provider=lemonsqueezy"
     }
   ],
   "crons": [
