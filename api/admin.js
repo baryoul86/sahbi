@@ -89,7 +89,7 @@ export async function GET(request) {
 
   const user = await getUser(request);
   if (!user) return fail('auth', 401, 'Connecte-toi d’abord sur Sahbi.');
-  if (!isAdmin(user.email)) return fail('forbidden', 403, 'Cette page est réservée à l’administrateur.');
+  if (!isAdmin(user.email)) return fail('forbidden', 403, adminEmails().length ? `Cette page est réservée à l’administrateur. Tu es connecté avec : ${user.email}` : 'ADMIN_EMAIL n’est pas encore configuré sur Vercel (ou le Redeploy n’a pas été fait).');
   const [stats, h, st] = await Promise.all([rpc('admin_stats', {}).catch((e) => ({ error: e.message })), health(q.get('deep') === '1'), checkStripe()]);
   return json({
     stats, health: h, stripe: st,
