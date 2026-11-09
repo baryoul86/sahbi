@@ -121,8 +121,13 @@ export function parsePhoto(value) {
   return { mime: m[1], b64: m[2], dataUrl: value };
 }
 
-export async function generateImage(userId, rawPrompt, { limit, photo = null } = {}) {
-  const prompt = String(rawPrompt || '').trim().slice(0, 1000);
+export async function generateImage(userId, rawPrompt, { limit, photo = null, userText = '' } = {}) {
+  const base = String(rawPrompt || '').trim().slice(0, 2000);
+  if (!base) return { ok: false, error: 'bad_request', status: 400, message: "Décris l'image que tu veux." };
+  // Le parole originali dell'utente hanno la priorità: se la descrizione inglese ha perso o cambiato qualcosa, il disegnatore le segue.
+  const prompt = userText
+    ? `${base}\n\nThe user's original request, in their own words (it may be in Darija, Arabic or French). Follow it exactly: keep every subject, number, color, action, place and written text it asks for, and do not add anything it does not ask for. If it refers to a previous image, apply only the requested change: "${String(userText).replace(/"/g, "'")}"`
+    : base;
   if (!prompt) return { ok: false, error: 'bad_request', status: 400, message: "Décris l'image que tu veux." };
 
   const left = await useCredit(userId, 'image', limit ?? limits(false).image);
