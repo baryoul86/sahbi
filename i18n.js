@@ -14,7 +14,7 @@ const D = [
 ['Ajouter une photo', 'إضافة صورة', 'Add a photo'],
 ['Ajouter un document PDF ou Word', 'إضافة مستند PDF أو Word', 'Add a PDF or Word document'],
 ['Message', 'رسالة', 'Message'],
-['Écris, envoie une photo…', 'اكتب أو أرسل صورة…', 'Type or send a photo…'],
+['Écris ici…', 'اكتب هنا…', 'Type here…'],
 ['Parler au micro', 'تحدّث عبر الميكروفون', 'Speak into the mic'],
 ['Conversation vocale avec Sahbi', 'محادثة صوتية مع صاحبي', 'Voice chat with Sahbi'],
 ['Conversation vocale', 'محادثة صوتية', 'Voice chat'],
