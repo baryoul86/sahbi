@@ -70,12 +70,14 @@ export async function GET(request) {
     try { due = await rpc('admin_alert', { p_kind: 'daily_report', p_message: 'résumé du jour', p_every_minutes: 1200 }); } catch { /* db giù */ }
     if (due) {
       const s = await rpc('admin_stats', {}).catch(() => null);
+      const v = await rpc('visit_stats', {}).catch(() => null);
       const st = await checkStripe();
       const lines = [
         allOk(h) ? '✅ Tout fonctionne.' : '⚠️ Il y a un problème, regarde le panneau.',
         '',
         s ? `Utilisateurs : ${s.users} (+${s.users_today} en 24 h, +${s.users_week} en 7 jours)` : '',
         s ? `Abonnés Pro actifs : ${s.pro}` : '',
+        v ? `Visites : ${v.today?.visitors || 0} visiteurs aujourd'hui · ${v.week?.visitors || 0} en 7 jours · ${v.month?.visitors || 0} en 30 jours` : '',
         s ? `Actifs aujourd'hui : ${s.active_today} · messages ${s.usage_today?.chat || 0} · images ${s.usage_today?.image || 0} · vidéos ce mois ${s.videos_month}` : '',
         s ? `\nPaiements ce mois :\n${money(s.payments_month)}` : '',
         st.ok ? `\nStripe : disponible ${st.available} · en attente ${st.pending}${st.live ? '' : ' (mode test)'}` : '',
@@ -90,9 +92,9 @@ export async function GET(request) {
   const user = await getUser(request);
   if (!user) return fail('auth', 401, 'Connecte-toi d’abord sur Sahbi.');
   if (!isAdmin(user.email)) return fail('forbidden', 403, adminEmails().length ? `Cette page est réservée à l’administrateur. Tu es connecté avec : ${user.email}` : 'ADMIN_EMAIL n’est pas encore configuré sur Vercel (ou le Redeploy n’a pas été fait).');
-  const [stats, h, st] = await Promise.all([rpc('admin_stats', {}).catch((e) => ({ error: e.message })), health(q.get('deep') === '1'), checkStripe()]);
+  const [stats, h, st, visits] = await Promise.all([rpc('admin_stats', {}).catch((e) => ({ error: e.message })), health(q.get('deep') === '1'), checkStripe(), rpc('visit_stats', {}).catch(() => null)]);
   return json({
-    stats, health: h, stripe: st,
+    stats, health: h, stripe: st, visits,
     config: {
       adminEmails: adminEmails(),
       alertsByEmail: !!env('RESEND_API_KEY'),

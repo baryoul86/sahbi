@@ -814,6 +814,15 @@ const { tr, lang: LANG, setLang, LOCALE } = window.SAHBI_I18N || { tr: (x, p) =>
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/+esm';
 
 const $ = (id) => document.getElementById(id);
+// Conta la visita per il pannello admin: solo numeri, nessun dato personale (una persona = una volta al giorno).
+(() => {
+  let fresh = false;
+  try { const d = new Date().toISOString().slice(0, 10); fresh = localStorage.getItem('sahbi-visit') !== d; localStorage.setItem('sahbi-visit', d); } catch { /* ignorato */ }
+  let app = /[?&]source=android/.test(location.search) || document.referrer.startsWith('android-app://');
+  try { app = app || sessionStorage.getItem('sahbi-android') === '1'; } catch { /* ignorato */ }
+  const body = JSON.stringify({ new: fresh, app, landing: !document.documentElement.classList.contains('has-session') });
+  setTimeout(() => fetch('/api/config?visit=1', { method: 'POST', headers: { 'content-type': 'application/json' }, body, keepalive: true }).catch(() => {}), 1500);
+})();
 // Scelta della lingua (pagina iniziale e Paramètres): si salva e la pagina si ricarica.
 for (const id of ['langLp', 'langSet']) { const s = $(id); if (s) { s.value = LANG; s.addEventListener('change', () => setLang(s.value)); } }
 const msgsEl = $('msgs'), thread = $('thread'), ta = $('msg'), sendBtn = $('send'), mic = $('mic');

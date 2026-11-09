@@ -45,3 +45,18 @@ export function GET(request) {
     },
   });
 }
+
+// POST /api/config?visit=1 → conta una visita (solo numeri per giorno, nessun dato personale).
+export async function POST(request) {
+  const url = new URL(request.url);
+  if (url.searchParams.get('visit') !== '1') return json({ ok: false }, 404);
+  const origin = request.headers.get('origin') || '';
+  if (origin && new URL(origin).host !== url.host) return json({ ok: false }, 403);
+  let b = {};
+  try { b = await request.json(); } catch { /* corpo vuoto */ }
+  try {
+    const { rpc } = await import('./_lib.js');
+    await rpc('track_visit', { p_new: b?.new === true, p_app: b?.app === true, p_landing: b?.landing === true });
+  } catch { /* tabella non ancora creata: si ignora */ }
+  return new Response(null, { status: 204 });
+}
