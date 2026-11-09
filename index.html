@@ -1353,6 +1353,7 @@ async function sendChat(text, pic = null, docAtt = null, opts = {}) {
     const parts = raw.split(SEP);
     reply = parts.filter((_, i) => i % 2 === 0).join('');
     out.textContent = reply; if (reply.trim()) outMsg.hidden = false;
+    opts.onText?.(reply);
     for (let i = 1; i < parts.length - 1; i += 2) {
       if ((i - 1) / 2 < handled) continue;
       handled++;
@@ -1916,20 +1917,24 @@ async function openVoice() {
   closeAll();
   if (me && !me.pro) { openSheet(); toast('La conversation vocale est incluse dans Sahbi Pro.'); return; }
   if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === 'undefined') { toast('Le micro n’est pas disponible sur ce navigateur.'); return; }
-  try { V.stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } }); }
-  catch { toast('Autorise le micro dans les réglages du navigateur.'); return; }
+  // La finestra si apre subito; intanto si "svegliano" i server di trascrizione, chat e voce.
+  $('voice').hidden = false; $('voiceLine').textContent = ''; vState('thinking', 'Je t’écoute…');
+  for (const u of ['/api/transcribe', '/api/speak', '/api/chat']) fetch(u, { method: 'GET' }).catch(() => {});
+  try { V.stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true, channelCount: 1 } }); }
+  catch { $('voice').hidden = true; toast('Autorise le micro dans les réglages du navigateur.'); return; }
   V.ctx = new (window.AudioContext || window.webkitAudioContext)();
   V.analyser = V.ctx.createAnalyser(); V.analyser.fftSize = 1024;
   V.ctx.createMediaStreamSource(V.stream).connect(V.analyser);
-  V.on = true; V.paused = false; $('voicePause').textContent = 'Pause'; $('voiceLine').textContent = '';
-  $('voice').hidden = false;
+  V.on = true; V.paused = false; $('voicePause').textContent = 'Pause';
   listen();
 }
 function listen() {
   if (!V.on || V.paused) return;
   vState('listening', 'Je t’écoute…');
-  const type = ['audio/webm', 'audio/mp4'].find((t) => MediaRecorder.isTypeSupported(t)) || '';
-  const rec = new MediaRecorder(V.stream, type ? { mimeType: type } : undefined);
+  const type = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4'].find((t) => MediaRecorder.isTypeSupported(t)) || '';
+  let rec;
+  try { rec = new MediaRecorder(V.stream, { ...(type ? { mimeType: type } : {}), audioBitsPerSecond: 24000 }); }
+  catch { rec = new MediaRecorder(V.stream, type ? { mimeType: type } : undefined); }
   V.rec = rec;
   const parts = []; let spoke = false, lastLoud = 0, floor = 0, n = 0;
   const t0 = performance.now();
@@ -1946,18 +1951,37 @@ function listen() {
   const tick = () => {
     if (!V.on || V.rec !== rec || rec.state !== 'recording') return;
     const lv = level(), now = performance.now();
-    if (now - t0 < 500) { floor = (floor * n + lv) / (n + 1); n++; }
+    if (now - t0 < 400) { floor = (floor * n + lv) / (n + 1); n++; }
     const thr = Math.max(0.025, floor * 2.5);
     $('orb').style.transform = `scale(${1 + Math.min(lv * 3, 0.2)})`;
-    if (now - t0 > 500 && lv > thr) { spoke = true; lastLoud = now; }
-    if (spoke && now - lastLoud > 1300) { rec.stop(); return; }          // pausa dopo aver parlato: tocca a Sahbi
+    if (now - t0 > 400 && lv > thr) { spoke = true; lastLoud = now; }
+    if (spoke && now - lastLoud > 900) { rec.stop(); return; }           // pausa dopo aver parlato: tocca a Sahbi
     if ((!spoke && now - t0 > 15000) || now - t0 > 60000) { rec.stop(); return; } // silenzio lungo o messaggio troppo lungo
     V.raf = requestAnimationFrame(tick);
   };
   V.raf = requestAnimationFrame(tick);
 }
+// Chiede l'audio di un pezzo di testo (parte subito, si ascolta dopo).
+function fetchSpeech(text) {
+  return api('/api/speak', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ text: text.slice(0, 1500) }) })
+    .then(async (r) => {
+      if (r.ok) return URL.createObjectURL(await r.blob());
+      const d = await r.json().catch(() => ({}));
+      if (d.error === 'pro') { closeVoice(); openSheet(); toast('La voix de Sahbi est incluse dans Sahbi Pro.'); }
+      else toast(d.message || 'Lecture impossible pour le moment.');
+      return null;
+    }).catch(() => null);
+}
+async function playUrl(url) {
+  if (!url) return;
+  if (!V.on) { URL.revokeObjectURL(url); return; }
+  V.audio = new Audio(url);
+  await new Promise((ok) => { V.audio.onended = ok; V.audio.onerror = ok; V.audio.onpause = ok; V.audio.play().catch(ok); });
+  const stopped = V.audio?.paused && !V.audio?.ended; URL.revokeObjectURL(url); V.audio = null;
+  return stopped;
+}
 async function turn(blob) {
-  vState('thinking', 'Je réfléchis…');
+  vState('thinking', 'Je transcris…');
   if (blob.size < 1500) { listen(); return; }
   let text = '';
   try {
@@ -1968,30 +1992,31 @@ async function turn(blob) {
     else if (d.error === 'limit') { toast(d.message || 'Limite du micro atteinte pour aujourd’hui.'); closeVoice(); return; }
   } catch { /* rete */ }
   if (!V.on) return;
-  if (!text) { vState('listening', 'Je n’ai pas compris, répète…'); setTimeout(listen, 700); return; }
+  if (!text) { vState('listening', 'Je n’ai pas compris, répète…'); setTimeout(listen, 500); return; }
   $('voiceLine').textContent = `« ${text} »`;
+  vState('thinking', 'Sahbi réfléchit…');
+  // Sahbi comincia a parlare appena la prima frase è pronta (anche prima che la risposta sia finita).
+  const SPEAK = 'Sahbi parle… touche le cercle pour l’interrompre';
+  let firstPlay = null, cut = 0;
+  const onText = (t) => {
+    if (firstPlay) return;
+    const m = t.match(/^[\s\S]{25,}?[.!?؟…](\s|$)|^[\s\S]{25,}?\n/);
+    if (!m) return;
+    cut = m[0].length;
+    const url = fetchSpeech(m[0].trim());
+    firstPlay = url.then((u) => { if (!V.on) return true; vState('speaking', SPEAK, m[0].trim()); return playUrl(u); });
+  };
   busy = true; grow();
-  const reply = await sendChat(text, null, null, { voice: true }).catch(() => '');
+  const reply = await sendChat(text, null, null, { voice: true, onText }).catch(() => '');
   busy = false; grow();
   if (!V.on) return;
   if (!reply) { vState('', 'Sahbi n’a pas pu répondre.'); setTimeout(listen, 1200); return; }
-  vState('speaking', 'Sahbi parle… touche le cercle pour l’interrompre', reply.length > 220 ? `${reply.slice(0, 220)}…` : reply);
-  await say(reply);
+  const rest = firstPlay ? reply.slice(cut).trim() : reply;
+  const restUrl = rest ? fetchSpeech(rest) : Promise.resolve(null);
+  const interrupted = firstPlay ? await firstPlay : false;
+  if (interrupted) restUrl.then((u) => u && URL.revokeObjectURL(u));
+  else if (V.on && rest) { vState('speaking', SPEAK, reply.length > 220 ? `${reply.slice(0, 220)}…` : reply); await playUrl(await restUrl); }
   if (V.on && !V.paused) listen();
-}
-async function say(text) {
-  const r = await api('/api/speak', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ text: text.slice(0, 1500) }) }).catch(() => null);
-  if (!r?.ok) {
-    const d = await r?.json().catch(() => ({})) || {};
-    if (d.error === 'pro') { closeVoice(); openSheet(); toast('La voix de Sahbi est incluse dans Sahbi Pro.'); }
-    else toast(d.message || 'Lecture impossible pour le moment.');
-    return;
-  }
-  const url = URL.createObjectURL(await r.blob());
-  if (!V.on) { URL.revokeObjectURL(url); return; }
-  V.audio = new Audio(url);
-  await new Promise((ok) => { V.audio.onended = ok; V.audio.onerror = ok; V.audio.onpause = ok; V.audio.play().catch(ok); });
-  URL.revokeObjectURL(url); V.audio = null;
 }
 function stopTurn() {
   if (V.rec) { V.rec.cancelled = true; if (V.rec.state === 'recording') V.rec.stop(); V.rec = null; }

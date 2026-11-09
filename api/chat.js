@@ -231,6 +231,9 @@ async function videoFrames(userId, prompt, opts) {
     : frame({ type: 'video_error', error: r.error, message: r.message });
 }
 
+// GET = sveglia il server (la conversazione vocale lo chiama appena si apre).
+export function GET() { return new Response(null, { status: 204, headers: { 'cache-control': 'no-store' } }); }
+
 export async function POST(request) {
   const userId = await getUserId(request);
   if (!userId) return fail('auth', 401, 'Session expirée. Recharge la page.');

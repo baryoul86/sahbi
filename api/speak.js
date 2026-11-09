@@ -1,5 +1,8 @@
 import { env, fail, getUserId, useCredit, refundCredit, getPlan, openaiHeaders, OPENAI } from './_lib.js';
 
+// GET = sveglia il server (la conversazione vocale lo chiama appena si apre).
+export function GET() { return new Response(null, { status: 204, headers: { 'cache-control': 'no-store' } }); }
+
 // Sahbi legge ad alta voce una risposta (funzione Pro). Restituisce un file audio mp3.
 export async function POST(request) {
   const userId = await getUserId(request);
