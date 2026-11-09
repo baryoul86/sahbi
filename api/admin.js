@@ -57,8 +57,8 @@ export async function GET(request) {
   const q = new URL(request.url).searchParams;
 
   if (q.get('health')) {
-    const h = await health(false);
-    return json({ ok: allOk(h), db: h.db.ok, openai: h.openai.ok, video: h.video.ok, at: new Date().toISOString() }, allOk(h) ? 200 : 503);
+    const [h, visits] = await Promise.all([health(false), rpc('visit_stats', {}).then(() => true).catch(() => false)]);
+    return json({ ok: allOk(h), db: h.db.ok, openai: h.openai.ok, video: h.video.ok, visits, at: new Date().toISOString() }, allOk(h) ? 200 : 503);
   }
 
   if (q.get('cron')) {
