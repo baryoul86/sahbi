@@ -65,6 +65,16 @@ Documenti:
 CV e lettere:
 - Per un CV usa sezioni chiare in righe separate (Nom, Contact, Profil, Expérience, Formation, Compétences, Langues), con titoli in maiuscolo e punti elenco con "- ". Niente tabelle. Dopo, ricorda che può scaricarlo in PDF con il pulsante PDF sotto la risposta.
 
+Meteo:
+- Per il meteo (tempo, temperatura, pioggia, vento, oggi/domani/settimana) chiama SUBITO get_weather con la città e le sue coordinate approssimative. Se l'utente non dice la città, usa quella dei ricordi; se non c'è, chiedi solo la città in una frase.
+- Con i dati ricevuti rispondi in modo breve e concreto: temperatura, cielo, pioggia, vento, e un consiglio pratico (ombrello, giacca...). Alla fine scrivi tra parentesi la fonte: MET Norway.
+
+Risposte dirette:
+- Rispondi SUBITO alla domanda, con la risposta vera già nella prima frase.
+- Non scrivere mai frasi come "vado a cercare", "un attimo", "controllo e ti dico", "se vuoi posso…", "fammi sapere se vuoi che…" al posto della risposta. Non promettere di fare dopo: fai adesso.
+- Non hai internet (tranne il meteo con get_weather). Per notizie, prezzi, risultati sportivi o fatti molto recenti, dì in UNA frase che non hai i dati in tempo reale e dai comunque l'informazione più utile che conosci.
+- Fai una domanda solo se senza quella informazione è impossibile rispondere.
+
 Stile:
 - Frasi brevi e chiare, tono amichevole e rispettoso. Niente prediche.
 - Usa elenchi solo quando aiutano (passaggi, ricette, liste).
@@ -119,6 +129,72 @@ const VIDEO_TOOL = {
 
 const MAX_MESSAGES = 20;
 const MAX_CHARS = 4000;
+const WEATHER_TOOL = {
+  type: 'function',
+  function: {
+    name: 'get_weather',
+    description: 'Meteo attuale e previsioni (fino a 7 giorni) per una città. Usalo per ogni domanda sul tempo che fa o che farà.',
+    parameters: {
+      type: 'object',
+      properties: {
+        city: { type: 'string', description: 'Nome della città, es. "Oran", "Dubai", "Le Caire"' },
+        latitude: { type: 'number', description: 'Latitudine approssimativa della città' },
+        longitude: { type: 'number', description: 'Longitudine approssimativa della città' },
+        days: { type: 'integer', description: 'Quanti giorni di previsione servono (1 = oggi, 2 = anche domani, max 7)' },
+      },
+      required: ['city', 'latitude', 'longitude'],
+      additionalProperties: false,
+    },
+  },
+};
+const SKY = { clearsky: 'ciel dégagé', fair: 'beau temps', partlycloudy: 'partiellement nuageux', cloudy: 'nuageux', fog: 'brouillard', lightrain: 'pluie faible', rain: 'pluie', heavyrain: 'forte pluie', lightrainshowers: 'averses faibles', rainshowers: 'averses', heavyrainshowers: 'fortes averses', thunder: 'orage', rainandthunder: 'pluie et orage', heavyrainandthunder: 'orages violents', rainshowersandthunder: 'averses orageuses', lightsleet: 'neige fondue', sleet: 'neige fondue', lightsnow: 'neige faible', snow: 'neige', heavysnow: 'forte neige', snowshowers: 'averses de neige' };
+const sky = (code) => { const k = String(code || '').replace(/_(day|night|polartwilight)$/, ''); return SKY[k] || k; };
+// Previsioni da MET Norway (gratuito anche per uso commerciale, con citazione della fonte).
+export async function getWeather({ city, latitude, longitude, days } = {}) {
+  const lat = Number(latitude), lon = Number(longitude);
+  if (!Number.isFinite(lat) || !Number.isFinite(lon) || Math.abs(lat) > 90 || Math.abs(lon) > 180) return { error: 'coordonnées inconnues' };
+  const ctrl = new AbortController(); const t = setTimeout(() => ctrl.abort(), 8000);
+  try {
+    const r = await fetch(`https://api.met.no/weatherapi/locationforecast/2.0/compact?lat=${lat.toFixed(3)}&lon=${lon.toFixed(3)}`, {
+      headers: { 'user-agent': 'Sahbi/1.0 https://www.sahbi.bond', accept: 'application/json' }, signal: ctrl.signal,
+    });
+    if (!r.ok) return { error: `service météo indisponible (${r.status})` };
+    const ts = (await r.json())?.properties?.timeseries || [];
+    if (!ts.length) return { error: 'pas de données' };
+    const off = Math.round(lon / 15) * 3600e3; // ora locale approssimativa
+    const local = (iso) => new Date(new Date(iso).getTime() + off).toISOString();
+    const now = ts[0], d0 = now.data?.instant?.details || {};
+    const n = Math.min(7, Math.max(1, Number(days) || 3));
+    const byDay = new Map();
+    for (const x of ts) {
+      const day = local(x.time).slice(0, 10), hour = Number(local(x.time).slice(11, 13));
+      const det = x.data?.instant?.details || {};
+      const e = byDay.get(day) || { day, min: Infinity, max: -Infinity, rain_mm: 0, wind_max_kmh: 0, sky: null, skyHour: 99 };
+      e.min = Math.min(e.min, det.air_temperature); e.max = Math.max(e.max, det.air_temperature);
+      e.wind_max_kmh = Math.max(e.wind_max_kmh, Math.round((det.wind_speed || 0) * 3.6));
+      const next = x.data?.next_6_hours || x.data?.next_1_hours;
+      if (x.data?.next_1_hours) e.rain_mm += x.data.next_1_hours.details?.precipitation_amount || 0;
+      if (next?.summary?.symbol_code && Math.abs(hour - 13) < Math.abs(e.skyHour - 13)) { e.sky = sky(next.summary.symbol_code); e.skyHour = hour; }
+      byDay.set(day, e);
+    }
+    const daily = [...byDay.values()].slice(0, n).map((e) => ({ day: e.day, min_c: Math.round(e.min), max_c: Math.round(e.max), sky: e.sky, rain_mm: Math.round(e.rain_mm * 10) / 10, wind_max_kmh: e.wind_max_kmh }));
+    return {
+      city, local_time_now: local(now.time).slice(0, 16).replace('T', ' '),
+      now: { temp_c: Math.round(d0.air_temperature), sky: sky((now.data?.next_1_hours || now.data?.next_6_hours)?.summary?.symbol_code), wind_kmh: Math.round((d0.wind_speed || 0) * 3.6), humidity: Math.round(d0.relative_humidity || 0) },
+      daily, source: 'MET Norway',
+    };
+  } catch (e) { return { error: e.name === 'AbortError' ? 'service météo trop lent' : 'service météo indisponible' }; }
+  finally { clearTimeout(t); }
+}
+
+// Data di oggi: serve per "domani", "sabato", ecc.
+const todayPrompt = () => `\n\nOggi è ${new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Africa/Algiers' })}.`;
+// Messaggi per la seconda risposta dopo il meteo.
+const weatherMessages = (base, reply, id, args, data) => [...base,
+  { role: 'assistant', content: reply || null, tool_calls: [{ id, type: 'function', function: { name: 'get_weather', arguments: args } }] },
+  { role: 'tool', tool_call_id: id, content: JSON.stringify(data) }];
+
+const parseJSON = (t) => { try { return JSON.parse(t || '{}'); } catch { return {}; } };
 const SEP = '\u001e'; // separa i messaggi di controllo (immagini) dal testo
 
 function cleanMessages(input) {
@@ -176,8 +252,9 @@ export async function POST(request) {
   if (left < 0) return fail('limit', 429, pro ? 'Limite de messages atteinte pour aujourd’hui.' : 'Limite gratuite atteinte pour aujourd’hui.');
   const imgOpts = (edit) => ({ limit: limits.image, photo: edit ? photo : null });
   const vidOpts = (fromPhoto) => ({ pro, limit: limits.video, photo: fromPhoto ? photo : null });
-  const tools = videoEnabled() ? [...TOOLS, VIDEO_TOOL] : TOOLS;
-  const NAMES = tools.map((t) => t.function.name);
+  const media = videoEnabled() ? [...TOOLS, VIDEO_TOOL] : TOOLS;
+  const tools = [...media, WEATHER_TOOL];
+  const NAMES = media.map((t) => t.function.name); // strumenti che creano immagini o video
   // Esegue lo strumento scelto dal modello e restituisce i messaggi di controllo per il telefono.
   const runTool = (name, prompt, edit) => (name === 'create_video'
     ? videoFrames(userId, prompt, vidOpts(edit))
@@ -201,7 +278,7 @@ export async function POST(request) {
   const model = env('OPENAI_CHAT_MODEL', 'gpt-5-nano');
   const payload = {
     model, stream: true, tools, tool_choice: 'auto',
-    messages: [{ role: 'system', content: SYSTEM.replace('{{VIDEO}}', videoEnabled() ? VIDEO_ON : VIDEO_OFF) + memoryPrompt(memory) + uiLangPrompt(body?.lang) + (body?.voice === true ? VOICE_STYLE : '') }, ...messages],
+    messages: [{ role: 'system', content: SYSTEM.replace('{{VIDEO}}', videoEnabled() ? VIDEO_ON : VIDEO_OFF) + memoryPrompt(memory) + uiLangPrompt(body?.lang) + todayPrompt() + (body?.voice === true ? VOICE_STYLE : '') }, ...messages],
   };
   if (model.startsWith('gpt-5')) payload.reasoning_effort = env('OPENAI_REASONING_EFFORT', 'minimal');
 
@@ -223,6 +300,13 @@ export async function POST(request) {
       const plain = await call({ ...payload, stream: false });
       const data = await plain.json().catch(() => null);
       const msg = data?.choices?.[0]?.message;
+      const wCall = msg?.tool_calls?.find((t) => t.function?.name === 'get_weather');
+      if (plain.ok && wCall) {
+        const wd = await getWeather(parseJSON(wCall.function.arguments));
+        const r2 = await call({ ...payload, stream: false, tool_choice: 'none', messages: weatherMessages(payload.messages, msg.content, wCall.id, wCall.function.arguments, wd) });
+        const d2 = await r2.json().catch(() => null);
+        return new Response((d2?.choices?.[0]?.message?.content || '') + await memoryFrame(), { headers });
+      }
       const toolCall = msg?.tool_calls?.find((t) => NAMES.includes(t.function?.name));
       const { prompt, edit } = toolCall ? parseArgs(toolCall.function.arguments) : { prompt: '' };
       if (plain.ok && (msg?.content || prompt)) {
@@ -248,7 +332,7 @@ export async function POST(request) {
   const decoder = new TextDecoder();
   const encoder = new TextEncoder();
   let buffer = '';
-  const tool = { name: '', args: '' };
+  const tool = { name: '', args: '', id: '' };
   let announced = false;
   let reply = '';
   // Rete di sicurezza: a volte il modello scrive "je lance la vidéo" senza chiamare lo strumento.
@@ -294,6 +378,7 @@ export async function POST(request) {
         if (delta?.content) { reply += delta.content; controller.enqueue(encoder.encode(delta.content.replaceAll(SEP, ''))); }
         for (const tc of delta?.tool_calls || []) {
           if (tc.index && tc.index > 0) continue; // una sola immagine per messaggio
+          if (tc.id) tool.id = tc.id;
           if (tc.function?.name) tool.name += tc.function.name;
           if (tc.function?.arguments) tool.args += tc.function.arguments;
           if (!announced && NAMES.includes(tool.name)) {
@@ -309,7 +394,27 @@ export async function POST(request) {
     },
   }));
 
+  // Meteo: prende i dati veri e chiede al modello la risposta finale, che arriva in streaming.
+  async function weatherFollowUp(controller) {
+    let args = {}; try { args = JSON.parse(tool.args || '{}'); } catch { /* argomenti rotti */ }
+    const data = await getWeather(args);
+    const r = await call({ ...payload, tool_choice: 'none', messages: weatherMessages(payload.messages, reply, tool.id || 'call_weather', tool.args || '{}', data) }).catch(() => null);
+    if (!r?.ok || !r.body) { controller.enqueue(encoder.encode(data.error ? `Je n'ai pas pu obtenir la météo (${data.error}).` : '')); return; }
+    const rd = r.body.getReader(); let buf = '';
+    for (;;) {
+      const { value, done } = await rd.read(); if (done) break;
+      buf += decoder.decode(value, { stream: true });
+      const lines = buf.split('\n'); buf = lines.pop();
+      for (const line of lines) {
+        const d = line.startsWith('data:') ? line.slice(5).trim() : '';
+        if (!d || d === '[DONE]') continue;
+        try { const c = JSON.parse(d).choices?.[0]?.delta?.content; if (c) controller.enqueue(encoder.encode(c.replaceAll(SEP, ''))); } catch { /* riga incompleta */ }
+      }
+    }
+  }
+
   async function finishTools(controller) {
+      if (tool.name === 'get_weather') { await weatherFollowUp(controller); return; }
       const forcedName = promised();
       if (forcedName) {
         const video = forcedName === 'create_video';
