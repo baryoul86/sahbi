@@ -595,7 +595,7 @@ html[lang=ar] body{line-height:1.7}
   <div class="lp-bar"><div class="wrap">
     <svg width="34" height="34" aria-hidden="true"><use href="#logo"/></svg>
     <b>sahbi</b>
-    <select class="lang-pick" id="langLp" aria-label="Langue"><option value="fr">Français</option><option value="ar">العربية</option><option value="en">English</option></select>
+    <select class="lang-pick" id="langLp" aria-label="Langue"><option value="auto">Auto</option><option value="fr">Français</option><option value="ar">العربية</option><option value="en">English</option></select>
     <a href="#inscription">Se connecter</a>
   </div></div>
 
@@ -787,7 +787,7 @@ html[lang=ar] body{line-height:1.7}
         <h3>Langue</h3>
         <div class="s-card">
           <div class="s-row"><label class="k" for="langSet">Langue de l’application</label>
-            <select class="lang-pick" id="langSet"><option value="fr">Français</option><option value="ar">العربية</option><option value="en">English</option></select></div>
+            <select class="lang-pick" id="langSet"><option value="auto">Langue du téléphone</option><option value="fr">Français</option><option value="ar">العربية</option><option value="en">English</option></select></div>
         </div>
         <p class="s-note">Sahbi te répond dans la langue que tu utilises : darija, arabe, français, anglais ou toute autre langue.</p>
       </div>
@@ -812,7 +812,7 @@ html[lang=ar] body{line-height:1.7}
 <script>window.SAHBI_I18N?.start();</script>
 <script type="module">
 // Lingua dell'interfaccia (i18n.js): tr('testo francese', {var}) restituisce il testo tradotto.
-const { tr, lang: LANG, setLang, LOCALE } = window.SAHBI_I18N || { tr: (x, p) => (p ? x.replace(/\{(\w+)\}/g, (m, k) => p[k] ?? m) : x), lang: 'fr', setLang: () => {}, LOCALE: 'fr-FR' };
+const { tr, lang: LANG, auto: LANG_AUTO, setLang, LOCALE } = window.SAHBI_I18N || { tr: (x, p) => (p ? x.replace(/\{(\w+)\}/g, (m, k) => p[k] ?? m) : x), lang: 'fr', auto: true, setLang: () => {}, LOCALE: 'fr-FR' };
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/+esm';
 
 const $ = (id) => document.getElementById(id);
@@ -826,7 +826,7 @@ const $ = (id) => document.getElementById(id);
   setTimeout(() => fetch('/api/config?visit=1', { method: 'POST', headers: { 'content-type': 'application/json' }, body, keepalive: true }).catch(() => {}), 1500);
 })();
 // Scelta della lingua (pagina iniziale e Paramètres): si salva e la pagina si ricarica.
-for (const id of ['langLp', 'langSet']) { const s = $(id); if (s) { s.value = LANG; s.addEventListener('change', () => setLang(s.value)); } }
+for (const id of ['langLp', 'langSet']) { const s = $(id); if (s) { s.value = LANG_AUTO ? 'auto' : LANG; s.addEventListener('change', () => setLang(s.value)); } }
 const msgsEl = $('msgs'), thread = $('thread'), ta = $('msg'), sendBtn = $('send'), mic = $('mic');
 let STORE = 'sahbi-chats-v1';
 let supabase = null, busy = false, imgLeft = null, imgLimit = 2, userId = null, cfg = {}, me = null, photo = null;

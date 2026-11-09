@@ -454,6 +454,8 @@ const D = [
 ['Quand tu dis ton prénom, ta ville ou ce que tu étudies, Sahbi s’en souvient pour mieux t’aider. Appuie sur × pour effacer un souvenir.', 'عندما تقول اسمك أو مدينتك أو ماذا تدرس، يتذكّر صاحبي ذلك ليساعدك أفضل. اضغط × لمسح ذكرى.', 'When you mention your name, city or what you study, Sahbi remembers to help you better. Tap × to erase a memory.'],
 ['Langue', 'اللغة', 'Language'],
 ['Langue de l’application', 'لغة التطبيق', 'App language'],
+['Langue du téléphone', 'لغة الهاتف', 'Phone language'],
+['Auto', 'تلقائي', 'Auto'],
 ['Sahbi te répond dans la langue que tu utilises : darija, arabe, français, anglais ou toute autre langue.', 'صاحبي يرد عليك باللغة التي تستعملها: الدارجة، العربية، الفرنسية، الإنجليزية أو أي لغة أخرى.', 'Sahbi answers in whatever language you use: Darija, Arabic, French, English or any other.'],
 ['Données', 'البيانات', 'Data'],
 ['Effacer l\'historique des discussions', 'مسح سجل المحادثات', 'Clear chat history'],
@@ -511,11 +513,14 @@ const D = [
 
 const LANGS = ['fr', 'ar', 'en'];
 const norm = (s) => s.replace(/\s+/g, ' ').trim();
-let lang = 'fr';
-try { lang = localStorage.getItem('sahbi-lang') || ''; } catch { /* ignorato */ }
-if (!LANGS.includes(lang)) {
-  const nav = (navigator.languages || [navigator.language || 'fr']).map((l) => String(l).toLowerCase());
-  lang = nav.find((l) => l.startsWith('ar')) ? 'ar' : nav[0]?.startsWith('fr') ? 'fr' : nav[0]?.startsWith('en') ? 'en' : 'fr';
+// Lingua: quella scelta a mano in Paramètres, altrimenti quella del telefono (in ordine di preferenza).
+const KEY = 'sahbi-lang2';
+let lang = '';
+try { localStorage.removeItem('sahbi-lang'); lang = localStorage.getItem(KEY) || ''; } catch { /* ignorato */ }
+const auto = !LANGS.includes(lang);
+if (auto) {
+  const nav = (navigator.languages?.length ? navigator.languages : [navigator.language || 'fr']).map((l) => String(l).toLowerCase().slice(0, 2));
+  lang = nav.find((l) => LANGS.includes(l)) || 'fr';
 }
 const col = LANGS.indexOf(lang);
 const MAP = new Map();
@@ -569,11 +574,10 @@ function start() {
   }).observe(document.body, { subtree: true, childList: true, characterData: true, attributes: true, attributeFilter: ATTRS });
 }
 function setLang(l) {
-  if (!LANGS.includes(l) || l === lang) return;
-  try { localStorage.setItem('sahbi-lang', l); } catch { /* ignorato */ }
+  try { if (l === 'auto') localStorage.removeItem(KEY); else if (LANGS.includes(l)) localStorage.setItem(KEY, l); else return; } catch { /* ignorato */ }
   location.reload();
 }
-window.SAHBI_I18N = { lang, tr, start, setLang, LOCALE, LANGS };
+window.SAHBI_I18N = { lang, auto, tr, start, setLang, LOCALE, LANGS };
 document.documentElement.lang = lang;
 document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
 })();
