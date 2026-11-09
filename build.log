@@ -1,0 +1,24 @@
+== Chiave di firma
+Chiave esistente: la recupero dal ramo android-key.
+Impronta SHA-256 della chiave di caricamento: 83:94:D6:76:C5:D8:38:99:04:62:4B:3C:4C:B3:F6:6A:E1:98:3E:08:99:9F:29:11:A9:FB:97:95:B8:B6:D7:D9
+== Progetto Android (Bubblewrap)
+,-----.        ,--.  ,--.  ,--.
+|  |) /_,--.,--|  |-.|  |-.|  |,---.,--.   ,--,--.--.,--,--.,---.
+|  .-.  |  ||  | .-. | .-. |  | .-. |  |.'.|  |  .--' ,-.  | .-. |
+|  '--' '  ''  | `-' | `-' |  \   --|   .'.   |  |  \ '-'  | '-' '
+`------' `----' `---' `---'`--'`----'--'   '--`--'   `--`--|  |-'
+                                                           `--'    
+Generating Android Project.
+
+Project updated successfully.
+Build it by running bubblewrap build
+== Compilazione
+== Firma
+total 3732
+drwxr-xr-x 2 runner runner    4096 Nov  9 13:44 .
+drwxr-xr-x 9 runner runner    4096 Nov  9 13:42 ..
+-rw-r--r-- 1 runner runner 2010726 Nov  9 13:44 sahbi-7.aab
+-rw-r--r-- 1 runner runner 1771941 Nov  9 13:44 sahbi-7.apk
+-rw-r--r-- 1 runner runner   21919 Nov  9 13:44 sahbi-7.apk.idsig
+-rw-r--r-- 1 runner runner      96 Nov  9 13:42 sha256.txt
+== FATTO
