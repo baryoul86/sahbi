@@ -239,6 +239,7 @@ const D = [
 ['Document long : Sahbi lira le début.', 'مستند طويل: سيقرأ صاحبي البداية.', 'Long document: Sahbi will read the beginning.'],
 ['Impossible de lire ce fichier Word. Essaie de l’enregistrer en PDF.', 'تعذّرت قراءة ملف Word هذا. جرّب حفظه بصيغة PDF.', 'Couldn’t read this Word file. Try saving it as PDF.'],
 ['Impossible de lire ce document.', 'تعذّرت قراءة هذا المستند.', 'Couldn’t read this document.'],
+['Annuler l’enregistrement', 'إلغاء التسجيل', 'Cancel recording'],
 ['Arrêter et transcrire', 'إيقاف وتحويل إلى نص', 'Stop and transcribe'],
 ['J’écoute… appuie encore pour terminer', 'أستمع… اضغط مرة أخرى للإنهاء', 'Listening… tap again to finish'],
 ['Le micro n’est pas disponible sur ce navigateur.', 'الميكروفون غير متاح في هذا المتصفح.', 'The mic isn’t available in this browser.'],

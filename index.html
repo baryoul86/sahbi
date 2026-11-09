@@ -102,7 +102,7 @@ footer.composer{border-top:1px solid var(--line)}
 .house .hc{margin-inline-start:auto;font-size:13px;color:var(--mint-text);font-weight:500;flex:0 0 auto}
 footer.composer .col{padding-block:10px 12px;display:flex;flex-direction:column;gap:8px}
 .count{font-variant-numeric:tabular-nums;color:var(--mint-text);font-weight:500}
-.box{display:flex;align-items:flex-end;gap:6px;background:var(--panel);border:1px solid var(--line);border-radius:22px;padding:6px 6px 6px 14px}
+.box{position:relative;display:flex;align-items:flex-end;gap:6px;background:var(--panel);border:1px solid var(--line);border-radius:22px;padding-block:6px;padding-inline:14px 6px}
 .box:focus-within{border-color:var(--mint)}
 .box textarea{flex:1;min-width:0;background:transparent;border:0;resize:none;outline:none;max-height:140px;padding-block:9px;line-height:1.4}
 .box textarea::placeholder{color:var(--muted)}
@@ -362,6 +362,18 @@ a.s-row[hidden]{display:none}
   @page{margin:16mm}
 }
 @media (prefers-reduced-motion:reduce){.typing i,.mic.on,.ph,.orb{animation:none}}
+/* Registrazione al microfono (come ChatGPT): ✕ annulla · onda e tempo · ■ stop */
+.rec{position:absolute;inset:0;z-index:2;display:flex;align-items:center;gap:8px;padding:6px;border-radius:inherit;background:var(--panel)}
+.rec[hidden]{display:none}
+.rec button{width:44px;height:44px;border-radius:50%;border:0;display:grid;place-items:center;flex:0 0 44px}
+.rec .rx{background:transparent;color:var(--muted)}
+.rec .rx:hover{color:var(--fg);background:var(--panel-2)}
+.rec .rs{background:var(--mint);color:var(--mint-ink)}
+.rec canvas{flex:1;min-width:0;height:36px}
+.rec .rt{font-size:14px;color:var(--muted);font-variant-numeric:tabular-nums;min-width:40px;text-align:center}
+.rec.busy canvas{opacity:.35}
+.rec .spin{width:20px;height:20px;border-radius:50%;border:2.5px solid currentColor;border-top-color:transparent;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
 /* Arabo: da destra a sinistra */
 html[dir=rtl] .msg.me .text{border-radius:20px 20px 20px 6px}
 
@@ -445,6 +457,12 @@ html[lang=ar] body{line-height:1.7}
         <button class="talk" id="talk" type="button" aria-label="Conversation vocale avec Sahbi" title="Conversation vocale">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M4 10v4M8 7v10M12 4v16M16 8v8M20 11v2"/></svg>
         </button>
+        <div class="rec" id="rec" hidden>
+          <button type="button" class="rx" id="recCancel" aria-label="Annuler l’enregistrement"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+          <canvas id="recWave" aria-hidden="true"></canvas>
+          <span class="rt" id="recTime">0:00</span>
+          <button type="button" class="rs" id="recStop" aria-label="Arrêter et transcrire"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="5" y="5" width="14" height="14" rx="3"/></svg></button>
+        </div>
         <button class="send" id="send" type="submit" aria-label="Envoyer" disabled hidden>
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
         </button>
@@ -1679,44 +1697,88 @@ $('docFile').addEventListener('change', async () => {
 });
 $('removeDoc').addEventListener('click', () => setDoc(null));
 
-// ---------- Microfono ----------
-let recorder = null, chunks = [], stopTimer = null;
+// ---------- Microfono (come ChatGPT: premi, parli, ■ per finire, ✕ per annullare) ----------
+let recorder = null, chunks = [], stopTimer = null, recCancelled = false, recStart = 0, recRaf = 0, recCtx = null;
+const recBar = $('rec'), recWave = $('recWave');
 function micState(on) {
   mic.classList.toggle('on', on); mic.setAttribute('aria-pressed', String(on));
-  mic.setAttribute('aria-label', on ? 'Arrêter et transcrire' : 'Parler au micro');
-  ta.placeholder = on ? 'J’écoute… appuie encore pour terminer' : placeholder();
+  recBar.hidden = !on; recBar.classList.remove('busy');
+  $('recStop').innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="5" y="5" width="14" height="14" rx="3"/></svg>';
+  $('recStop').disabled = false;
+  if (on) $('recStop').focus();
+}
+// Onda che si muove con la voce + cronometro.
+function drawWave(stream) {
+  try {
+    recCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const an = recCtx.createAnalyser(); an.fftSize = 256; recCtx.createMediaStreamSource(stream).connect(an);
+    const buf = new Uint8Array(an.fftSize), bars = [];
+    const g = recWave.getContext('2d');
+    const loop = () => {
+      const w = recWave.clientWidth, h = recWave.clientHeight, dpr = window.devicePixelRatio || 1;
+      if (recWave.width !== w * dpr) { recWave.width = w * dpr; recWave.height = h * dpr; }
+      an.getByteTimeDomainData(buf);
+      let peak = 0; for (const v of buf) peak = Math.max(peak, Math.abs(v - 128));
+      bars.push(Math.min(1, peak / 50)); const n = Math.floor(w / 5); while (bars.length > n) bars.shift();
+      g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, w, h);
+      g.fillStyle = getComputedStyle(mic).color || '#2FAE74';
+      bars.forEach((v, i) => { const bh = Math.max(3, v * h); g.fillRect(w - (bars.length - i) * 5, (h - bh) / 2, 3, bh); });
+      const sec = Math.floor((Date.now() - recStart) / 1000);
+      $('recTime').textContent = `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}`;
+      recRaf = requestAnimationFrame(loop);
+    };
+    loop();
+  } catch { /* senza onda va bene lo stesso */ }
+}
+function stopWave() { cancelAnimationFrame(recRaf); recCtx?.close().catch(() => {}); recCtx = null; }
+// Trascrizione in streaming: il testo appare man mano.
+async function transcribe(blob) {
+  recBar.classList.add('busy'); $('recStop').disabled = true; $('recStop').innerHTML = '<span class="spin" aria-hidden="true"></span>';
+  const before = ta.value ? ta.value.replace(/\s+$/, '') + ' ' : '';
+  try {
+    const fd = new FormData(); fd.append('audio', blob, 'audio'); fd.append('stream', '1');
+    const r = await api('/api/transcribe', { method: 'POST', body: fd });
+    if (!r.ok) { const d = await r.json().catch(() => ({})); toast(d.message || 'Je n’ai pas compris. Réessaie.'); return; }
+    let text = '';
+    if ((r.headers.get('content-type') || '').includes('text/plain') && r.body) {
+      const rd = r.body.getReader(), dec = new TextDecoder();
+      micState(false);
+      for (;;) { const { value, done } = await rd.read(); if (done) break; text += dec.decode(value, { stream: true }); ta.value = before + text.trimStart(); grow(); }
+    } else text = (await r.json().catch(() => ({}))).text || '';
+    text = text.trim();
+    if (!text) { toast('Je n’ai pas compris. Réessaie.'); ta.value = before.trimEnd(); }
+    else ta.value = before + text;
+    grow(); ta.focus();
+  } catch { toast('Pas de connexion.'); }
+  finally { micState(false); }
 }
 async function startMic() {
   if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === 'undefined') { toast('Le micro n’est pas disponible sur ce navigateur.'); return; }
+  fetch('/api/transcribe', { method: 'GET' }).catch(() => {}); // sveglia il server mentre parli
   let stream;
-  try { stream = await navigator.mediaDevices.getUserMedia({ audio: true }); }
+  try { stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, channelCount: 1 } }); }
   catch { toast('Autorise le micro dans les réglages du navigateur.'); return; }
-  const type = ['audio/webm', 'audio/mp4'].find((t) => MediaRecorder.isTypeSupported(t)) || '';
-  recorder = new MediaRecorder(stream, type ? { mimeType: type } : undefined);
-  chunks = [];
+  const type = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4'].find((t) => MediaRecorder.isTypeSupported(t)) || '';
+  // File più leggero = invio più veloce (la voce resta chiara).
+  try { recorder = new MediaRecorder(stream, { ...(type ? { mimeType: type } : {}), audioBitsPerSecond: 24000 }); }
+  catch { recorder = new MediaRecorder(stream, type ? { mimeType: type } : undefined); }
+  chunks = []; recCancelled = false; recStart = Date.now();
   recorder.ondataavailable = (e) => { if (e.data.size) chunks.push(e.data); };
-  recorder.onstop = async () => {
-    stream.getTracks().forEach((t) => t.stop());
-    clearTimeout(stopTimer); micState(false);
+  recorder.onstop = () => {
+    stream.getTracks().forEach((t) => t.stop()); stopWave(); clearTimeout(stopTimer);
     const blob = new Blob(chunks, { type: recorder.mimeType || 'audio/webm' });
     recorder = null;
-    if (blob.size < 1000) return;
-    mic.classList.add('busy'); ta.placeholder = 'Transcription…';
-    try {
-      const fd = new FormData(); fd.append('audio', blob, 'audio');
-      const r = await api('/api/transcribe', { method: 'POST', body: fd });
-      const d = await r.json().catch(() => ({}));
-      if (r.ok && d.text) { ta.value = (ta.value ? ta.value + ' ' : '') + d.text; grow(); ta.focus(); }
-      else toast(d.message || 'Je n’ai pas compris. Réessaie.');
-    } catch { toast('Pas de connexion.'); }
-    mic.classList.remove('busy'); ta.placeholder = placeholder();
+    if (recCancelled || blob.size < 1000 || Date.now() - recStart < 500) { micState(false); return; }
+    transcribe(blob);
   };
-  recorder.start(); micState(true);
-  stopTimer = setTimeout(() => recorder && recorder.stop(), 120000);
+  recorder.start(); micState(true); drawWave(stream);
+  stopTimer = setTimeout(() => recorder?.state === 'recording' && recorder.stop(), 120000);
 }
-mic.addEventListener('click', () => {
-  if (mic.classList.contains('busy')) return;
-  if (recorder) recorder.stop(); else startMic();
+mic.addEventListener('click', () => { if (!recorder && recBar.hidden) startMic(); });
+$('recStop').addEventListener('click', () => { if (recorder?.state === 'recording') recorder.stop(); });
+$('recCancel').addEventListener('click', () => {
+  recCancelled = true;
+  if (recorder?.state === 'recording') recorder.stop(); else micState(false);
 });
 
 // ---------- Interfaccia ----------
