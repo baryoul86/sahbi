@@ -50,6 +50,8 @@ jobs:
           tmp="$(mktemp -d)"
           tail -n 200 build.log > "$tmp/build.log" 2>/dev/null || echo "nessun log" > "$tmp/build.log"
           cp out/sha256.txt "$tmp/" 2>/dev/null || true
+          # Anche i file dell'app (firmati, niente di segreto): cosi' si scaricano anche dal ramo.
+          cp out/*.aab out/*.apk "$tmp/" 2>/dev/null || true
           echo "run ${{ github.run_number }} – ${{ job.status }} – $(date -u)" > "$tmp/STATO.txt"
           cd "$tmp" && git init -q && git checkout -q -b android-build && git add . \
             && git -c user.name="sahbi-bot" -c user.email="bot@sahbi.bond" commit -qm "Rapporto ${{ github.run_number }}" \
