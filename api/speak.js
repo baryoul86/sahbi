@@ -3,12 +3,12 @@ import { env, fail, getUserId, useCredit, refundCredit, getPlan, openaiHeaders, 
 // Sahbi legge ad alta voce una risposta (funzione Pro). Restituisce un file audio mp3.
 export async function POST(request) {
   const userId = await getUserId(request);
-  if (!userId) return fail('auth', 401, 'Sessione scaduta. Ricarica la pagina.');
+  if (!userId) return fail('auth', 401, 'Session expirée. Recharge la page.');
 
   let body;
-  try { body = await request.json(); } catch { return fail('bad_request', 400, 'Richiesta non valida.'); }
+  try { body = await request.json(); } catch { return fail('bad_request', 400, 'Demande invalide.'); }
   const text = typeof body?.text === 'string' ? body.text.trim().slice(0, 3000) : '';
-  if (!text) return fail('bad_request', 400, 'Niente da leggere.');
+  if (!text) return fail('bad_request', 400, 'Rien à lire.');
 
   const { limits, pro } = await getPlan(userId);
   if (!pro && limits.tts <= 0) return fail('pro', 402, 'La voix de Sahbi est réservée à Sahbi Pro.');

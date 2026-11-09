@@ -8,7 +8,7 @@ async function lemonWebhook(request, raw) {
   if (!verifyLemon(raw, request.headers.get('x-signature'), env('LEMONSQUEEZY_WEBHOOK_SECRET'))) {
     const { alert } = await import('./_alert.js');
     await alert('lemon_webhook', 'Un avis de paiement Lemon Squeezy a été refusé (signature invalide). Vérifie LEMONSQUEEZY_WEBHOOK_SECRET sur Vercel.', 360);
-    return fail('signature', 400, 'Firma non valida.');
+    return fail('signature', 400, 'Signature invalide.');
   }
   const event = JSON.parse(raw);
   const name = event.meta?.event_name;
@@ -37,7 +37,7 @@ export async function POST(request) {
   if (!verifyStripe(raw, request.headers.get('stripe-signature'), env('STRIPE_WEBHOOK_SECRET'))) {
     const { alert } = await import('./_alert.js');
     await alert('stripe_webhook', 'Un avis de paiement a été refusé (signature invalide). Si ça se répète, vérifie le secret du webhook sur Vercel.', 360);
-    return fail('signature', 400, 'Firma non valida.');
+    return fail('signature', 400, 'Signature invalide.');
   }
   const event = JSON.parse(raw);
   const obj = event.data?.object || {};

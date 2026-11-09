@@ -3,7 +3,7 @@ import { json, fail, getUserId, deleteAccount } from './_lib.js';
 // Cancella l'account dell'utente collegato, con tutte le sue immagini.
 export async function DELETE(request) {
   const userId = await getUserId(request);
-  if (!userId) return fail('auth', 401, 'Sessione scaduta. Ricarica la pagina.');
+  if (!userId) return fail('auth', 401, 'Session expirée. Recharge la page.');
   try {
     await deleteAccount(userId);
     return json({ ok: true });

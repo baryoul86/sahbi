@@ -18,19 +18,20 @@
 <link rel="manifest" href="/manifest.webmanifest">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@800&family=Rubik:wght@400;500&family=Reem+Kufi:wght@600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@800&family=Baloo+Bhaijaan+2:wght@800&family=IBM+Plex+Sans+Arabic:wght@400;500&family=Rubik:wght@400;500&family=Reem+Kufi:wght@600&display=swap">
 <script>
 try { if (localStorage.getItem('sahbi-theme') === 'dark') document.documentElement.dataset.theme = 'dark'; } catch {}
 try { if (Object.keys(localStorage).some((k) => /^sb-.*-auth-token$/.test(k))) document.documentElement.classList.add('has-session'); } catch {}
 </script>
+<script src="/i18n.js"></script>
 <style>
 :root{
   /* Tema chiaro (predefinito): sfondo bianco, testo verde notte, verde del logo per i pulsanti */
   --night:#FFFFFF; --panel:#F2F7F4; --panel-2:#E2EEE7; --line:#D3E3DA;
   --fg:#0F2E24; --muted:#4D675C; --mint:#2FAE74; --mint-text:#187A4F; --mint-ink:#0B2219; --danger:#B3401F;
   --scrim:rgba(15,46,36,.35);
-  --brand:"Baloo 2","Rubik",system-ui,sans-serif;
-  --body:"Rubik",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --brand:"Baloo 2","Baloo Bhaijaan 2","Rubik",system-ui,sans-serif;
+  --body:"Rubik","IBM Plex Sans Arabic",system-ui,-apple-system,"Segoe UI",sans-serif;
   --arabic:"Reem Kufi","Rubik",sans-serif;
   color-scheme:light;
 }
@@ -65,7 +66,7 @@ main.thread .col{display:flex;flex-direction:column;gap:18px;padding-block:20px 
 .empty h1{margin:0;font-family:var(--brand);font-weight:800;font-size:32px;line-height:1.1;text-wrap:balance}
 .empty p{margin:0;color:var(--muted);max-width:30ch}
 .chips{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:6px}
-.chip{min-height:40px;padding:8px 14px;border-radius:14px;border:1px solid var(--line);background:var(--panel);font-size:14px;text-align:left}
+.chip{min-height:40px;padding:8px 14px;border-radius:14px;border:1px solid var(--line);background:var(--panel);font-size:14px;text-align:start}
 .chip:hover{border-color:var(--mint)}
 .msg{display:flex;gap:10px;align-items:flex-start;min-width:0}
 .msg.me{justify-content:flex-end}
@@ -89,16 +90,16 @@ main.thread .col{display:flex;flex-direction:column;gap:18px;padding-block:20px 
 footer.composer{border-top:1px solid var(--line)}
 .adbar{border-top:1px solid var(--line);background:var(--panel)}
 .adbar .col{display:flex;align-items:center;justify-content:center;min-height:56px;padding-block:3px;position:relative}
-.ad-tag{position:absolute;top:2px;left:0;font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.ad-tag{position:absolute;top:2px;inset-inline-start:0;font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
 .ad-slot{width:100%;max-width:468px;height:50px;overflow:hidden;display:flex;justify-content:center}
 .ad-slot ins{display:inline-block;width:320px;height:50px}
-.house{width:100%;max-width:468px;min-height:48px;display:flex;align-items:center;gap:12px;padding:6px 10px;border:0;border-radius:12px;background:transparent;text-align:left}
+.house{width:100%;max-width:468px;min-height:48px;display:flex;align-items:center;gap:12px;padding:6px 10px;border:0;border-radius:12px;background:transparent;text-align:start}
 .house:hover{background:var(--panel-2)}
 .house .hi{flex:0 0 36px;height:36px;border-radius:10px;background:var(--mint);color:var(--mint-ink);display:grid;place-items:center}
 .house .ht{display:flex;flex-direction:column;min-width:0;line-height:1.25}
 .house .ht b{font-weight:500;font-size:14px}
 .house .ht span{font-size:12.5px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.house .hc{margin-left:auto;font-size:13px;color:var(--mint-text);font-weight:500;flex:0 0 auto}
+.house .hc{margin-inline-start:auto;font-size:13px;color:var(--mint-text);font-weight:500;flex:0 0 auto}
 footer.composer .col{padding-block:10px 12px;display:flex;flex-direction:column;gap:8px}
 .count{font-variant-numeric:tabular-nums;color:var(--mint-text);font-weight:500}
 .box{display:flex;align-items:flex-end;gap:6px;background:var(--panel);border:1px solid var(--line);border-radius:22px;padding:6px 6px 6px 14px}
@@ -115,24 +116,24 @@ footer.composer .col{padding-block:10px 12px;display:flex;flex-direction:column;
 .send:disabled{background:var(--panel-2);color:var(--muted);cursor:default}
 .hint{font-size:12px;color:var(--muted);text-align:center}
 .scrim{position:fixed;inset:0;background:var(--scrim);z-index:20}
-.drawer{position:fixed;top:0;bottom:0;left:0;width:min(320px,86vw);background:var(--panel);z-index:21;display:flex;flex-direction:column;gap:16px;padding:calc(16px + env(safe-area-inset-top,0px)) 16px calc(16px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));border-right:1px solid var(--line)}
+.drawer{position:fixed;top:0;bottom:0;inset-inline-start:0;width:min(320px,86vw);background:var(--panel);z-index:21;display:flex;flex-direction:column;gap:16px;padding:calc(16px + env(safe-area-inset-top,0px)) 16px calc(16px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));border-inline-end:1px solid var(--line)}
 .drawer h2{margin:0;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:500}
 .new{min-height:48px;border-radius:14px;border:0;background:var(--mint);color:var(--mint-ink);font-weight:500;display:flex;align-items:center;gap:10px;padding:0 16px}
 .hist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px;overflow-y:auto;flex:1}
-.hist button{width:100%;text-align:left;min-height:44px;padding:8px 12px;border-radius:10px;border:0;background:transparent;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hist button{width:100%;text-align:start;min-height:44px;padding:8px 12px;border-radius:10px;border:0;background:transparent;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .hist button[aria-current="true"]{background:var(--panel-2)}
 .hist button:hover{background:var(--panel-2)}
 .hist-empty{color:var(--muted);font-size:14px;padding:0 12px}
 .hist li{display:flex;align-items:center;gap:2px;position:relative}
 .hist li .title{flex:1;min-width:0}
 .hist li .more{width:40px;min-height:40px;flex:0 0 40px;padding:0;text-align:center;border-radius:10px;color:var(--muted);font-size:20px;line-height:1}
-.hist li .pin{font-size:12px;margin-right:4px}
+.hist li .pin{font-size:12px;margin-inline-end:4px}
 .hist .sec{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);padding:10px 12px 4px}
-.hmenu{position:absolute;right:4px;top:42px;z-index:5;background:var(--night);border:1px solid var(--line);border-radius:14px;box-shadow:0 8px 24px rgba(0,0,0,.18);padding:6px;display:flex;flex-direction:column;min-width:190px}
-.hist .hmenu button{min-height:44px;text-align:left;white-space:nowrap;padding:0 12px;border-radius:10px;display:flex;align-items:center;gap:10px}
+.hmenu{position:absolute;inset-inline-end:4px;top:42px;z-index:5;background:var(--night);border:1px solid var(--line);border-radius:14px;box-shadow:0 8px 24px rgba(0,0,0,.18);padding:6px;display:flex;flex-direction:column;min-width:190px}
+.hist .hmenu button{min-height:44px;text-align:start;white-space:nowrap;padding:0 12px;border-radius:10px;display:flex;align-items:center;gap:10px}
 .hist .hmenu button.danger{color:var(--danger)}
 .hist li input{flex:1;min-width:0;min-height:40px;border-radius:10px;border:1px solid var(--mint);background:var(--night);color:var(--fg);padding:0 10px;font:inherit;font-size:16px}
-.plus-card{border:1px solid var(--line);border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:6px;background:var(--night);text-align:left}
+.plus-card{border:1px solid var(--line);border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:6px;background:var(--night);text-align:start}
 .plus-card b{font-family:var(--brand);font-size:20px;font-weight:800}
 .plus-card span{color:var(--muted);font-size:14px}
 .sheet{position:fixed;left:0;right:0;bottom:0;z-index:21;background:var(--panel);border-radius:24px 24px 0 0;border-top:1px solid var(--line);padding:22px max(16px,env(safe-area-inset-right,0px)) calc(20px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
@@ -144,7 +145,7 @@ footer.composer .col{padding-block:10px 12px;display:flex;flex-direction:column;
 .feats svg{flex:0 0 20px;margin-top:3px}
 .cta{min-height:52px;border-radius:16px;border:0;background:var(--mint);color:var(--mint-ink);font-weight:500;font-size:17px}
 .ghost{min-height:44px;border:0;background:transparent;color:var(--muted)}
-.lib-btn{min-height:48px;border-radius:14px;border:1px solid var(--line);background:transparent;display:flex;align-items:center;gap:10px;padding:0 16px;text-align:left}
+.lib-btn{min-height:48px;border-radius:14px;border:1px solid var(--line);background:transparent;display:flex;align-items:center;gap:10px;padding:0 16px;text-align:start}
 .lib-btn:hover{background:var(--panel-2)}
 .gallery,.viewer{position:fixed;inset:0;z-index:25;background:var(--night);display:flex;flex-direction:column}
 .gallery header,.viewer header{display:flex;align-items:center;gap:8px;padding:calc(8px + env(safe-area-inset-top,0px)) max(8px,env(safe-area-inset-right,0px)) 8px max(8px,env(safe-area-inset-left,0px));border-bottom:1px solid var(--line)}
@@ -165,23 +166,23 @@ footer.composer .col{padding-block:10px 12px;display:flex;flex-direction:column;
 .v-actions .danger{color:var(--danger)}
 .stack{display:flex;flex-direction:column;gap:4px;min-width:0;max-width:85%}
 .stack .text{max-width:100%}
-.actions{display:flex;gap:2px;flex-wrap:wrap;margin-left:-8px}
+.actions{display:flex;gap:2px;flex-wrap:wrap;margin-inline-start:-8px}
 .act{min-height:36px;min-width:36px;padding:0 8px;border:0;border-radius:10px;background:transparent;color:var(--muted);display:inline-flex;align-items:center;gap:6px;font-size:13px}
 .act:hover{background:var(--panel);color:var(--fg)}
 .act.on{color:var(--mint-text)}
 .me-photo{display:flex;flex-direction:column;align-items:flex-end;gap:6px;max-width:85%}
 .me-photo img{width:180px;max-width:100%;border-radius:16px;display:block}
-.attach{width:44px;height:44px;border-radius:50%;border:0;background:transparent;color:var(--muted);display:grid;place-items:center;flex:0 0 44px;margin-left:-10px}
+.attach{width:44px;height:44px;border-radius:50%;border:0;background:transparent;color:var(--muted);display:grid;place-items:center;flex:0 0 44px;margin-inline-start:-10px}
 .attach:hover{color:var(--fg)}
 .attach-bar{display:flex;flex-direction:column;gap:8px}
 .thumb{position:relative;width:64px;height:64px}
 .thumb img{width:64px;height:64px;object-fit:cover;border-radius:12px;display:block;border:1px solid var(--line)}
-.thumb button{position:absolute;top:-8px;right:-8px;width:28px;height:28px;border-radius:50%;border:2px solid var(--night);background:var(--fg);color:var(--night);display:grid;place-items:center;font-size:16px;line-height:1;padding:0}
+.thumb button{position:absolute;top:-8px;inset-inline-end:-8px;width:28px;height:28px;border-radius:50%;border:2px solid var(--night);background:var(--fg);color:var(--night);display:grid;place-items:center;font-size:16px;line-height:1;padding:0}
 .styles{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;scrollbar-width:none}
 .styles button{flex:0 0 auto;min-height:36px;padding:0 12px;border-radius:999px;border:1px solid var(--line);background:var(--panel);font-size:13px;white-space:nowrap}
 .styles button:hover{border-color:var(--mint)}
 .shortcuts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;width:100%;max-width:520px;margin-top:6px}
-.sc{min-height:64px;padding:10px 12px;border-radius:14px;border:1px solid var(--line);background:var(--panel);text-align:left;display:flex;flex-direction:column;justify-content:center;gap:2px}
+.sc{min-height:64px;padding:10px 12px;border-radius:14px;border:1px solid var(--line);background:var(--panel);text-align:start;display:flex;flex-direction:column;justify-content:center;gap:2px}
 .sc:hover{border-color:var(--mint)}
 .sc b{font-weight:500;font-size:15px}
 .sc span{font-size:12px;color:var(--muted)}
@@ -228,7 +229,7 @@ footer.composer .col{padding-block:10px 12px;display:flex;flex-direction:column;
 .plan.pro{border-color:var(--mint);background:var(--panel)}
 .plan h3{margin:0;font-size:20px;font-weight:500}
 .plan .pr{font-family:var(--brand);font-weight:800;font-size:30px;color:var(--mint-text)}
-.plan ul{margin:0;padding-left:18px;color:var(--fg)}
+.plan ul{margin:0;padding-inline-start:18px;color:var(--fg)}
 .plan li{margin:4px 0}
 .faq details{border-top:1px solid var(--line);padding:14px 0}
 .faq details:last-child{border-bottom:1px solid var(--line)}
@@ -248,7 +249,7 @@ footer.composer .col{padding-block:10px 12px;display:flex;flex-direction:column;
 .auth input.code{letter-spacing:.4em;font-variant-numeric:tabular-nums;text-align:center;font-size:24px}
 .auth .err{color:var(--danger);font-size:14px;min-height:1.2em}
 .cta:disabled{opacity:.6;cursor:default}
-.settings-btn{display:flex;align-items:center;gap:12px;min-height:56px;padding:8px 12px;border:0;border-top:1px solid var(--line);background:transparent;text-align:left;min-width:0}
+.settings-btn{display:flex;align-items:center;gap:12px;min-height:56px;padding:8px 12px;border:0;border-top:1px solid var(--line);background:transparent;text-align:start;min-width:0}
 .settings-btn:hover{background:var(--panel-2)}
 .settings-btn .who{display:flex;flex-direction:column;min-width:0}
 .settings-btn .who b{font-weight:500}
@@ -265,7 +266,7 @@ footer.composer .col{padding-block:10px 12px;display:flex;flex-direction:column;
 .s-row:first-child{border-top:0}
 .s-row .k{color:var(--muted);font-size:15px}
 .s-row .v{font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;font-variant-numeric:tabular-nums}
-button.s-row{width:100%;border:0;border-top:1px solid var(--line);background:transparent;text-align:left;font-size:16px}
+button.s-row{width:100%;border:0;border-top:1px solid var(--line);background:transparent;text-align:start;font-size:16px}
 button.s-row:first-child{border-top:0}
 button.s-row:hover{background:var(--panel-2)}
 button.s-row.danger{color:var(--danger)}
@@ -281,7 +282,7 @@ button.s-row.danger{color:var(--danger)}
 .gbtn:disabled{opacity:.6}
 .or{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:13px;margin-top:14px}
 .or::before,.or::after{content:"";flex:1;height:1px;background:var(--line)}
-.attach.doc{margin-left:-8px}
+.attach.doc{margin-inline-start:-8px}
 a.s-row{text-decoration:none;color:inherit}
 a.s-row[hidden]{display:none}
 .app-only{display:none}
@@ -317,17 +318,17 @@ a.s-row[hidden]{display:none}
 .times .hl{border-color:var(--mint);background:var(--panel-2)}
 .iftar{border-radius:16px;background:var(--mint);color:var(--mint-ink);padding:14px 16px;display:flex;flex-direction:column;gap:2px}
 .iftar b{font-family:var(--brand);font-weight:800;font-size:28px;font-variant-numeric:tabular-nums}
-.save-badge{display:inline-block;margin-left:6px;padding:1px 8px;border-radius:999px;background:var(--mint);color:var(--mint-ink);font-size:12px;font-weight:500}
+.save-badge{display:inline-block;margin-inline-start:6px;padding:1px 8px;border-radius:999px;background:var(--mint);color:var(--mint-ink);font-size:12px;font-weight:500}
 /* Schermata iniziale: biglietti, consiglio del giorno */
 .occasions{display:flex;gap:6px;overflow-x:auto;width:100%;max-width:520px;padding-bottom:2px;scrollbar-width:none}
 .occasions button{flex:0 0 auto;min-height:40px;padding:0 14px;border-radius:999px;border:1px solid var(--line);background:var(--panel);font-size:14px;white-space:nowrap}
 .occasions button:hover{border-color:var(--mint)}
-.tip{width:100%;max-width:520px;text-align:left;border:1px dashed var(--line);border-radius:14px;padding:10px 12px;font-size:14px;color:var(--muted);background:transparent}
+.tip{width:100%;max-width:520px;text-align:start;border:1px dashed var(--line);border-radius:14px;padding:10px 12px;font-size:14px;color:var(--muted);background:transparent}
 .tip b{color:var(--fg);font-weight:500}
-.label-sm{width:100%;max-width:520px;text-align:left;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-top:4px}
+.label-sm{width:100%;max-width:520px;text-align:start;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-top:4px}
 .mem-note{font-size:12px;color:var(--muted)}
 .mem-list{list-style:none;margin:0;padding:0}
-.mem-list li{display:flex;align-items:center;gap:8px;min-height:52px;padding:6px 6px 6px 16px;border-top:1px solid var(--line)}
+.mem-list li{display:flex;align-items:center;gap:8px;min-height:52px;padding-block:6px;padding-inline:16px 6px;border-top:1px solid var(--line)}
 .mem-list li:first-child{border-top:0}
 .mem-list li span{flex:1;min-width:0;overflow-wrap:anywhere}
 .mem-list li button{width:40px;height:40px;border:0;border-radius:10px;background:transparent;color:var(--muted);font-size:18px;flex:0 0 40px}
@@ -361,6 +362,13 @@ a.s-row[hidden]{display:none}
   @page{margin:16mm}
 }
 @media (prefers-reduced-motion:reduce){.typing i,.mic.on,.ph,.orb{animation:none}}
+/* Arabo: da destra a sinistra */
+html[dir=rtl] .msg.me .text{border-radius:20px 20px 20px 6px}
+
+html[dir=rtl] #closeLib svg,html[dir=rtl] #closeViewer svg,html[dir=rtl] #closeSettings svg{transform:scaleX(-1)}
+html[lang=ar] .lp-hero .ar{display:none}
+html[lang=ar] body{line-height:1.7}
+.lang-pick{min-height:40px;border-radius:12px;border:1px solid var(--line);background:var(--panel);color:var(--fg);font:inherit;font-size:15px;padding:0 8px;max-width:130px}
 </style>
 </head>
 <body>
@@ -416,7 +424,7 @@ a.s-row[hidden]{display:none}
         <div class="styles" id="styles" aria-label="Transformer la photo"></div>
         <div class="doc-chip" id="docChip" hidden>
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h5"/></svg>
-          <span class="dn" id="docName" dir="auto"></span><span class="ds" id="docSize"></span>
+          <span class="dn" id="docName" dir="auto" data-noi18n></span><span class="ds" id="docSize"></span>
           <button type="button" id="removeDoc" aria-label="Retirer le document">×</button>
         </div>
       </div>
@@ -515,12 +523,12 @@ a.s-row[hidden]{display:none}
     <p class="s-note">Quiz, fiches et exercices selon le programme de ton pays.</p>
     <div class="row2">
       <div class="field"><label for="bacCountry">Pays</label>
-        <select id="bacCountry"><option>Algérie</option><option>Maroc</option><option>Tunisie</option></select></div>
+        <select id="bacCountry"><option value="Algérie">Algérie</option><option value="Maroc">Maroc</option><option value="Tunisie">Tunisie</option><option value="Égypte">Égypte</option><option value="Arabie saoudite">Arabie saoudite</option><option value="Émirats">Émirats</option><option value="Qatar">Qatar</option><option value="Koweït">Koweït</option></select></div>
       <div class="field"><label for="bacBranch">Filière</label>
-        <select id="bacBranch"><option>Sciences expérimentales</option><option>Mathématiques</option><option>Technique</option><option>Gestion et économie</option><option>Lettres et philosophie</option><option>Langues étrangères</option></select></div>
+        <select id="bacBranch"><option value="Sciences expérimentales">Sciences expérimentales</option><option value="Mathématiques">Mathématiques</option><option value="Technique">Technique</option><option value="Gestion et économie">Gestion et économie</option><option value="Lettres et philosophie">Lettres et philosophie</option><option value="Langues étrangères">Langues étrangères</option></select></div>
     </div>
     <div class="field"><label for="bacSubject">Matière</label>
-      <select id="bacSubject"><option>Mathématiques</option><option>Physique-Chimie</option><option>Sciences naturelles (SVT)</option><option>Philosophie</option><option>Arabe</option><option>Français</option><option>Anglais</option><option>Histoire-Géographie</option><option>Économie et gestion</option><option>Sciences islamiques</option><option>Informatique</option></select></div>
+      <select id="bacSubject"><option value="Mathématiques">Mathématiques</option><option value="Physique-Chimie">Physique-Chimie</option><option value="Sciences naturelles (SVT)">Sciences naturelles (SVT)</option><option value="Philosophie">Philosophie</option><option value="Arabe">Arabe</option><option value="Français">Français</option><option value="Anglais">Anglais</option><option value="Histoire-Géographie">Histoire-Géographie</option><option value="Économie et gestion">Économie et gestion</option><option value="Sciences islamiques">Sciences islamiques</option><option value="Informatique">Informatique</option></select></div>
     <div class="field"><label for="bacChapter">Chapitre (facultatif)</label>
       <input id="bacChapter" type="text" dir="auto" placeholder="Ex. : les suites numériques" maxlength="120"></div>
     <div class="choice" role="group" aria-label="Activité" id="bacMode">
@@ -540,7 +548,7 @@ a.s-row[hidden]{display:none}
     <div class="row2">
       <div class="field"><label for="prCity">Ville</label><input id="prCity" type="text" dir="auto" placeholder="Ex. : Oran" maxlength="60" autocomplete="address-level2"></div>
       <div class="field"><label for="prCountry">Pays</label>
-        <select id="prCountry"><option value="DZ">Algérie</option><option value="MA">Maroc</option><option value="TN">Tunisie</option><option value="FR">France</option><option value="BE">Belgique</option><option value="LY">Libye</option><option value="EG">Égypte</option><option value="SA">Arabie saoudite</option><option value="AE">Émirats</option><option value="QA">Qatar</option></select></div>
+        <select id="prCountry"><option value="DZ">Algérie</option><option value="MA">Maroc</option><option value="TN">Tunisie</option><option value="FR">France</option><option value="BE">Belgique</option><option value="LY">Libye</option><option value="EG">Égypte</option><option value="SA">Arabie saoudite</option><option value="AE">Émirats</option><option value="QA">Qatar</option><option value="KW">Koweït</option></select></div>
     </div>
     <button class="cta" id="prGo" type="button">Afficher les horaires</button>
     <div id="prOut" aria-live="polite"></div>
@@ -567,6 +575,7 @@ a.s-row[hidden]{display:none}
   <div class="lp-bar"><div class="wrap">
     <svg width="34" height="34" aria-hidden="true"><use href="#logo"/></svg>
     <b>sahbi</b>
+    <select class="lang-pick" id="langLp" aria-label="Langue"><option value="fr">Français</option><option value="ar">العربية</option><option value="en">English</option></select>
     <a href="#inscription">Se connecter</a>
   </div></div>
 
@@ -605,14 +614,14 @@ a.s-row[hidden]{display:none}
 
   <div class="lp-sec"><div class="wrap">
     <h2>Ce que Sahbi sait faire</h2>
-    <p class="sub">Un assistant pensé pour le Maghreb et pour tous ceux qui parlent plusieurs langues à la fois.</p>
+    <p class="sub">Un assistant pensé pour le Maghreb, l'Égypte et le Golfe, et pour tous ceux qui parlent plusieurs langues à la fois.</p>
     <div class="feat">
-      <div><h3>Il parle comme toi</h3><p>Darija algérienne, marocaine ou tunisienne, en lettres latines (« wach rak ») ou en arabe, et le mélange avec le français. Aussi l'arabe, l'anglais et la plupart des langues du monde.</p></div>
+      <div><h3>Il parle comme toi</h3><p>Darija algérienne, marocaine ou tunisienne, égyptien ou dialecte du Golfe, en lettres latines (« wach rak », « ezayak ») ou en arabe, et le mélange avec le français. Aussi l'arabe standard, l'anglais et la plupart des langues du monde.</p></div>
       <div><h3>Il crée des images</h3><p>Décris une scène et Sahbi la dessine : un coucher de soleil sur le Sahara, une affiche pour ton commerce, une illustration pour un exposé.</p></div>
       <div><h3>Il transforme tes photos</h3><p>Envoie une photo et choisis un style : cartoon, anime, 3D animé, bande dessinée, aquarelle ou réaliste.</p></div>
       <div><h3>Il comprend les photos</h3><p>Photographie un exercice, une lettre en français ou une facture : Sahbi t'explique, traduit ou résume.</p></div>
       <div><h3>Il t'écoute et te parle</h3><p>Appuie sur le micro et parle. Avec Sahbi Pro, discute à voix haute avec lui comme au téléphone.</p></div>
-      <div><h3>Mode Bac</h3><p>Quiz de 5 questions, fiches de révision et exercices corrigés selon le programme d'Algérie, du Maroc ou de Tunisie.</p></div>
+      <div><h3>Mode Bac</h3><p>Quiz de 5 questions, fiches de révision et exercices corrigés selon le programme de ton pays : Maghreb, Égypte ou Golfe.</p></div>
       <div><h3>Cartes de vœux</h3><p>Aïd, Ramadan, mariage, anniversaire : Sahbi crée la carte avec le prénom, tu la partages sur WhatsApp.</p></div>
       <div><h3>Il lit tes documents</h3><p>Envoie un PDF ou un Word (Pro) : résumé, traduction ou réponse à rédiger. Ton CV s'enregistre en PDF.</p></div>
       <div><h3>Il t'aide au quotidien</h3><p>Révisions du Bac, CV, lettres administratives, traductions, recettes, idées de sorties : il suffit de demander.</p></div>
@@ -625,6 +634,8 @@ a.s-row[hidden]{display:none}
     <div class="demo">
       <div class="conv"><span class="tag">Darija</span><div class="q">Wach n9der ntayeb l 3cha b batata w bid?</div><div class="a">Dir chakchouka b batata ! Qli el batata, zid tmatem w felfel, w kassar el bid fouqha. Bessa7tek !</div></div>
       <div class="conv"><span class="tag">Français</span><div class="q">Aide-moi à écrire une lettre pour demander un rendez-vous à la mairie.</div><div class="a">Bien sûr. Voici un modèle avec l'objet, la formule de politesse et les informations à compléter…</div></div>
+      <div class="conv"><span class="tag">Égyptien</span><div class="q" lang="ar" dir="rtl">عامل ايه؟ عايز اكلة سريعة للعشا</div><div class="a" lang="ar" dir="rtl">تمام الحمد لله! اعمل كشري سريع: رز ومكرونة وعدس وصلصة طماطم بالتوم والخل. هتاكل صوابعك!</div></div>
+      <div class="conv"><span class="tag">Golfe</span><div class="q" lang="ar" dir="rtl">شلونك؟ ابغى فكرة هدية لأمي</div><div class="a" lang="ar" dir="rtl">هلا والله! وش رايك ببوكس تمر وقهوة عربية مع عطر عود وكرت مكتوب بخطك؟ أكيد بتفرح فيه.</div></div>
       <div class="conv"><span class="tag" lang="ar" dir="rtl">العربية</span><div class="q" lang="ar" dir="rtl">اشرح لي الذكاء الاصطناعي ببساطة</div><div class="a" lang="ar" dir="rtl">الذكاء الاصطناعي هو برنامج يتعلم من أمثلة كثيرة، فيستطيع أن يفهم الأسئلة ويجيب عنها…</div></div>
     </div>
   </div></div>
@@ -649,10 +660,10 @@ a.s-row[hidden]{display:none}
   <div class="lp-sec faq"><div class="wrap">
     <h2>Questions fréquentes</h2>
     <details><summary>Sahbi est-il gratuit ?</summary><p>Oui. L'offre gratuite permet 30 messages et 2 images par jour. Sahbi Pro ajoute plus de messages et d'images, 5 vidéos par mois, la voix et supprime la publicité.</p></details>
-    <details><summary>Quelles langues comprend Sahbi ?</summary><p>La darija algérienne, marocaine et tunisienne (en lettres latines ou arabes), l'arabe, le français, l'anglais et la plupart des langues du monde. Il répond toujours dans la langue de ta question.</p></details>
+    <details><summary>Quelles langues comprend Sahbi ?</summary><p>La darija algérienne, marocaine et tunisienne, l'égyptien et les dialectes du Golfe (en lettres latines ou arabes), l'arabe standard, le français, l'anglais et la plupart des langues du monde. Il répond toujours dans la langue de ta question.</p></details>
     <details><summary>Mes conversations sont-elles privées ?</summary><p>L'historique de tes discussions reste sur ton téléphone. Tes images sont enregistrées dans ton compte et tu peux tout supprimer depuis les paramètres. Détails dans la <a href="/confidentialite.html">politique de confidentialité</a>.</p></details>
     <details><summary>Les réponses sont-elles toujours justes ?</summary><p>Sahbi peut se tromper, comme toute intelligence artificielle. Vérifie les informations importantes, surtout pour la santé, le droit ou l'argent.</p></details>
-    <details><summary>Comment payer Sahbi Pro ?</summary><p>Par carte bancaire (abonnement mensuel, résiliable à tout moment) ou avec Edahabia et CIB pour 30 jours, sans renouvellement automatique.</p></details>
+    <details><summary>Comment payer Sahbi Pro ?</summary><p>Par carte bancaire ou PayPal (abonnement mensuel, résiliable à tout moment), avec Google Play dans l'application Android, ou avec Edahabia et CIB pour 30 jours, sans renouvellement automatique.</p></details>
     <details><summary>Faut-il installer une application ?</summary><p>Non, Sahbi fonctionne dans le navigateur. Tu peux l'ajouter à l'écran d'accueil de ton téléphone pour l'ouvrir comme une application.</p></details>
     <a class="lp-cta" href="#inscription">Commencer gratuitement</a>
   </div></div>
@@ -684,7 +695,7 @@ a.s-row[hidden]{display:none}
   <div class="body">
     <img id="vImg" alt="">
     <video id="vVid" controls playsinline preload="metadata" hidden></video>
-    <p id="vPrompt" dir="auto"></p>
+    <p id="vPrompt" dir="auto" data-noi18n></p>
     <div class="v-actions">
       <a id="vOpen" href="#" target="_blank" rel="noopener">Ouvrir en grand</a>
       <button type="button" id="vDelete" class="danger">Supprimer</button>
@@ -754,7 +765,11 @@ a.s-row[hidden]{display:none}
 
       <div class="s-group">
         <h3>Langue</h3>
-        <p class="s-note">Sahbi te répond dans la langue que tu utilises : darija, arabe, français, anglais ou toute autre langue. Il n'y a rien à régler.</p>
+        <div class="s-card">
+          <div class="s-row"><label class="k" for="langSet">Langue de l’application</label>
+            <select class="lang-pick" id="langSet"><option value="fr">Français</option><option value="ar">العربية</option><option value="en">English</option></select></div>
+        </div>
+        <p class="s-note">Sahbi te répond dans la langue que tu utilises : darija, arabe, français, anglais ou toute autre langue.</p>
       </div>
 
       <div class="s-group">
@@ -774,10 +789,15 @@ a.s-row[hidden]{display:none}
 <div class="toast" id="toast" hidden role="status"></div>
 <div id="printArea" aria-hidden="true"></div>
 
+<script>window.SAHBI_I18N?.start();</script>
 <script type="module">
+// Lingua dell'interfaccia (i18n.js): tr('testo francese', {var}) restituisce il testo tradotto.
+const { tr, lang: LANG, setLang, LOCALE } = window.SAHBI_I18N || { tr: (x, p) => (p ? x.replace(/\{(\w+)\}/g, (m, k) => p[k] ?? m) : x), lang: 'fr', setLang: () => {}, LOCALE: 'fr-FR' };
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/+esm';
 
 const $ = (id) => document.getElementById(id);
+// Scelta della lingua (pagina iniziale e Paramètres): si salva e la pagina si ricarica.
+for (const id of ['langLp', 'langSet']) { const s = $(id); if (s) { s.value = LANG; s.addEventListener('change', () => setLang(s.value)); } }
 const msgsEl = $('msgs'), thread = $('thread'), ta = $('msg'), sendBtn = $('send'), mic = $('mic');
 let STORE = 'sahbi-chats-v1';
 let supabase = null, busy = false, imgLeft = null, imgLimit = 2, userId = null, cfg = {}, me = null, photo = null;
@@ -913,7 +933,7 @@ const scroll = () => { thread.scrollTop = thread.scrollHeight; };
 
 function bubble(role, text, extra = '') {
   const m = el('div', `msg ${role === 'user' ? 'me' : 'bot'} ${extra}`);
-  const t = el('div', 'text', text); t.dir = 'auto';
+  const t = el('div', 'text', text); t.dir = 'auto'; t.dataset.noi18n = '';
   if (role === 'user') m.appendChild(t);
   else { const st = el('div', 'stack'); st.appendChild(t); m.append(avatar(), st); }
   msgsEl.appendChild(m); scroll();
@@ -922,7 +942,7 @@ function bubble(role, text, extra = '') {
 function userPhotoBubble(src, text) {
   const m = el('div', 'msg me'); const w = el('div', 'me-photo');
   if (src) { const img = el('img'); img.src = src; img.alt = 'Photo envoyée'; w.appendChild(img); }
-  if (text) { const t = el('div', 'text', text); t.dir = 'auto'; w.appendChild(t); }
+  if (text) { const t = el('div', 'text', text); t.dir = 'auto'; t.dataset.noi18n = ''; w.appendChild(t); }
   m.appendChild(w); msgsEl.appendChild(m); scroll();
 }
 
@@ -984,7 +1004,7 @@ function actBtn(icon, label, onClick, showLabel = false) {
   b.innerHTML = ICONS[icon] + (showLabel ? `<span>${label}</span>` : '');
   b.addEventListener('click', () => onClick(b)); return b;
 }
-const SHARE_TAIL = () => `\n\n— Sahbi, l'IA qui parle ta langue : ${location.origin}`;
+const SHARE_TAIL = () => tr('\n\n— Sahbi, l\'IA qui parle ta langue : {u}', { u: location.origin });
 async function shareText(text) {
   const full = text + SHARE_TAIL();
   if (navigator.share) { try { await navigator.share({ text: full }); return; } catch (e) { if (e?.name === 'AbortError') return; } }
@@ -994,7 +1014,7 @@ async function shareImage(src, caption) {
   try {
     const blob = await withSignature(await (await fetch(src)).blob());
     const file = new File([blob], 'sahbi.jpg', { type: 'image/jpeg' });
-    if (navigator.canShare?.({ files: [file] })) { await navigator.share({ files: [file], text: `Créé avec Sahbi : ${location.origin}` }); return; }
+    if (navigator.canShare?.({ files: [file] })) { await navigator.share({ files: [file], text: tr('Créé avec Sahbi : {u}', { u: location.origin }) }); return; }
   } catch (e) { if (e?.name === 'AbortError') return; }
   window.open(src, '_blank', 'noopener');
   toast('Appuie longuement sur l’image pour l’enregistrer, puis partage-la.');
@@ -1046,7 +1066,7 @@ function imageBubble(src, caption, note) {
   const m = el('div', 'msg bot'); m.appendChild(avatar());
   const box = el('div', 'gen');
   if (src) { const img = el('img'); img.src = src; img.alt = caption; box.appendChild(img); }
-  else box.appendChild(el('div', 'text', `Image : ${caption}`));
+  else box.appendChild(el('div', 'text', tr('Image : {c}', { c: caption })));
   if (note) box.appendChild(el('small', '', note));
   if (src) {
     const row = el('div', 'actions');
@@ -1118,7 +1138,7 @@ function render() {
       const b = el('button', '', label); b.type = 'button'; b.addEventListener('click', () => prefill(p)); occ.appendChild(b);
     }
     const [tt, td] = TIPS[Math.floor(Date.now() / 864e5) % TIPS.length];
-    const tip = el('div', 'tip'); tip.append(el('b', '', `Astuce du jour · ${tt} : `), document.createTextNode(td));
+    const tip = el('div', 'tip'); tip.append(el('b', '', tr('Astuce du jour · {t} : ', { t: tr(tt) })), document.createTextNode(td));
     e.append(logo, el('h1', '', 'Salam, ana Sahbi'), el('p', '', 'Écris, parle ou envoie une photo, dans ta langue. Je crée aussi des images, des vidéos et des cartes de vœux.'), chips, el('div', 'label-sm', 'Cartes de vœux à partager'), occ, tip);
     msgsEl.appendChild(e);
   }
@@ -1155,10 +1175,10 @@ function histItem(c) {
   const li = el('li');
   const b = el('button', 'title'); b.type = 'button'; b.dir = 'auto';
   if (c.pinned) b.appendChild(el('span', 'pin', '📌'));
-  b.appendChild(document.createTextNode(c.title || 'Discussion'));
+  const tn = el('span', '', c.title || tr('Discussion')); tn.dataset.noi18n = ''; b.appendChild(tn);
   if (current && c.id === current.id) b.setAttribute('aria-current', 'true');
   b.addEventListener('click', () => { closeHistMenu(); current = c; recentPhoto = null; closeAll(); render(); });
-  const more = el('button', 'more', '⋯'); more.type = 'button'; more.setAttribute('aria-label', `Options : ${c.title || 'Discussion'}`);
+  const more = el('button', 'more', '⋯'); more.type = 'button'; more.setAttribute('aria-label', tr('Options : {x}', { x: c.title || tr('Discussion') }));
   more.addEventListener('click', (e) => {
     e.stopPropagation();
     const was = openMenu?.parentElement === li; closeHistMenu(); if (was) return;
@@ -1255,7 +1275,7 @@ async function sendChat(text, pic = null, docAtt = null, opts = {}) {
   if (recentTurns <= 0 && !pic) recentPhoto = null;
   let res;
   try {
-    res = await api('/api/chat', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ messages: history, ...(pic ? { photo: pic } : (recentPhoto && recentTurns > 0 && !opts.voice ? { photo: recentPhoto, photoEarlier: true } : {})), ...(docAtt ? { doc: { name: docAtt.name, text: docAtt.text } } : {}), ...(opts.voice ? { voice: true } : {}) }) });
+    res = await api('/api/chat', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ messages: history, lang: LANG, ...(pic ? { photo: pic } : (recentPhoto && recentTurns > 0 && !opts.voice ? { photo: recentPhoto, photoEarlier: true } : {})), ...(docAtt ? { doc: { name: docAtt.name, text: docAtt.text } } : {}), ...(opts.voice ? { voice: true } : {}) }) });
   } catch { wait.remove(); bubble('bot', 'Pas de connexion. Vérifie internet et réessaie.', 'err'); return ''; }
   if (!res.ok) {
     wait.remove();
@@ -1275,7 +1295,7 @@ async function sendChat(text, pic = null, docAtt = null, opts = {}) {
     if (pending) { pending.remove(); pending = null; }
     if (f.type === 'video') {
       if (me?.remaining) me.remaining.video = f.remaining;
-      videoBubble(f.id, f.prompt, `Il te reste ${f.remaining} vidéo${f.remaining === 1 ? '' : 's'} ce mois-ci`);
+      videoBubble(f.id, f.prompt, f.remaining === 1 ? tr('Il te reste 1 vidéo ce mois-ci') : tr('Il te reste {n} vidéos ce mois-ci', { n: f.remaining }));
       extra.push({ role: 'assistant', kind: 'video', content: f.prompt || 'vidéo', id: f.id || null });
       return;
     }
@@ -1287,7 +1307,7 @@ async function sendChat(text, pic = null, docAtt = null, opts = {}) {
     }
     if (f.type === 'image') {
       imgLeft = f.remaining; imgLimit = f.limit; if (me?.remaining) me.remaining.image = f.remaining;
-      imageBubble(f.image, f.prompt || 'Image créée par Sahbi', `Il te reste ${f.remaining} image${f.remaining === 1 ? '' : 's'} aujourd’hui`);
+      imageBubble(f.image, f.prompt || tr('Image créée par Sahbi'), f.remaining === 1 ? tr('Il te reste 1 image aujourd’hui') : tr('Il te reste {n} images aujourd’hui', { n: f.remaining }));
       extra.push({ role: 'assistant', kind: 'image', content: f.prompt || 'image', id: f.id || null });
       library = null;
     } else if (f.type === 'image_error') {
@@ -1397,10 +1417,10 @@ $('vDelete').addEventListener('click', async () => {
 // Promozioni di Sahbi: girano ogni minuto quando AdSense non è attivo o non ha annunci da mostrare.
 const HOUSE = [
   { t: 'Sahbi Pro, sans publicité', d: '8 images par jour, voix, 300 messages', c: 'Voir', go: () => openSheet() },
-  { t: 'Invite un ami', d: '7 jours de Pro offerts à tous les deux', c: 'Inviter', go: () => shareText(`Salam ! J’utilise Sahbi, l’IA qui parle darija, arabe et français. Inscris-toi avec mon lien et on reçoit 7 jours de Pro tous les deux : ${inviteLink()}`) },
+  { t: 'Invite un ami', d: '7 jours de Pro offerts à tous les deux', c: 'Inviter', go: () => shareText(tr('Salam ! J’utilise Sahbi, l’IA qui parle darija, arabe et français. Inscris-toi avec mon lien et on reçoit 7 jours de Pro tous les deux : {l}', { l: inviteLink() })) },
   { t: 'Transforme tes photos', d: 'Cartoon, anime, 3D, aquarelle…', c: 'Essayer', go: () => $('file').click() },
   { t: 'Sahbi lit à voix haute', d: 'Appuie sur le haut-parleur sous une réponse', c: 'Pro', go: () => openSheet() },
-  { t: 'Aide au Bac', d: 'Exercices expliqués pas à pas', c: 'Essayer', go: () => { ta.value = 'Aide-moi à réviser pour le Bac. Matière et chapitre : '; grow(); ta.focus(); } },
+  { t: 'Aide au Bac', d: 'Exercices expliqués pas à pas', c: 'Essayer', go: () => { ta.value = tr('Aide-moi à réviser pour le Bac. Matière et chapitre : '); grow(); ta.focus(); } },
 ];
 let houseI = 0, houseTimer = null, adsenseLoaded = false;
 function showHouse(i) {
@@ -1452,11 +1472,11 @@ async function refreshMe() {
     me = await r.json();
     imgLeft = me.remaining.image; imgLimit = me.limits.image;
     $('openPlus').textContent = me.pro ? 'Pro ✓' : 'Pro';
-    $('drawerProText').textContent = me.pro ? `Actif jusqu’au ${fmtDate(me.proUntil)}` : 'Images, vidéos, voix, sans pub';
+    $('drawerProText').textContent = me.pro ? tr('Actif jusqu’au {d}', { d: fmtDate(me.proUntil) }) : 'Images, vidéos, voix, sans pub';
     updateAds();
   } catch { /* offline */ }
 }
-const fmtDate = (d) => (d ? new Date(d).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }) : '');
+const fmtDate = (d) => (d ? new Date(d).toLocaleDateString(LOCALE, { day: 'numeric', month: 'long', year: 'numeric' }) : '');
 
 // Inviti: il link ?ref=CODICE viene ricordato fino all'accesso.
 (() => {
@@ -1493,21 +1513,21 @@ function renderSheet() {
   const save = monthly && yearly ? Math.round((1 - yearly / (monthly * 12)) * 100) : 0;
   $('saveBadge').textContent = save > 0 ? `−${save} %` : '';
   $('priceNote').hidden = !year;
-  $('priceNote').textContent = year ? `Soit ${(yearly / 12).toFixed(2).replace('.', ',')} € par mois, payé en une fois.` : '';
+  $('priceNote').textContent = year ? tr('Soit {p} € par mois, payé en une fois.', { p: (yearly / 12).toFixed(2).replace('.', LANG === 'en' ? '.' : ',') }) : '';
   // Carta: Lemon Squeezy se configurato (anche PayPal), altrimenti Stripe.
   const cardOk = pay.lemonsqueezy ? (year ? pay.lemonsqueezyYear : true) : (year ? pay.stripeYear : pay.stripe);
-  $('payCardSub').textContent = cardOk ? (year ? `${pay.priceYearEur || '59 €'} par an` : `${pay.priceEur || '6,50 €'} par mois`) : 'Bientôt disponible';
-  $('payDzSub').textContent = pay.chargily ? (year ? `${(pay.priceYearDzd || 10000).toLocaleString('fr-FR')} DA pour 1 an` : `${(pay.priceDzd || 1000).toLocaleString('fr-FR')} DA pour 30 jours`) : 'Bientôt disponible';
+  $('payCardSub').textContent = cardOk ? (year ? tr('{p} par an', { p: pay.priceYearEur || '59 €' }) : tr('{p} par mois', { p: pay.priceEur || '6,50 €' })) : 'Bientôt disponible';
+  $('payDzSub').textContent = pay.chargily ? (year ? tr('{p} DA pour 1 an', { p: (pay.priceYearDzd || 10000).toLocaleString(LOCALE) }) : tr('{p} DA pour 30 jours', { p: (pay.priceDzd || 1000).toLocaleString(LOCALE) })) : 'Bientôt disponible';
   $('payCardLabel').textContent = pay.lemonsqueezy ? 'Carte bancaire ou PayPal' : 'Payer par carte';
   $('payCard').disabled = !cardOk; $('payDz').disabled = !pay.chargily;
   $('fChat').textContent = cfg.limits?.pro?.chat ?? 300; $('fImg').textContent = cfg.limits?.pro?.image ?? 8;
   $('fVid').textContent = cfg.limits?.pro?.video ?? 5;
   // App Android: Google Play Billing (il pulsante appare solo se l'app lo supporta).
   $('payPlay').hidden = !playOk; $('appNote').hidden = playOk;
-  if (playPrice) $('payPlaySub').textContent = `${playPrice} par mois`;
+  if (playPrice) $('payPlaySub').textContent = tr('{p} par mois', { p: playPrice });
   const st = $('proStatus');
-  if (me?.pro && IN_APP) { st.hidden = false; st.textContent = `Tu es Pro jusqu’au ${fmtDate(me.proUntil)}.`; }
-  else if (me?.pro) { st.hidden = false; st.textContent = `Tu es Pro jusqu’au ${fmtDate(me.proUntil)}. Un paiement Edahabia / CIB ajoute ${year ? '1 an' : '30 jours'}.`; }
+  if (me?.pro && IN_APP) { st.hidden = false; st.textContent = tr('Tu es Pro jusqu’au {d}.', { d: fmtDate(me.proUntil) }); }
+  else if (me?.pro) { st.hidden = false; st.textContent = tr(year ? 'Tu es Pro jusqu’au {d}. Un paiement Edahabia / CIB ajoute 1 an.' : 'Tu es Pro jusqu’au {d}. Un paiement Edahabia / CIB ajoute 30 jours.', { d: fmtDate(me.proUntil) }); }
   else st.hidden = true;
 }
 // ---------- Google Play Billing (solo nell'app Android del Play Store) ----------
@@ -1519,7 +1539,7 @@ async function initPlay() {
     const [d] = await playSvc.getDetails([cfg.payments.playSku]);
     if (!d) return;
     playOk = true;
-    try { playPrice = new Intl.NumberFormat('fr-FR', { style: 'currency', currency: d.price.currency }).format(d.price.value); } catch { /* ignorato */ }
+    try { playPrice = new Intl.NumberFormat(LOCALE, { style: 'currency', currency: d.price.currency }).format(d.price.value); } catch { /* ignorato */ }
     // Abbonamenti già comprati (anche rinnovi): si ricontrollano per tenere il Pro aggiornato.
     for (const p of await playSvc.listPurchases()) await sendPlay(p.purchaseToken, p.itemId);
   } catch { /* Play Billing non disponibile */ }
@@ -1555,7 +1575,7 @@ async function startCheckout(provider, b) {
 const STYLES = ['Cartoon', 'Anime', '3D animé', 'Bande dessinée', 'Aquarelle', 'Réaliste', 'Pixel art'];
 for (const st of STYLES) {
   const b = el('button', '', st); b.type = 'button';
-  b.addEventListener('click', () => { ta.value = `Transforme ma photo en style ${st.toLowerCase()}.`; grow(); $('form').requestSubmit(); });
+  b.addEventListener('click', () => { ta.value = tr('Transforme ma photo en style {s}.', { s: tr(st).toLowerCase() }); grow(); $('form').requestSubmit(); });
   $('styles').appendChild(b);
 }
 function setPhoto(dataUrl) {
@@ -1709,7 +1729,7 @@ function grow() {
   // Casella vuota: al posto di "envoyer" c'è il pulsante della conversazione vocale.
   sendBtn.hidden = empty && !busy; $('talk').hidden = !(empty && !busy);
 }
-function prefill(p) { ta.value = p; grow(); ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); }
+function prefill(p) { ta.value = tr(p); grow(); ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); }
 ta.addEventListener('input', grow);
 ta.addEventListener('keydown', (e) => {
   if (e.key === 'Enter' && !e.shiftKey && !matchMedia('(pointer:coarse)').matches) { e.preventDefault(); $('form').requestSubmit(); }
@@ -1717,7 +1737,7 @@ ta.addEventListener('keydown', (e) => {
 $('form').addEventListener('submit', async (e) => {
   e.preventDefault();
   const pic = photo, att = doc;
-  const v = ta.value.trim() || (pic ? 'Explique-moi cette photo.' : att ? 'Résume-moi ce document.' : '');
+  const v = ta.value.trim() || (pic ? tr('Explique-moi cette photo.') : att ? tr('Résume-moi ce document.') : '');
   if (!v || busy) return;
   ta.value = ''; busy = true; setPhoto(null); setDoc(null);
   try { await sendChat(v, pic, att); }
@@ -1750,14 +1770,15 @@ $('bacGo').addEventListener('click', () => {
   store.set('sahbi-bac', { country, branch, subject });
   const what = { quiz: 'Fais-moi un quiz de 5 questions, une question à la fois.', fiche: 'Fais-moi une fiche de révision.', exo: 'Donne-moi un exercice type Bac, puis attends ma réponse avant la correction.', cours: 'Explique-moi le cours simplement, avec un exemple.' }[bacMode];
   closeAll(); newChat();
-  ta.value = `Mode Bac — ${country}, filière ${branch}, ${subject}${chapter ? `, chapitre : ${chapter}` : ''}. ${what}`;
+  const txt = (id) => $(id).selectedOptions[0]?.textContent || $(id).value;
+  ta.value = tr(chapter ? 'Mode Bac — {c}, filière {b}, {s}, chapitre : {ch}. {w}' : 'Mode Bac — {c}, filière {b}, {s}. {w}', { c: txt('bacCountry'), b: txt('bacBranch'), s: txt('bacSubject'), ch: chapter, w: tr(what) });
   grow(); $('form').requestSubmit();
 });
 $('bacClose').addEventListener('click', closeAll);
 $('openBac').addEventListener('click', openBac);
 
 // ---------- Horaires de prière (AlAdhan.com, dal telefono) ----------
-const PRAYER_METHOD = { DZ: 19, MA: 21, TN: 18, FR: 12, BE: 3, LY: 3, EG: 5, SA: 4, AE: 16, QA: 10 };
+const PRAYER_METHOD = { DZ: 19, MA: 21, TN: 18, FR: 12, BE: 3, LY: 3, EG: 5, SA: 4, AE: 16, QA: 10, KW: 9 };
 function openPrayer() {
   closeAll();
   const s = store.get('sahbi-prayer', {});
@@ -1782,12 +1803,12 @@ async function showPrayer() {
     out.replaceChildren();
     if (ramadan) {
       const box = el('div', 'iftar'); const cd = el('b', '', '');
-      box.append(el('span', '', `Ramadan, jour ${hijri.day} · Iftar à ${t.Maghrib}`), cd, el('span', '', `Imsak ${t.Imsak} · Fajr ${t.Fajr}`));
+      box.append(el('span', '', tr('Ramadan, jour {d} · Iftar à {t}', { d: hijri.day, t: t.Maghrib })), cd, el('span', '', tr('Imsak {i} · Fajr {f}', { i: t.Imsak, f: t.Fajr })));
       out.appendChild(box);
       const tick = () => {
         const [h, m] = t.Maghrib.split(':').map(Number); const now = new Date(); const at = new Date(); at.setHours(h, m, 0, 0);
         const ms = at - now;
-        cd.textContent = ms > 0 ? `Iftar dans ${Math.floor(ms / 36e5)} h ${String(Math.floor(ms / 6e4) % 60).padStart(2, '0')} min` : 'Saha ftourkoum !';
+        cd.textContent = ms > 0 ? tr('Iftar dans {h} h {m} min', { h: Math.floor(ms / 36e5), m: String(Math.floor(ms / 6e4) % 60).padStart(2, '0') }) : 'Saha ftourkoum !';
       };
       tick(); clearInterval(iftarTimer); iftarTimer = setInterval(() => { if ($('prayerSheet').hidden) clearInterval(iftarTimer); else tick(); }, 30000);
     }
@@ -1937,8 +1958,8 @@ function renderMemory() {
   $('memClear').hidden = !facts.length;
   if (!facts.length) { list.appendChild(el('li', '', '')).appendChild(el('span', 'mem-note', 'Rien pour l’instant.')); return; }
   facts.forEach((f, i) => {
-    const li = el('li'); li.appendChild(el('span', '', f));
-    const x = el('button', '', '×'); x.type = 'button'; x.setAttribute('aria-label', `Oublier : ${f}`);
+    const li = el('li'); const fs = el('span', '', f); fs.dataset.noi18n = ''; li.appendChild(fs);
+    const x = el('button', '', '×'); x.type = 'button'; x.setAttribute('aria-label', tr('Oublier : {f}', { f }));
     x.addEventListener('click', () => forget(String(i)));
     li.appendChild(x); list.appendChild(li);
   });
@@ -1993,7 +2014,7 @@ async function openSettings() {
   $('sEmail').textContent = $('who').textContent || '–';
   const fill = () => {
     const r = me?.remaining || {}, l = me?.limits || {};
-    $('sPlan').textContent = me?.pro ? `Pro · jusqu’au ${fmtDate(me.proUntil)}` : 'Gratuit';
+    $('sPlan').textContent = me?.pro ? tr('Pro · jusqu’au {d}', { d: fmtDate(me.proUntil) }) : 'Gratuit';
     $('sAdmin').hidden = !me?.admin;
     $('sGoPro').textContent = me?.pro ? (me.canManageBilling && !IN_APP ? 'Gérer' : 'Prolonger') : 'Passer à Pro';
     $('sChat').textContent = me ? `${r.chat} / ${l.chat}` : '…';
@@ -2006,7 +2027,7 @@ async function openSettings() {
   };
   fill(); await refreshMe(); fill();
 }
-$('sShareInvite').addEventListener('click', () => shareText(`Salam ! J’utilise Sahbi, l’IA qui parle darija, arabe et français. Inscris-toi avec mon lien et on reçoit 7 jours de Pro tous les deux : ${inviteLink()}`).catch(() => {}));
+$('sShareInvite').addEventListener('click', () => shareText(tr('Salam ! J’utilise Sahbi, l’IA qui parle darija, arabe et français. Inscris-toi avec mon lien et on reçoit 7 jours de Pro tous les deux : {l}', { l: inviteLink() })).catch(() => {}));
 $('openSettings').addEventListener('click', openSettings);
 $('closeSettings').addEventListener('click', () => { $('settings').hidden = true; });
 $('sGoPro').addEventListener('click', async () => {

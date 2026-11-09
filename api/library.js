@@ -5,7 +5,7 @@ import { checkVideo } from './_video.js';
 // GET /api/library?video=ID → a che punto è un video in creazione.
 export async function GET(request) {
   const userId = await getUserId(request);
-  if (!userId) return fail('auth', 401, 'Sessione scaduta. Ricarica la pagina.');
+  if (!userId) return fail('auth', 401, 'Session expirée. Recharge la page.');
   const video = new URL(request.url).searchParams.get('video');
   try {
     if (video) return json(await checkVideo(userId, video));
@@ -20,7 +20,7 @@ export async function GET(request) {
 // Cancella un'immagine o un video: DELETE /api/library?id=...
 export async function DELETE(request) {
   const userId = await getUserId(request);
-  if (!userId) return fail('auth', 401, 'Sessione scaduta. Ricarica la pagina.');
+  if (!userId) return fail('auth', 401, 'Session expirée. Recharge la page.');
   const id = new URL(request.url).searchParams.get('id');
   return (await deleteImage(userId, id)) ? json({ ok: true }) : fail('not_found', 404, 'Image introuvable.');
 }

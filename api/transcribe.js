@@ -5,17 +5,17 @@ const MAX_BYTES = 4 * 1024 * 1024; // circa 2-3 minuti di voce
 // Riceve l'audio registrato dal microfono e restituisce il testo.
 export async function POST(request) {
   const userId = await getUserId(request);
-  if (!userId) return fail('auth', 401, 'Sessione scaduta. Ricarica la pagina.');
+  if (!userId) return fail('auth', 401, 'Session expirée. Recharge la page.');
 
   let form;
-  try { form = await request.formData(); } catch { return fail('bad_request', 400, 'Audio non valido.'); }
+  try { form = await request.formData(); } catch { return fail('bad_request', 400, 'Audio invalide.'); }
   const audio = form.get('audio');
-  if (!audio || typeof audio === 'string' || !audio.size) return fail('bad_request', 400, 'Audio vuoto.');
-  if (audio.size > MAX_BYTES) return fail('too_big', 413, 'Registrazione troppo lunga. Massimo circa 2 minuti.');
+  if (!audio || typeof audio === 'string' || !audio.size) return fail('bad_request', 400, 'Audio vide.');
+  if (audio.size > MAX_BYTES) return fail('too_big', 413, 'Enregistrement trop long : 2 minutes maximum.');
 
   const { limits } = await getPlan(userId);
   const left = await useCredit(userId, 'voice', limits.voice);
-  if (left < 0) return fail('limit', 429, 'Limite di messaggi vocali di oggi raggiunto.');
+  if (left < 0) return fail('limit', 429, 'Limite du micro atteinte pour aujourd’hui.');
 
   const out = new FormData();
   const name = (audio.type || '').includes('mp4') ? 'audio.mp4' : 'audio.webm';
@@ -32,7 +32,7 @@ export async function POST(request) {
     await refundCredit(userId, 'voice').catch(() => {});
     console.error('OpenAI transcribe error', upstream.status, data?.error?.code);
     if (upstream.status !== 400) { const { openaiAlert } = await import('./_alert.js'); await openaiAlert(upstream.status, JSON.stringify(data?.error || {})); }
-    return fail('upstream', 502, 'Non ho capito l’audio. Riprova.');
+    return fail('upstream', 502, 'Je n’ai pas compris l’audio. Réessaie.');
   }
   return json({ text: data.text.trim() });
 }

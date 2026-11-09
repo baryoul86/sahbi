@@ -6,7 +6,7 @@ import { isAdmin } from './_alert.js';
 // Stato dell'utente: piano, scadenza del Pro, invito, quanto resta oggi, ricordi di Sahbi.
 export async function GET(request) {
   const user = await getUser(request);
-  if (!user) return fail('auth', 401, 'Sessione scaduta. Ricarica la pagina.');
+  if (!user) return fail('auth', 401, 'Session expirée. Recharge la page.');
   const { profile, pro, limits } = await getPlan(user.id);
   const kinds = ['chat', 'image', 'tts'];
   const [left, videoLeft, memory] = await Promise.all([
@@ -34,9 +34,9 @@ export async function GET(request) {
 // Cancella i ricordi: DELETE /api/me?memory=all oppure ?memory=<numero del ricordo>
 export async function DELETE(request) {
   const user = await getUser(request);
-  if (!user) return fail('auth', 401, 'Sessione scaduta. Ricarica la pagina.');
+  if (!user) return fail('auth', 401, 'Session expirée. Recharge la page.');
   const which = new URL(request.url).searchParams.get('memory');
-  if (which == null) return fail('bad_request', 400, 'Richiesta non valida.');
+  if (which == null) return fail('bad_request', 400, 'Demande invalide.');
   try {
     const facts = await getMemory(user.id);
     const i = Number(which);

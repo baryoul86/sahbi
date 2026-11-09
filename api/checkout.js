@@ -6,9 +6,9 @@ import { playReady, verifyPlay } from './_play.js';
 // POST { provider: 'portal' } -> pagina Stripe per cambiare carta o disdire l'abbonamento.
 export async function POST(request) {
   const user = await getUser(request);
-  if (!user) return fail('auth', 401, 'Sessione scaduta. Ricarica la pagina.');
+  if (!user) return fail('auth', 401, 'Session expirée. Recharge la page.');
   let body;
-  try { body = await request.json(); } catch { return fail('bad_request', 400, 'Richiesta non valida.'); }
+  try { body = await request.json(); } catch { return fail('bad_request', 400, 'Demande invalide.'); }
   const base = publicUrl(request);
   const year = body?.plan === 'year';
 

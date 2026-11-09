@@ -9,7 +9,7 @@ export async function POST(request) {
   if (!verifyChargily(raw, request.headers.get('signature'), env('CHARGILY_SECRET_KEY'))) {
     const { alert } = await import('./_alert.js');
     await alert('chargily_webhook', 'Un avis de paiement a été refusé (signature invalide). Si ça se répète, vérifie le secret du webhook sur Vercel.', 360);
-    return fail('signature', 400, 'Firma non valida.');
+    return fail('signature', 400, 'Signature invalide.');
   }
   const event = JSON.parse(raw);
   if (event.type === 'checkout.paid') {

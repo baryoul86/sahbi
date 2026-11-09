@@ -5,6 +5,9 @@ import { openaiAlert } from './_alert.js';
 
 const VOICE_STYLE = `\n\nModalità conversazione a voce: l'utente ti PARLA e la tua risposta verrà letta ad alta voce. Rispondi come in una telefonata tra amici: 1-3 frasi brevi e naturali, niente elenchi, niente emoji, niente simboli o markdown, niente link. Se serve una spiegazione lunga, dai l'essenziale e chiedi se vuole continuare.`;
 const MAX_DOC_CHARS = 60000;
+// Lingua dell'interfaccia scelta dall'utente: serve solo quando dal messaggio non si capisce la lingua (es. "ok", un'emoji).
+const UI_LANG = { fr: 'francese', ar: 'arabo', en: 'inglese' };
+const uiLangPrompt = (l) => (UI_LANG[l] ? `\n\nL'interfaccia dell'app è in ${UI_LANG[l]}: se dall'ultimo messaggio non si capisce la lingua, rispondi in ${UI_LANG[l]}.` : '');
 // Documento allegato (testo già estratto dal telefono, da PDF o Word): { name, text }.
 function parseDoc(value) {
   if (!value || typeof value !== 'object') return null;
@@ -19,6 +22,8 @@ const SYSTEM = `Sei Sahbi (صاحبي), "amico mio": un assistente di intelligen
 Lingua:
 - Rispondi SEMPRE nella stessa lingua e nello stesso registro dell'ultimo messaggio dell'utente.
 - Se l'utente scrive in darija, rispondi in darija dello stesso paese (algerina, marocchina o tunisina), con lo stesso alfabeto: lettere latine e numeri (arabizi, es. "wach rak", "3lach") se lui usa quelle, alfabeto arabo se usa quello.
+- Se l'utente scrive in dialetto egiziano (masri, es. "ezayak", "3amel eh", "عامل ايه", "ازيك") rispondi in egiziano; se scrive in dialetto del Golfo (khaleeji: emiratino, saudita, qatariota, kuwaitiano, es. "shlonak", "wesh tabi", "شلونك", "وش تبي", "ابغى") rispondi nello stesso dialetto del Golfo; per il levantino (shami) fai lo stesso. Stesso alfabeto dell'utente.
+- Se scrive in arabo standard (fusha) rispondi in arabo standard, semplice e chiaro.
 - Se mescola lingue (darija e francese, per esempio), mescola anche tu nello stesso modo.
 - Se l'utente chiede esplicitamente un'altra lingua ("parlami in italiano", "answer in English"), usa quella finché non chiede di cambiare.
 - Per qualsiasi altra lingua del mondo, rispondi in quella lingua.
@@ -152,12 +157,12 @@ async function videoFrames(userId, prompt, opts) {
 
 export async function POST(request) {
   const userId = await getUserId(request);
-  if (!userId) return fail('auth', 401, 'Sessione scaduta. Ricarica la pagina.');
+  if (!userId) return fail('auth', 401, 'Session expirée. Recharge la page.');
 
   let body;
-  try { body = await request.json(); } catch { return fail('bad_request', 400, 'Richiesta non valida.'); }
+  try { body = await request.json(); } catch { return fail('bad_request', 400, 'Demande invalide.'); }
   const messages = cleanMessages(body?.messages);
-  if (!messages) return fail('bad_request', 400, 'Messaggio vuoto.');
+  if (!messages) return fail('bad_request', 400, 'Message vide.');
   const photo = body?.photo ? parsePhoto(body.photo) : null;
   if (body?.photo && !photo) return fail('bad_request', 400, 'Photo non valide ou trop grande.');
 
@@ -168,7 +173,7 @@ export async function POST(request) {
   if (doc && !pro) return fail('pro', 402, 'La lecture de documents est incluse dans Sahbi Pro.');
   const userText = messages[messages.length - 1].content;
   const left = await useCredit(userId, 'chat', limits.chat);
-  if (left < 0) return fail('limit', 429, pro ? 'Limite di messaggi di oggi raggiunto.' : 'Limite gratuito di oggi raggiunto.');
+  if (left < 0) return fail('limit', 429, pro ? 'Limite de messages atteinte pour aujourd’hui.' : 'Limite gratuite atteinte pour aujourd’hui.');
   const imgOpts = (edit) => ({ limit: limits.image, photo: edit ? photo : null });
   const vidOpts = (fromPhoto) => ({ pro, limit: limits.video, photo: fromPhoto ? photo : null });
   const tools = videoEnabled() ? [...TOOLS, VIDEO_TOOL] : TOOLS;
@@ -196,7 +201,7 @@ export async function POST(request) {
   const model = env('OPENAI_CHAT_MODEL', 'gpt-5-nano');
   const payload = {
     model, stream: true, tools, tool_choice: 'auto',
-    messages: [{ role: 'system', content: SYSTEM.replace('{{VIDEO}}', videoEnabled() ? VIDEO_ON : VIDEO_OFF) + memoryPrompt(memory) + (body?.voice === true ? VOICE_STYLE : '') }, ...messages],
+    messages: [{ role: 'system', content: SYSTEM.replace('{{VIDEO}}', videoEnabled() ? VIDEO_ON : VIDEO_OFF) + memoryPrompt(memory) + uiLangPrompt(body?.lang) + (body?.voice === true ? VOICE_STYLE : '') }, ...messages],
   };
   if (model.startsWith('gpt-5')) payload.reasoning_effort = env('OPENAI_REASONING_EFFORT', 'minimal');
 
@@ -229,14 +234,14 @@ export async function POST(request) {
     }
     await refundCredit(userId, 'chat').catch(() => {});
     console.error('OpenAI chat error', 400, errText.slice(0, 300));
-    return fail('upstream', 502, 'Sahbi non riesce a rispondere ora. Riprova tra poco.');
+    return fail('upstream', 502, 'Sahbi ne peut pas répondre maintenant. Réessaie dans un instant.');
   }
   if (!upstream.ok || !upstream.body) {
     await refundCredit(userId, 'chat').catch(() => {});
     const errBody = await upstream.text().catch(() => '');
     console.error('OpenAI chat error', upstream.status, errBody.slice(0, 300));
     await openaiAlert(upstream.status, errBody);
-    return fail('upstream', 502, 'Sahbi non riesce a rispondere ora. Riprova tra poco.');
+    return fail('upstream', 502, 'Sahbi ne peut pas répondre maintenant. Réessaie dans un instant.');
   }
 
   // Trasforma lo stream di OpenAI in testo semplice; se il modello chiede un'immagine, la crea alla fine.
