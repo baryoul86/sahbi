@@ -2154,7 +2154,18 @@ $('sDelete').addEventListener('click', async () => {
   chats = []; await logout(); toast('Ton compte a été supprimé.');
 });
 
-if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js', { updateViaCache: 'none' }).then((r) => r.update()).catch(() => {});
+// Aggiornamenti automatici: quando l'app torna in primo piano, se è uscita una nuova versione si ricarica da sola
+// (mai durante una risposta, una registrazione o la conversazione vocale).
+let hiddenAt = 0;
+document.addEventListener('visibilitychange', async () => {
+  if (document.hidden) { hiddenAt = Date.now(); return; }
+  if (!hiddenAt || Date.now() - hiddenAt < 60e3 || !cfg?.version) return;
+  try {
+    const v = (await (await fetch('/api/config', { cache: 'no-store' })).json()).version;
+    if (v && v !== cfg.version && !busy && !recorder && !V.on && !ta.value.trim()) location.reload();
+  } catch { /* offline */ }
+});
 
 newChat();
 ready.catch(() => toast('Connexion impossible. Recharge la page.'));

@@ -39,6 +39,15 @@
           "value": "microphone=(self), camera=(), geolocation=()"
         }
       ]
+    },
+    {
+      "source": "/(sw.js|i18n.js|index.html)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-cache"
+        }
+      ]
     }
   ],
   "rewrites": [

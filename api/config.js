@@ -23,6 +23,8 @@ export function GET(request) {
     return new Response(body, { headers: { 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'public, max-age=3600' } });
   }
   return json({
+    // Versione pubblicata: l'app la confronta quando torna in primo piano e si ricarica se è cambiata.
+    version: (process.env.VERCEL_GIT_COMMIT_SHA || '').slice(0, 12),
     supabaseUrl: env('SUPABASE_URL', ''),
     supabaseAnonKey: env('SUPABASE_ANON_KEY', ''),
     limits: { free: limits(false), pro: limits(true) },
