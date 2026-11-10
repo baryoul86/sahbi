@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Supprimer mon compte – Sahbi</title>
+<meta name="description" content="Supprimer ton compte Sahbi et toutes tes données (Delete your Sahbi account and data).">
+<link rel="icon" href="/icons/icon-192.png">
+<script src="/i18n.js"></script>
+<style>
+:root{--bg:#FFFFFF;--panel:#F2F7F4;--line:#D3E3DA;--fg:#0F2E24;--muted:#4D675C;--mint:#2FAE74;--mint-text:#187A4F;--mint-ink:#0B2219;--danger:#B3401F;color-scheme:light dark}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0B1F18;--panel:#123026;--line:#21483A;--fg:#E8F5EE;--muted:#9CB8AB;--mint:#3CC587;--mint-text:#5FD69F;--mint-ink:#062016;--danger:#F08A6C}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.6 "Rubik","IBM Plex Sans Arabic",system-ui,-apple-system,"Segoe UI",sans-serif}
+main{max-width:640px;margin:0 auto;padding:24px 16px 56px}
+a{color:var(--mint-text)}
+.brand{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--fg);font-weight:700;font-size:20px}
+.brand img{width:36px;height:36px;border-radius:10px}
+h1{font-size:28px;line-height:1.2;margin:24px 0 8px}
+h2{font-size:18px;margin:28px 0 8px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:16px;margin:16px 0}
+ul{padding-inline-start:20px;margin:8px 0}
+.btn{min-height:48px;width:100%;border-radius:14px;border:1px solid var(--line);background:var(--bg);color:var(--fg);font:inherit;font-weight:500;cursor:pointer;margin-top:10px}
+.btn.main{background:var(--mint);border-color:var(--mint);color:var(--mint-ink)}
+.btn.danger{background:var(--danger);border-color:var(--danger);color:#fff}
+.btn:disabled{opacity:.6}
+input{width:100%;min-height:48px;border-radius:14px;border:1px solid var(--line);background:var(--bg);color:var(--fg);font:inherit;padding:0 14px;margin-top:6px}
+.muted{color:var(--muted);font-size:14px}
+.ok{color:var(--mint-text);font-weight:500}
+[hidden]{display:none !important}
+</style>
+</head>
+<body>
+<main>
+  <a class="brand" href="/"><img src="/icons/icon-192.png" alt="">Sahbi</a>
+  <h1>Supprimer mon compte Sahbi</h1>
+  <p class="muted" lang="en">Delete your Sahbi account and all your data.</p>
+
+  <h2>Ce qui est supprimé</h2>
+  <ul>
+    <li>Ton compte et ton adresse e-mail</li>
+    <li>Toutes tes images et vidéos créées</li>
+    <li>Ce que Sahbi retient de toi (mémoire)</li>
+    <li>Tes compteurs d’utilisation et ton code d’invitation</li>
+  </ul>
+  <p class="muted">La suppression est immédiate et définitive. L’historique des discussions est enregistré seulement sur ton téléphone : il disparaît quand tu désinstalles l’application ou effaces les données du site.</p>
+
+  <h2>Abonnement Sahbi Pro</h2>
+  <p class="muted">Supprimer le compte n’arrête pas un abonnement en cours. Résilie-le d’abord : dans Google Play (Profil → Paiements et abonnements → Abonnements) ou dans le lien de gestion reçu par e-mail après le paiement par carte.</p>
+
+  <h2>Méthode 1 : dans l’application</h2>
+  <p>Ouvre Sahbi → menu ☰ → Paramètres → <b>Supprimer mon compte</b> (appuie deux fois pour confirmer).</p>
+
+  <h2>Méthode 2 : sur cette page</h2>
+  <div class="card">
+    <div id="loading" class="muted">Chargement…</div>
+    <div id="out" hidden>
+      <p>Connecte-toi avec le compte à supprimer.</p>
+      <button class="btn main" id="google" type="button">Continuer avec Google</button>
+      <label for="email" class="muted" style="display:block;margin-top:14px">Ton adresse e-mail</label>
+      <input id="email" type="email" autocomplete="email" placeholder="nom@exemple.com">
+      <button class="btn" id="sendLink" type="button">Recevoir mon lien de connexion</button>
+      <p id="sent" class="ok" hidden>📩 Ouvre l’e-mail reçu et appuie sur le lien, puis reviens sur cette page.</p>
+    </div>
+    <div id="in" hidden>
+      <p>Compte connecté : <b id="who" data-noi18n></b></p>
+      <button class="btn danger" id="del" type="button">Supprimer mon compte</button>
+      <button class="btn" id="logout" type="button">Ce n’est pas mon compte</button>
+    </div>
+    <p id="done" class="ok" hidden>✅ Ton compte et tes données ont été supprimés.</p>
+    <p id="err" class="muted" role="alert"></p>
+  </div>
+
+  <p class="muted">Voir aussi la <a href="/confidentialite.html">politique de confidentialité</a>.</p>
+</main>
+<script>window.SAHBI_I18N?.start();</script>
+<script type="module">
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/+esm';
+const tr = window.SAHBI_I18N?.tr || ((x) => x);
+const $ = (id) => document.getElementById(id);
+const show = (id) => { for (const x of ['loading', 'out', 'in', 'done']) $(x).hidden = x !== id; };
+const err = (m) => { $('err').textContent = m ? tr(m) : ''; };
+let sb = null, session = null, armed = false;
+try {
+  const cfg = await fetch('/api/config').then((r) => r.json());
+  sb = createClient(cfg.supabaseUrl, cfg.supabaseAnonKey, { auth: { persistSession: true, detectSessionInUrl: true, flowType: 'pkce' } });
+  sb.auth.onAuthStateChange((_e, s) => { session = s; render(); });
+  session = (await sb.auth.getSession()).data.session;
+  render();
+} catch { show('out'); err('Connexion impossible. Recharge la page.'); }
+function render() {
+  if ($('done').hidden === false) return;
+  if (session) { $('who').textContent = session.user?.email || ''; show('in'); } else show('out');
+}
+const back = location.origin + location.pathname;
+$('google').addEventListener('click', async () => {
+  err('');
+  const { error } = await sb.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: back } });
+  if (error) err('Connexion Google impossible pour le moment. Utilise ton e-mail.');
+});
+$('sendLink').addEventListener('click', async () => {
+  err('');
+  const email = $('email').value.trim();
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { err('Écris une adresse e-mail valide.'); return; }
+  $('sendLink').disabled = true;
+  const { error } = await sb.auth.signInWithOtp({ email, options: { emailRedirectTo: back, shouldCreateUser: false } });
+  $('sendLink').disabled = false;
+  if (error) err('Impossible d’envoyer l’e-mail. Vérifie l’adresse et réessaie.'); else $('sent').hidden = false;
+});
+$('logout').addEventListener('click', async () => { await sb.auth.signOut(); session = null; render(); });
+$('del').addEventListener('click', async () => {
+  err('');
+  if (!armed) { armed = true; $('del').textContent = tr('Appuie encore : compte et images supprimés pour toujours'); return; }
+  $('del').disabled = true;
+  const r = await fetch('/api/account', { method: 'DELETE', headers: { authorization: `Bearer ${session.access_token}` } }).catch(() => null);
+  if (!r?.ok) { $('del').disabled = false; err('Impossible de supprimer le compte. Réessaie.'); return; }
+  try { Object.keys(localStorage).filter((k) => k.startsWith('sahbi-chats')).forEach((k) => localStorage.removeItem(k)); } catch { /* ignorato */ }
+  await sb.auth.signOut().catch(() => {});
+  $('done').hidden = false; for (const x of ['loading', 'out', 'in']) $(x).hidden = true;
+});
+</script>
+</body>
+</html>
