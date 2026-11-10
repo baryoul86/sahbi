@@ -14,7 +14,7 @@ Assistente di intelligenza artificiale che risponde nella lingua dell'utente (da
 ## Come è fatta
 
 - `index.html`: l'app (una sola pagina) · `sw.js`, `manifest.webmanifest`, `icons/`: installazione sul telefono
-- `conditions.html`, `confidentialite.html`: pagine legali (da completare dove c'è scritto `[...]`)
+- `conditions-utilisation.html`, `confidentialite.html`: pagine legali (da completare dove c'è scritto `[...]`)
 - `api/`: il server su Vercel, che custodisce tutte le chiavi
   - `chat.js` risposte, foto e immagini · `me.js` piano e limiti · `speak.js` voce · `transcribe.js` microfono
   - `library.js` galleria · `referral.js` inviti · `account.js` cancellazione account · `config.js` dati pubblici

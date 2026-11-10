@@ -52,6 +52,10 @@
   ],
   "rewrites": [
     {
+      "source": "/conditions-utilisation",
+      "destination": "/conditions-utilisation.html"
+    },
+    {
       "source": "/ads.txt",
       "destination": "/api/config?file=ads.txt"
     },
@@ -68,6 +72,13 @@
     {
       "path": "/api/admin?cron=1",
       "schedule": "30 6 * * *"
+    }
+  ],
+  "redirects": [
+    {
+      "source": "/conditions.html",
+      "destination": "/conditions-utilisation",
+      "permanent": true
     }
   ]
 }

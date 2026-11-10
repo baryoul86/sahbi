@@ -36,7 +36,7 @@ Poi aggiorna: `PUBLIC_URL` su Vercel e **Site URL** in Supabase › Authenticati
 1. Account sviluppatore Google Play (25 $ una volta).
 2. Vai su pwabuilder.com, inserisci l'indirizzo dell'app › Package for stores › Android. Scarica il pacchetto.
 3. Metti il file `assetlinks.json` del pacchetto in `.well-known/assetlinks.json` di questo progetto (lo aggiungo io).
-4. Carica il file `.aab` su Google Play Console, con le pagine `/conditions.html` e `/confidentialite.html` come link legali.
+4. Carica il file `.aab` su Google Play Console, con le pagine `/conditions-utilisation` e `/confidentialite.html` come link legali.
 
 ## 7. Pubblicità: Google AdSense
 1. Serve il dominio proprio (Google non accetta indirizzi `.vercel.app`) e le pagine legali complete.
