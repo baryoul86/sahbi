@@ -7,6 +7,26 @@ const VOICE_STYLE = `\n\nModalità conversazione a voce: l'utente ti PARLA e la 
 const MAX_DOC_CHARS = 60000;
 // Lingua dell'interfaccia scelta dall'utente: serve solo quando dal messaggio non si capisce la lingua (es. "ok", un'emoji).
 const UI_LANG = { fr: 'francese', ar: 'arabo', en: 'inglese' };
+// Lingua dell'ultimo messaggio (solo quando è chiara): l'istruzione va in fondo, così vince su cronologia e ricordi.
+const LANG_WORDS = {
+  italiano: /\b(il|lo|la|gli|che|non|per|una|sono|questa|questo|voglio|fammi|trasformami|come|perché|anche|della|nella|mi|ciao|grazie|puoi|vorrei)\b/gi,
+  francese: /\b(le|les|des|une|est|pas|pour|avec|je|tu|vous|qui|que|dans|sur|fais|moi|bonjour|merci|peux|veux|c'est|ça)\b/gi,
+  inglese: /\b(the|and|is|are|you|what|how|can|please|make|with|this|that|my|me|for|hello|thanks|want|could)\b/gi,
+  spagnolo: /\b(el|los|las|una|es|por|para|con|que|hola|gracias|quiero|puedes|esta|este|hazme|cómo)\b/gi,
+  tedesco: /\b(der|die|das|und|ist|nicht|ich|du|mit|bitte|danke|kannst|mach|mein|eine)\b/gi,
+};
+const DARIJA = /\b(wach|wesh|rak|rah|bghit|bghina|kifach|chno|chnou|3la|dyal|dial|ntaa|nta3|bezzaf|khoya|sahbi|labas|wakha|safi|daba|kayen|ma3ndich|shlonak|ezayak|3amel|ana|enta|ntia)\b|[a-z][2379][a-z]/i;
+function detectLang(text) {
+  const t = String(text || '');
+  if (!t.trim() || /[\u0600-\u06FF]/.test(t) || DARIJA.test(t)) return null; // arabo e darija: ci pensa il prompt
+  const scores = Object.entries(LANG_WORDS).map(([k, re]) => [k, (t.match(re) || []).length]).sort((a, b) => b[1] - a[1]);
+  return scores[0][1] >= 2 && scores[0][1] >= scores[1][1] * 2 ? scores[0][0] : null;
+}
+// Richieste chiarissime di immagine: lo strumento si chiama SUBITO, senza testo né domande.
+const STYLE_ASK = /(trasform|transform|stile|style|disney|pixar|dreamworks|ghibli|cartoon|cartone|anime|manga|3d|aquarell|acquerell|watercolor|bande dessin|fumetto|comic|حوّل|حول|ستايل|كرتون)/i;
+const NOT_IMAGE = /(vid[ée]o|فيديو|\banime[rz]?\s+(ma|la|cette|mon)|\banima|\bprompt\b)/i;
+const IMAGE_REQ = /^(dessine|disegna|draw|ارسم|rsem|rsemli)\b|^(?!.*\bprompt\b).*(fammi|fai|crea|creami|disegna|disegnami|genera|dessine|fais[- ]moi|fait[- ]moi|crée|cree|génère|genere|draw|make me|create|generate|ارسم|اصنع|اعمل لي|سوي لي|dir ?li|dirli|sawer|rsem|3mel li).{0,40}(immagine|image|foto|photo|dessin|disegno|picture|drawing|صورة|رسم|tswira|tsawer|poster|affiche|logo|sticker|carte|biglietto)/i;
+const langPrompt = (text) => { const l = detectLang(text); return l ? `\n\nLINGUA DI QUESTA RISPOSTA: l'ultimo messaggio dell'utente è in ${l}. Rispondi in ${l}, anche se la cronologia, i ricordi o l'interfaccia sono in un'altra lingua.` : ''; };
 const uiLangPrompt = (l) => (UI_LANG[l] ? `\n\nL'interfaccia dell'app è in ${UI_LANG[l]}: se dall'ultimo messaggio non si capisce la lingua, rispondi in ${UI_LANG[l]}.` : '');
 // Documento allegato (testo già estratto dal telefono, da PDF o Word): { name, text }.
 function parseDoc(value) {
@@ -37,6 +57,7 @@ Immagini:
 - Per modificare un'immagine già creata, riparti dalla sua descrizione "[Image créée : ...]" e cambia SOLO quello che l'utente chiede.
 - NON chiedere mai conferma ("vuoi che proceda?", "ti va?"): se la richiesta è chiara, chiama SUBITO create_image nella stessa risposta, con al massimo una frase breve.
 - Non creare immagini sessuali, violente in modo esplicito, di persone famose o che imitano marchi e personaggi protetti: spiega gentilmente che non puoi e proponi un'alternativa. Puoi però ispirarti a uno stile (es. "yellow-skinned 2D cartoon style" invece del nome di una serie).
+- STILI DI STUDI FAMOSI (Disney, Pixar, DreamWorks, Ghibli, Simpson, Marvel, anime...): uno STILE non è un personaggio protetto. NON rifiutare mai, NON chiedere conferma, NON proporre alternative: chiama SUBITO create_image (con edit_photo = true se c'è la foto) e descrivi lo stile con parole generiche, es. "classic hand-drawn 2D animated fairy-tale film style, big expressive eyes, soft colors" per Disney, "3D animated family movie style" per Pixar, "soft hand-painted Japanese animation style" per Ghibli. Rifiuta solo se si chiede di copiare un personaggio preciso (es. Topolino, Elsa).
 - Nella cronologia, "[Image créée : ...]" indica un'immagine che hai già creato con quella descrizione.
 
 Foto dell'utente:
@@ -286,8 +307,11 @@ export async function POST(request) {
 
   const model = env('OPENAI_CHAT_MODEL', 'gpt-5-nano');
   const payload = {
-    model, stream: true, tools, tool_choice: 'auto',
-    messages: [{ role: 'system', content: SYSTEM.replace('{{VIDEO}}', videoEnabled() ? VIDEO_ON : VIDEO_OFF) + memoryPrompt(memory) + uiLangPrompt(body?.lang) + todayPrompt() + (body?.voice === true ? VOICE_STYLE : '') }, ...messages],
+    model, stream: true, tools,
+    // Foto + "trasformala in stile…", oppure "fammi un'immagine di…": si disegna subito, senza domande.
+    tool_choice: !NOT_IMAGE.test(userText) && ((photo && !body?.photoEarlier && STYLE_ASK.test(userText)) || (!photo && IMAGE_REQ.test(userText.trim())))
+      ? { type: 'function', function: { name: 'create_image' } } : 'auto',
+    messages: [{ role: 'system', content: SYSTEM.replace('{{VIDEO}}', videoEnabled() ? VIDEO_ON : VIDEO_OFF) + memoryPrompt(memory) + uiLangPrompt(body?.lang) + todayPrompt() + langPrompt(userText) + (body?.voice === true ? VOICE_STYLE : '') }, ...messages],
   };
   if (model.startsWith('gpt-5')) payload.reasoning_effort = env('OPENAI_REASONING_EFFORT', 'minimal');
 
@@ -358,6 +382,8 @@ export async function POST(request) {
   const VIDEO_WORDS = /(vid[ée]o|فيديو|anim)/i;
   const IMAGE_WORDS = /(image|immagine|imag|foto|photo|dessin|disegn|رسم|صورة|tswira|cartoon|cartone|anime|simpson|stile|style|carte|biglietto|sticker|transform|trasform)/i;
   const promised = () => {
+    // L'utente ha mandato una foto e chiede di trasformarla: si crea l'immagine anche se il modello ha rifiutato o chiesto conferma.
+    if (!tool.name && photo && !body?.photoEarlier && STYLE_ASK.test(lastText)) return 'create_image';
     if (tool.name || !PROMISE.test(reply) || REFUSAL.test(reply)) return null;
     if (videoEnabled() && VIDEO_WORDS.test(reply) && asked(VIDEO_WORDS)) return 'create_video';
     if (IMAGE_WORDS.test(reply) && asked(IMAGE_WORDS)) return 'create_image';
