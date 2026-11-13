@@ -121,20 +121,49 @@ export function parsePhoto(value) {
   return { mime: m[1], b64: m[2], dataUrl: value };
 }
 
-export async function generateImage(userId, rawPrompt, { limit, photo = null, userText = '' } = {}) {
+// "Regista" delle immagini: un modello più bravo (gpt-5-mini) rilegge la richiesta dell'utente e scrive
+// la descrizione esatta per il disegnatore, scegliendo anche il formato (quadrato, verticale, orizzontale).
+const SIZES = { square: '1024x1024', portrait: '1024x1536', landscape: '1536x1024' };
+async function directImage(draft, userText, history, edit) {
+  if (env('IMAGE_DIRECTOR', 'true') === 'false' || !userText) return null;
+  const model = env('OPENAI_PROMPT_MODEL', 'gpt-5-mini');
+  const sys = `You write prompts for an image generator. Read the user's request (it can be in Darija written in Latin letters or Arabic script, Egyptian, Gulf Arabic, standard Arabic, French or English) and produce ONE precise English prompt.
+Rules:
+- Keep EVERY detail the user asked for: subjects, how many, who, age, clothes, colors, actions, objects, place, time of day, weather, mood, style, camera angle. Nothing important may be lost or changed.
+- Do not add subjects, people, animals, objects, text or ideas the user did not ask for. Only add neutral details needed for a good picture (composition, lighting, background coherent with the request).
+- If the user wants written text in the image, copy it EXACTLY inside double quotes and say where it goes.
+- Style: use the style requested; if none, choose the most natural one (photo-realistic for real scenes, illustration for cards/stickers).
+- ${edit ? 'This edits the user\'s photo: describe ONLY the requested transformation, and keep the same people, faces, poses and composition recognizable.' : 'If the request changes a previous image (see "[Image créée : ...]" in the history), start from that description and change ONLY what is asked.'}
+- Darija hints: tswira = picture, dar = house, khobz = bread, 9at/qat = cat, kelb = dog, bhar = sea, tomobil = car, bent = girl, weld = boy, chibani = old man, 3ers = wedding, 3id = Eid, zwin = beautiful, kbir = big, sghir = small.
+- Format: "portrait" for phone wallpapers, stories, posters, full-body people; "landscape" for banners, panoramas, YouTube thumbnails, wide scenes; otherwise "square".
+- Never include sexual content, explicit violence, real famous people or trademarked characters.
+Answer only with JSON: {"prompt": "...", "format": "square|portrait|landscape"}`;
+  const user = `Conversation (most recent last):\n${history || '(none)'}\n\nUser's request now: ${userText}\n\nDraft prompt from the assistant (may be incomplete or wrong): ${draft}`;
+  const ctrl = new AbortController(); const t = setTimeout(() => ctrl.abort(), 20000);
+  try {
+    const r = await fetch(`${OPENAI}/chat/completions`, {
+      method: 'POST', signal: ctrl.signal,
+      headers: openaiHeaders({ 'content-type': 'application/json' }),
+      body: JSON.stringify({ model, messages: [{ role: 'system', content: sys }, { role: 'user', content: user.slice(0, 6000) }], response_format: { type: 'json_object' }, ...(model.startsWith('gpt-5') ? { reasoning_effort: 'low' } : {}) }),
+    });
+    if (!r.ok) return null;
+    const out = JSON.parse((await r.json())?.choices?.[0]?.message?.content || '{}');
+    const prompt = String(out.prompt || '').trim();
+    return prompt.length > 10 ? { prompt: prompt.slice(0, 3000), size: SIZES[out.format] || null } : null;
+  } catch { return null; } finally { clearTimeout(t); }
+}
+
+export async function generateImage(userId, rawPrompt, { limit, photo = null, userText = '', history = '' } = {}) {
   const base = String(rawPrompt || '').trim().slice(0, 2000);
   if (!base) return { ok: false, error: 'bad_request', status: 400, message: "Décris l'image que tu veux." };
-  // Le parole originali dell'utente hanno la priorità: se la descrizione inglese ha perso o cambiato qualcosa, il disegnatore le segue.
-  const prompt = userText
-    ? `${base}\n\nThe user's original request, in their own words (it may be in Darija, Arabic or French). Follow it exactly: keep every subject, number, color, action, place and written text it asks for, and do not add anything it does not ask for. If it refers to a previous image, apply only the requested change: "${String(userText).replace(/"/g, "'")}"`
-    : base;
-  if (!prompt) return { ok: false, error: 'bad_request', status: 400, message: "Décris l'image que tu veux." };
-
+  const directed = await directImage(base, userText, history, !!photo);
+  const words = String(userText).length >= 8 ? `\n\nThe user's original request, in their own words (it may be in Darija, Arabic or French). Follow it exactly and do not add anything it does not ask for: "${String(userText).replace(/"/g, "'")}"` : '';
+  const prompt = (directed?.prompt || base) + words;
   const left = await useCredit(userId, 'image', limit ?? limits(false).image);
   if (left < 0) return { ok: false, error: 'limit', status: 429, message: "Tu as utilisé tes images d'aujourd'hui." };
 
   const model = env('OPENAI_IMAGE_MODEL', 'gpt-image-1-mini');
-  const size = env('OPENAI_IMAGE_SIZE', '1024x1024');
+  const size = directed?.size || env('OPENAI_IMAGE_SIZE', '1024x1024');
   const quality = env('OPENAI_IMAGE_QUALITY', 'medium');
   let upstream;
   if (photo) {
@@ -168,7 +197,7 @@ export async function generateImage(userId, rawPrompt, { limit, photo = null, us
       ? { ok: false, error: 'blocked', status: 400, message: "Je ne peux pas créer cette image. Essaie une autre description." }
       : { ok: false, error: 'upstream', status: 502, message: "Impossible de créer l'image maintenant. Réessaie dans un instant." };
   }
-  const id = await saveImage(userId, b64, prompt).catch((e) => { console.error('Salvataggio immagine', e.message); return null; });
+  const id = await saveImage(userId, b64, directed?.prompt || base).catch((e) => { console.error('Salvataggio immagine', e.message); return null; });
   return { ok: true, id, image: `data:image/jpeg;base64,${b64}`, remaining: left, limit };
 }
 

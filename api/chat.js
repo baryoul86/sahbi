@@ -258,7 +258,8 @@ export async function POST(request) {
   if (left < 0) return fail('limit', 429, pro ? 'Limite de messages atteinte pour aujourd’hui.' : 'Limite gratuite atteinte pour aujourd’hui.');
   // Le parole esatte dell'utente vanno anche al disegnatore, così non può "inventare" un'altra scena.
   const ownWords = userText.replace(/\(photo envoyée juste avant, jointe à nouveau\)/g, '').trim();
-  const imgOpts = (edit) => ({ limit: limits.image, photo: edit ? photo : null, userText: ownWords.length >= 8 ? ownWords.slice(0, 1500) : '' });
+  const recent = messages.slice(-6, -1).map((m) => `${m.role === 'user' ? 'User' : 'Sahbi'}: ${m.content.slice(0, 500)}`).join('\n');
+  const imgOpts = (edit) => ({ limit: limits.image, photo: edit ? photo : null, userText: ownWords.slice(0, 1500), history: recent });
   const vidOpts = (fromPhoto) => ({ pro, limit: limits.video, photo: fromPhoto ? photo : null });
   const media = videoEnabled() ? [...TOOLS, VIDEO_TOOL] : TOOLS;
   const tools = [...media, WEATHER_TOOL];
