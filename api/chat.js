@@ -286,9 +286,11 @@ export async function POST(request) {
   const tools = [...media, WEATHER_TOOL];
   const NAMES = media.map((t) => t.function.name); // strumenti che creano immagini o video
   // Esegue lo strumento scelto dal modello e restituisce i messaggi di controllo per il telefono.
+  // Foto + "trasformala": si parte SEMPRE dalla foto dell'utente, anche se il modello dimentica edit_photo.
+  const mustEdit = !!photo && !body?.photoEarlier && STYLE_ASK.test(userText) && !NOT_IMAGE.test(userText);
   const runTool = (name, prompt, edit) => (name === 'create_video'
     ? videoFrames(userId, prompt, vidOpts(edit))
-    : imageFrames(userId, prompt, imgOpts(edit)));
+    : imageFrames(userId, prompt, imgOpts(edit || mustEdit)));
   const startFrame = (name) => frame({ type: name === 'create_video' ? 'video_start' : 'image_start' });
 
   // Il documento va solo nell'ultimo messaggio dell'utente.
@@ -424,7 +426,15 @@ export async function POST(request) {
       }
     },
     async flush(controller) {
-      await finishTools(controller);
+      // Mentre si crea l'immagine (fino a 1-2 minuti) si manda un piccolo segnale ogni 8 secondi:
+      // così il telefono e la rete non chiudono la connessione credendola ferma.
+      const hb = setInterval(() => { try { controller.enqueue(encoder.encode(frame({ type: 'ping' }))); } catch { /* chiuso */ } }, 8000);
+      try { await finishTools(controller); }
+      catch (e) {
+        console.error('Strumento', e?.message);
+        const video = tool.name === 'create_video';
+        controller.enqueue(encoder.encode(frame({ type: video ? 'video_error' : 'image_error', error: 'upstream', message: video ? 'Impossible de créer la vidéo maintenant. Réessaie dans un instant.' : "Impossible de créer l'image maintenant. Réessaie dans un instant." })));
+      } finally { clearInterval(hb); }
       controller.enqueue(encoder.encode(await memoryFrame()));
     },
   }));

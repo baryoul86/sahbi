@@ -176,13 +176,17 @@ export async function generateImage(userId, rawPrompt, { limit, photo = null, us
     form.append('size', size);
     form.append('quality', quality);
     form.append('output_format', 'jpeg');
-    upstream = await fetch(`${OPENAI}/images/edits`, { method: 'POST', headers: openaiHeaders(), body: form });
+    upstream = await fetch(`${OPENAI}/images/edits`, { method: 'POST', headers: openaiHeaders(), body: form, signal: AbortSignal.timeout(240000) }).catch(() => null);
   } else {
     upstream = await fetch(`${OPENAI}/images/generations`, {
-      method: 'POST',
+      method: 'POST', signal: AbortSignal.timeout(240000),
       headers: openaiHeaders({ 'content-type': 'application/json' }),
       body: JSON.stringify({ model, prompt, size, quality, output_format: 'jpeg', n: 1 }),
-    });
+    }).catch(() => null);
+  }
+  if (!upstream) {
+    await refundCredit(userId, 'image').catch(() => {});
+    return { ok: false, error: 'upstream', status: 504, message: "La création a pris trop de temps. Réessaie : ça marche souvent au deuxième essai." };
   }
   const data = await upstream.json().catch(() => null);
   const b64 = data?.data?.[0]?.b64_json;
