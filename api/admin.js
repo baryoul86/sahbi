@@ -28,7 +28,8 @@ async function checkOpenAI(deep) {
     }), 20000);
     if (r.ok) return { ok: true };
     const t = await r.text().catch(() => '');
-    return { ok: false, detail: /quota|billing|insufficient/i.test(t) ? 'crédit épuisé' : `HTTP ${r.status}` };
+    let code = ''; try { const e = JSON.parse(t).error || {}; code = `${e.code || e.type || ''} ${e.param || ''}`.trim(); } catch { /* non JSON */ }
+    return { ok: false, detail: /quota|billing|insufficient/i.test(t) ? 'crédit épuisé' : `HTTP ${r.status}${code ? ` ${code}` : ''}` };
   } catch (e) { return { ok: false, detail: e.message }; }
 }
 async function checkStripe() {
@@ -66,7 +67,7 @@ export async function GET(request) {
     // Chiamato ogni ora da GitHub Actions (.github/workflows/surveillance.yml) e ogni mattina da Vercel.
     // Il controllo "vero" di OpenAI (che scopre il credito finito) si fa al massimo ogni 25 minuti.
     let deep = true;
-    try { deep = await rpc('admin_alert', { p_kind: 'probe_openai', p_message: 'contrôle automatique', p_every_minutes: 25 }); } catch { /* db giù */ }
+    try { deep = await rpc('admin_alert', { p_kind: 'probe_openai', p_message: 'contrôle automatique', p_every_minutes: 10 }); } catch { /* db giù */ }
     const h = await health(deep);
     if (!h.db.ok) await alert('db_down', `La base de données ne répond pas : ${h.db.detail}`, 60);
     if (!h.openai.ok) {
@@ -93,7 +94,7 @@ export async function GET(request) {
       ];
       await sendMail(`Sahbi – résumé du jour${allOk(h) ? '' : ' ⚠️'}`, lines.filter((l) => l !== '').join('\n'));
     }
-    return json({ ok: allOk(h), report: due, db: h.db.ok ? 'ok' : 'ko', openai: h.openai.ok ? 'ok' : (h.openai.detail === 'crédit épuisé' ? 'credit' : 'ko'), deep });
+    return json({ ok: allOk(h), report: due, db: h.db.ok ? 'ok' : 'ko', openai: h.openai.ok ? 'ok' : (h.openai.detail === 'crédit épuisé' ? 'credit' : 'ko'), detail: h.openai.ok ? undefined : String(h.openai.detail || '').slice(0, 80), deep });
   }
 
   const user = await getUser(request);
