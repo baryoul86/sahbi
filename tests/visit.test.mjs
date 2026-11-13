@@ -1,0 +1,11 @@
+import assert from 'node:assert/strict';
+Object.assign(process.env, { SUPABASE_URL: 'https://sb.test', SUPABASE_ANON_KEY: 'a', SUPABASE_SERVICE_ROLE_KEY: 'test-service-key' });
+let got = null;
+globalThis.fetch = async (url, opt) => { if (url.endsWith('/rpc/track_visit')) { got = JSON.parse(opt.body); return new Response('null', { headers: { 'content-type': 'application/json' } }); } throw new Error(url); };
+const { POST } = await import('../api/config.js');
+let r = await POST(new Request('https://www.sahbi.bond/api/config?visit=1', { method: 'POST', headers: { origin: 'https://www.sahbi.bond' }, body: '{"new":true,"app":false,"landing":true}' }));
+assert.equal(r.status, 204); assert.deepEqual(got, { p_new: true, p_app: false, p_landing: true });
+got = null; r = await POST(new Request('https://www.sahbi.bond/api/config?visit=1', { method: 'POST', headers: { origin: 'https://evil.com' }, body: '{}' }));
+assert.equal(r.status, 403); assert.equal(got, null);
+r = await POST(new Request('https://www.sahbi.bond/api/config', { method: 'POST', body: '{}' })); assert.equal(r.status, 404);
+console.log('visit OK');
