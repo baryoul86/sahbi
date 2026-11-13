@@ -84,7 +84,10 @@ main.thread .col{display:flex;flex-direction:column;gap:18px;padding-block:20px 
 .gen small{color:var(--muted);font-size:13px}
 .gen video{width:100%;max-height:70vh;border-radius:16px;display:block;background:#000}
 .ph.vid{aspect-ratio:9/16;max-height:420px;text-align:center;padding:16px}
-.ph{width:100%;aspect-ratio:1;border-radius:16px;background:var(--panel);border:1px dashed var(--line);display:grid;place-items:center;color:var(--muted);font-size:14px;animation:glow 1.6s ease-in-out infinite}
+.ph{width:min(78vw,360px);max-width:100%;aspect-ratio:1;border-radius:16px;background:var(--panel);border:1px dashed var(--line);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;color:var(--muted);font-size:14px;animation:glow 1.6s ease-in-out infinite;padding:16px}
+.ph-pct{font-size:34px;font-weight:500;color:var(--fg);font-variant-numeric:tabular-nums}
+.ph-bar{width:min(70%,240px);height:6px;border-radius:99px;background:var(--line);overflow:hidden}
+.ph-bar i{display:block;height:100%;width:0;background:var(--mint);border-radius:inherit;transition:width .3s linear}
 @keyframes glow{50%{background:var(--panel-2)}}
 .inline-cta{margin-top:10px;display:inline-flex;align-items:center;min-height:44px;padding:0 16px;border-radius:12px;border:1px solid var(--mint-text);background:transparent;color:var(--mint-text);font-weight:500}
 footer.composer{border-top:1px solid var(--line)}
@@ -1275,10 +1278,24 @@ const toApi = (m, isLast) => {
   if (m.doc && !isLast) return { role: m.role, content: `${m.content}\n[Document envoyé : ${m.doc}]` };
   return { role: m.role, content: m.content };
 };
+// Segnaposto con percentuale (come ChatGPT): sale da sola verso il 95 % e arriva al 100 % quando l'immagine è pronta.
 function imagePlaceholder(video = false) {
   const m = el('div', 'msg bot'); m.appendChild(avatar());
-  const box = el('div', 'gen'); box.appendChild(el('div', video ? 'ph vid' : 'ph', video ? 'Je prépare ta vidéo…' : 'Je dessine ton image…'));
-  m.appendChild(box); msgsEl.appendChild(m); scroll();
+  const box = el('div', 'gen');
+  const ph = el('div', video ? 'ph vid' : 'ph');
+  const label = el('div', 'ph-label', video ? 'Je prépare ta vidéo…' : 'Je dessine ton image…');
+  const pct = el('div', 'ph-pct', '0 %');
+  const bar = el('div', 'ph-bar'); const fill = el('i'); bar.appendChild(fill);
+  ph.append(label, pct, bar); ph.setAttribute('role', 'progressbar'); ph.setAttribute('aria-valuemin', '0'); ph.setAttribute('aria-valuemax', '100');
+  box.appendChild(ph); m.appendChild(box); msgsEl.appendChild(m); scroll();
+  const t0 = Date.now(), T = video ? 70e3 : 28e3;
+  const tick = () => {
+    if (!m.isConnected) { clearInterval(timer); return; }
+    const v = Math.min(95, Math.round(95 * (1 - Math.exp(-(Date.now() - t0) / T))));
+    pct.textContent = `${v} %`; fill.style.width = `${v}%`; ph.setAttribute('aria-valuenow', String(v));
+  };
+  const timer = setInterval(tick, 300); tick();
+  m.done = () => { clearInterval(timer); pct.textContent = '100 %'; fill.style.width = '100%'; };
   return m;
 }
 
@@ -1356,8 +1373,9 @@ async function sendChat(text, pic = null, docAtt = null, opts = {}) {
   const extra = []; let pending = null, handled = 0, raw = '', reply = '';
   const onFrame = (f) => {
     if (f.type === 'memory') { toast('🧠 Sahbi s’en souviendra.'); if (me) me.memoryStale = true; return; }
+    if (f.type === 'ping') return; // segnale "sono ancora qui" del server: il segnaposto resta
     if (f.type === 'image_start' || f.type === 'video_start') { if (!pending) pending = imagePlaceholder(f.type === 'video_start'); return; }
-    if (pending) { pending.remove(); pending = null; }
+    if (pending) { pending.done?.(); pending.remove(); pending = null; }
     if (f.type === 'video') {
       if (me?.remaining) me.remaining.video = f.remaining;
       videoBubble(f.id, f.prompt, f.remaining === 1 ? tr('Il te reste 1 vidéo ce mois-ci') : tr('Il te reste {n} vidéos ce mois-ci', { n: f.remaining }));
