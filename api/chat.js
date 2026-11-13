@@ -223,6 +223,10 @@ const weatherMessages = (base, reply, id, args, data) => [...base,
   { role: 'tool', tool_call_id: id, content: JSON.stringify(data) }];
 
 const parseJSON = (t) => { try { return JSON.parse(t || '{}'); } catch { return {}; } };
+// Vercel: "aspetta che finisca" anche se la risposta al telefono si è chiusa (come waitUntil di @vercel/functions).
+function keepAlive(promise) {
+  try { globalThis[Symbol.for('@vercel/request-context')]?.get?.()?.waitUntil?.(promise); } catch { /* fuori da Vercel */ }
+}
 const SEP = '\u001e'; // separa i messaggi di controllo (immagini) dal testo
 
 function cleanMessages(input) {
@@ -413,7 +417,9 @@ export async function POST(request) {
     const tc = d?.choices?.[0]?.message?.tool_calls?.find((t) => t.function?.name === name);
     return tc ? parseArgs(tc.function.arguments) : { prompt: '' };
   }
-  const stream = upstream.body.pipeThrough(new TransformStream({
+  // Il lavoro (risposta, immagine, video) continua anche se l'utente esce dall'app o perde la rete:
+  // il telefono può staccarsi, il server finisce comunque e salva l'immagine nella galleria.
+  const T = {
     transform(chunk, controller) {
       buffer += decoder.decode(chunk, { stream: true });
       const lines = buffer.split('\n');
@@ -448,7 +454,23 @@ export async function POST(request) {
       } finally { clearInterval(hb); }
       controller.enqueue(encoder.encode(await memoryFrame()));
     },
-  }));
+  };
+  let gone = false;
+  const stream = new ReadableStream({
+    start(ctrl) {
+      const out = { enqueue: (x) => { if (gone) return; try { ctrl.enqueue(x); } catch { gone = true; } } };
+      const work = (async () => {
+        const rd = upstream.body.getReader();
+        try {
+          for (;;) { const { value, done } = await rd.read(); if (done) break; T.transform(value, out); }
+          await T.flush(out);
+        } catch (e) { console.error('Stream chat', e?.message); }
+        if (!gone) { try { ctrl.close(); } catch { /* già chiuso */ } }
+      })();
+      keepAlive(work);
+    },
+    cancel() { gone = true; },
+  });
 
   // Meteo: prende i dati veri e chiede al modello la risposta finale, che arriva in streaming.
   async function weatherFollowUp(controller) {
