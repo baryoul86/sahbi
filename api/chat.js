@@ -9,9 +9,9 @@ const MAX_DOC_CHARS = 60000;
 const UI_LANG = { fr: 'francese', ar: 'arabo', en: 'inglese' };
 // Lingua dell'ultimo messaggio (solo quando è chiara): l'istruzione va in fondo, così vince su cronologia e ricordi.
 const LANG_WORDS = {
-  italiano: /\b(il|lo|la|gli|che|non|per|una|sono|questa|questo|voglio|fammi|trasformami|come|perché|anche|della|nella|mi|ciao|grazie|puoi|vorrei)\b/gi,
-  francese: /\b(le|les|des|une|est|pas|pour|avec|je|tu|vous|qui|que|dans|sur|fais|moi|bonjour|merci|peux|veux|c'est|ça)\b/gi,
-  inglese: /\b(the|and|is|are|you|what|how|can|please|make|with|this|that|my|me|for|hello|thanks|want|could)\b/gi,
+  italiano: /\b(il|lo|gli|che|per|una|sono|questa|questo|voglio|fammi|trasformami|come|perché|anche|della|nella|mi|ciao|grazie|puoi|vorrei|rifarla|rifalla|rifai|ancora|sì|va bene|dai|perfetto|bene)\b/gi,
+  francese: /\b(le|les|des|une|est|pas|pour|avec|je|tu|vous|qui|que|dans|sur|fais|moi|bonjour|merci|peux|veux|c'est|ça|oui|refais|encore|d'accord|vas-y)\b/gi,
+  inglese: /\b(the|and|is|are|you|what|how|can|please|make|with|this|that|my|me|for|hello|thanks|want|could|yes|again|redo)\b/gi,
   spagnolo: /\b(el|los|las|una|es|por|para|con|que|hola|gracias|quiero|puedes|esta|este|hazme|cómo)\b/gi,
   tedesco: /\b(der|die|das|und|ist|nicht|ich|du|mit|bitte|danke|kannst|mach|mein|eine)\b/gi,
 };
@@ -20,12 +20,16 @@ function detectLang(text) {
   const t = String(text || '');
   if (!t.trim() || /[\u0600-\u06FF]/.test(t) || DARIJA.test(t)) return null; // arabo e darija: ci pensa il prompt
   const scores = Object.entries(LANG_WORDS).map(([k, re]) => [k, (t.match(re) || []).length]).sort((a, b) => b[1] - a[1]);
-  return scores[0][1] >= 2 && scores[0][1] >= scores[1][1] * 2 ? scores[0][0] : null;
+  const short = t.trim().split(/\s+/).length <= 5; // "Puoi rifarla?", "Oui", "Thanks!"
+  return (scores[0][1] >= 2 && scores[0][1] >= scores[1][1] * 2) || (short && scores[0][1] >= 1 && scores[1][1] === 0) ? scores[0][0] : null;
 }
 // Richieste chiarissime di immagine: lo strumento si chiama SUBITO, senza testo né domande.
 const STYLE_ASK = /(trasform|transform|stile|style|disney|pixar|dreamworks|ghibli|cartoon|cartone|anime|manga|3d|aquarell|acquerell|watercolor|bande dessin|fumetto|comic|حوّل|حول|ستايل|كرتون)/i;
 const NOT_IMAGE = /(vid[ée]o|فيديو|\banime[rz]?\s+(ma|la|cette|mon)|\banima|\bprompt\b)/i;
 const IMAGE_REQ = /^(dessine|disegna|draw|ارسم|rsem|rsemli)\b|^(?!.*\bprompt\b).*(fammi|fai|crea|creami|disegna|disegnami|genera|dessine|fais[- ]moi|fait[- ]moi|crée|cree|génère|genere|draw|make me|create|generate|ارسم|اصنع|اعمل لي|سوي لي|dir ?li|dirli|sawer|rsem|3mel li).{0,40}(immagine|image|foto|photo|dessin|disegno|picture|drawing|صورة|رسم|tswira|tsawer|poster|affiche|logo|sticker|carte|biglietto)/i;
+// "Rifalla", "encore", "again", "3awed"... e le conferme "sì / oui / ok".
+const RETRY = /(rifa|rifai|rifarla|rifalla|rifallo|rifammela|riprova|di nuovo|un'altra volta|ancora|again|redo|retry|one more|refai|refais|recommence|réessaie|reessaie|encore|une autre|3awed|3awdha|3awedha|عاود|أعد|اعد|عيد|مرة أخرى|مرة ثانية)/i;
+const CONFIRM = /^(s[iì]|oui|ok|okay|yes|vas-?y|vai|go|d'?accord|wakha|iyeh|ih|ouais|yep|نعم|إيه|واخا|ايوا|يلا)\b/i;
 const langPrompt = (text) => { const l = detectLang(text); return l ? `\n\nLINGUA DI QUESTA RISPOSTA: l'ultimo messaggio dell'utente è in ${l}. Rispondi in ${l}, anche se la cronologia, i ricordi o l'interfaccia sono in un'altra lingua.` : ''; };
 const uiLangPrompt = (l) => (UI_LANG[l] ? `\n\nL'interfaccia dell'app è in ${UI_LANG[l]}: se dall'ultimo messaggio non si capisce la lingua, rispondi in ${UI_LANG[l]}.` : '');
 // Documento allegato (testo già estratto dal telefono, da PDF o Word): { name, text }.
@@ -278,7 +282,14 @@ export async function POST(request) {
   const left = await useCredit(userId, 'chat', limits.chat);
   if (left < 0) return fail('limit', 429, pro ? 'Limite de messages atteinte pour aujourd’hui.' : 'Limite gratuite atteinte pour aujourd’hui.');
   // Le parole esatte dell'utente vanno anche al disegnatore, così non può "inventare" un'altra scena.
-  const ownWords = userText.replace(/\(photo envoyée juste avant, jointe à nouveau\)/g, '').trim();
+  const clean = (t) => String(t || '').replace(/\(photo envoyée juste avant, jointe à nouveau\)/g, '').trim();
+  const nowText = clean(userText);
+  const prevUserText = clean([...messages].slice(0, -1).reverse().find((m) => m.role === 'user')?.content);
+  const prevBotText = [...messages].reverse().find((m) => m.role === 'assistant')?.content || '';
+  // "Rifalla" / "sì" dopo una richiesta di immagine: si rifà subito la stessa immagine, senza domande.
+  const again = !NOT_IMAGE.test(nowText) && ((RETRY.test(nowText) && nowText.split(/\s+/).length <= 8) || (nowText.length < 30 && CONFIRM.test(nowText)))
+    && (STYLE_ASK.test(prevUserText) || IMAGE_REQ.test(prevUserText) || /\[Image créée|image|immagine|photo|foto|صورة|tswira/i.test(prevBotText));
+  const ownWords = again && prevUserText ? `${prevUserText} — ${nowText}` : nowText;
   const recent = messages.slice(-6, -1).map((m) => `${m.role === 'user' ? 'User' : 'Sahbi'}: ${m.content.slice(0, 500)}`).join('\n');
   const imgOpts = (edit) => ({ limit: limits.image, photo: edit ? photo : null, userText: ownWords.slice(0, 1500), history: recent });
   const vidOpts = (fromPhoto) => ({ pro, limit: limits.video, photo: fromPhoto ? photo : null });
@@ -287,7 +298,7 @@ export async function POST(request) {
   const NAMES = media.map((t) => t.function.name); // strumenti che creano immagini o video
   // Esegue lo strumento scelto dal modello e restituisce i messaggi di controllo per il telefono.
   // Foto + "trasformala": si parte SEMPRE dalla foto dell'utente, anche se il modello dimentica edit_photo.
-  const mustEdit = !!photo && !body?.photoEarlier && STYLE_ASK.test(userText) && !NOT_IMAGE.test(userText);
+  const mustEdit = !!photo && !NOT_IMAGE.test(nowText) && ((!body?.photoEarlier && STYLE_ASK.test(nowText)) || (again && STYLE_ASK.test(`${prevUserText} ${prevBotText}`)));
   const runTool = (name, prompt, edit) => (name === 'create_video'
     ? videoFrames(userId, prompt, vidOpts(edit))
     : imageFrames(userId, prompt, imgOpts(edit || mustEdit)));
@@ -311,9 +322,9 @@ export async function POST(request) {
   const payload = {
     model, stream: true, tools,
     // Foto + "trasformala in stile…", oppure "fammi un'immagine di…": si disegna subito, senza domande.
-    tool_choice: !NOT_IMAGE.test(userText) && ((photo && !body?.photoEarlier && STYLE_ASK.test(userText)) || (!photo && IMAGE_REQ.test(userText.trim())))
+    tool_choice: again || (!NOT_IMAGE.test(nowText) && ((photo && !body?.photoEarlier && STYLE_ASK.test(nowText)) || (!photo && IMAGE_REQ.test(nowText))))
       ? { type: 'function', function: { name: 'create_image' } } : 'auto',
-    messages: [{ role: 'system', content: SYSTEM.replace('{{VIDEO}}', videoEnabled() ? VIDEO_ON : VIDEO_OFF) + memoryPrompt(memory) + uiLangPrompt(body?.lang) + todayPrompt() + langPrompt(userText) + (body?.voice === true ? VOICE_STYLE : '') }, ...messages],
+    messages: [{ role: 'system', content: SYSTEM.replace('{{VIDEO}}', videoEnabled() ? VIDEO_ON : VIDEO_OFF) + memoryPrompt(memory) + uiLangPrompt(body?.lang) + todayPrompt() + langPrompt(detectLang(nowText) ? nowText : (again ? prevUserText : nowText)) + (body?.voice === true ? VOICE_STYLE : '') }, ...messages],
   };
   if (model.startsWith('gpt-5')) payload.reasoning_effort = env('OPENAI_REASONING_EFFORT', 'minimal');
 

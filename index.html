@@ -1331,8 +1331,13 @@ async function sendChat(text, pic = null, docAtt = null, opts = {}) {
   saveCurrent();
   const wait = typing();
   const history = current.messages.map((m, i, a) => toApi(m, i === a.length - 1));
-  if (pic) { recentPhoto = pic; recentTurns = 3; } else if (recentTurns > 0) recentTurns--;
+  if (pic) { recentPhoto = pic; recentTurns = 5; } else if (recentTurns > 0) recentTurns--;
   if (recentTurns <= 0 && !pic) recentPhoto = null;
+  // Discussione riaperta più tardi: si usa la miniatura salvata dell'ultima foto (se è recente nella discussione).
+  if (!pic && !recentPhoto) {
+    const lastPhoto = current.messages.slice(-7, -1).reverse().find((m) => m.role === 'user' && m.thumb);
+    if (lastPhoto) { recentPhoto = lastPhoto.thumb; recentTurns = 2; }
+  }
   let res;
   try {
     res = await api('/api/chat', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ messages: history, lang: LANG, ...(pic ? { photo: pic } : (recentPhoto && recentTurns > 0 && !opts.voice ? { photo: recentPhoto, photoEarlier: true } : {})), ...(docAtt ? { doc: { name: docAtt.name, text: docAtt.text } } : {}), ...(opts.voice ? { voice: true } : {}) }) });
