@@ -12,6 +12,8 @@ const D = [
 ['Transformer la photo', 'تحويل الصورة', 'Transform the photo'],
 ['Retirer le document', 'إزالة المستند', 'Remove document'],
 ['Ajouter une photo', 'إضافة صورة', 'Add a photo'],
+['Prendre une photo', 'التقط صورة', 'Take a photo'],
+['Joindre une photo ou un document', 'إرفاق صورة أو مستند', 'Attach a photo or document'],
 ['Ajouter un document PDF ou Word', 'إضافة مستند PDF أو Word', 'Add a PDF or Word document'],
 ['Message', 'رسالة', 'Message'],
 ['Écris ici…', 'اكتب هنا…', 'Type here…'],

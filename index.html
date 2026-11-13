@@ -443,14 +443,15 @@ html[lang=ar] body{line-height:1.7}
         </div>
       </div>
       <div class="box">
-        <button class="attach" id="attach" type="button" aria-label="Ajouter une photo">
+        <button class="attach" id="attach" type="button" aria-label="Prendre une photo">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
         </button>
         <input type="file" id="file" accept="image/*" hidden>
-        <button class="attach doc" id="attachDoc" type="button" aria-label="Ajouter un document PDF ou Word">
+        <input type="file" id="camFile" accept="image/*" capture="environment" hidden>
+        <button class="attach doc" id="attachDoc" type="button" aria-label="Joindre une photo ou un document">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21.4 11.1l-9.2 9.2a6 6 0 0 1-8.5-8.5l9.2-9.2a4 4 0 0 1 5.7 5.7l-9.2 9.2a2 2 0 0 1-2.8-2.8l8.5-8.5"/></svg>
         </button>
-        <input type="file" id="docFile" accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document" hidden>
+        <input type="file" id="docFile" accept="image/*,.pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document" hidden>
         <label for="msg" class="sr">Message</label>
         <textarea id="msg" rows="1" dir="auto" placeholder="Écris ici…"></textarea>
         <button class="mic" id="mic" type="button" aria-label="Parler au micro" aria-pressed="false">
@@ -1650,13 +1651,18 @@ async function shrink(file, max = 1280) {
     return c.toDataURL('image/jpeg', 0.85);
   } finally { URL.revokeObjectURL(url); }
 }
-$('attach').addEventListener('click', () => $('file').click());
-$('file').addEventListener('change', async () => {
-  const f = $('file').files?.[0]; $('file').value = '';
-  if (!f) return;
+// 📷 = fotocamera subito (sul telefono); la graffetta = galleria foto o documento.
+async function usePhotoFile(f) {
   if (!f.type.startsWith('image/')) { toast('Choisis une photo.'); return; }
   try { setPhoto(await shrink(f)); ta.focus(); } catch { toast('Impossible de lire cette photo.'); }
-});
+}
+$('attach').addEventListener('click', () => $('camFile').click());
+for (const id of ['file', 'camFile']) {
+  $(id).addEventListener('change', async () => {
+    const f = $(id).files?.[0]; $(id).value = '';
+    if (f) await usePhotoFile(f);
+  });
+}
 $('removePhoto').addEventListener('click', () => setPhoto(null));
 
 // ---------- Documenti PDF e Word (Pro): il testo viene letto qui sul telefono ----------
@@ -1673,10 +1679,7 @@ function setDoc(d) {
   ta.placeholder = d ? 'Que veux-tu faire ? Résumer, traduire, expliquer…' : placeholder();
   updateAttachBar(); grow();
 }
-function pickDoc() {
-  if (me && !me.pro) { openSheet(); toast('La lecture de documents est incluse dans Sahbi Pro.'); return; }
-  $('docFile').click();
-}
+function pickDoc() { $('docFile').click(); }
 async function pdfText(buf) {
   const base = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.4.168/build/';
   const pdfjs = await import(`${base}pdf.min.mjs`);
@@ -1718,6 +1721,8 @@ $('attachDoc').addEventListener('click', pickDoc);
 $('docFile').addEventListener('change', async () => {
   const f = $('docFile').files?.[0]; $('docFile').value = '';
   if (!f) return;
+  if (f.type.startsWith('image/') || /\.(jpe?g|png|webp|heic|heif|gif)$/i.test(f.name)) { await usePhotoFile(f); return; }
+  if (me && !me.pro) { openSheet(); toast('La lecture de documents est incluse dans Sahbi Pro.'); return; }
   if (f.size > 15 * 1024 * 1024) { toast('Document trop lourd (15 Mo maximum).'); return; }
   const isPdf = /pdf$/i.test(f.type) || /\.pdf$/i.test(f.name), isDocx = /\.docx$/i.test(f.name) || /wordprocessingml/.test(f.type);
   if (!isPdf && !isDocx) { toast('Choisis un PDF ou un fichier Word (.docx).'); return; }
