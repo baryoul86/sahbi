@@ -1,6 +1,10 @@
 import { env, json, fail, getUserId, useCredit, refundCredit, getPlan, openaiHeaders, OPENAI } from './_lib.js';
 
 const MAX_BYTES = 4 * 1024 * 1024; // circa 2-3 minuti di voce
+const HINT = "Transcris exactement ce qui est dit, dans la langue parlée, sans traduire ni résumer. "
+  + "La personne parle souvent en darija (algérienne, marocaine, tunisienne), en arabe égyptien, en arabe du Golfe, en arabe standard, en français ou en anglais, et mélange parfois ces langues dans la même phrase. "
+  + "Si elle parle darija avec des mots français, garde le mélange tel quel. Écris l'arabe et la darija en lettres arabes quand c'est de l'arabe, et les mots français en français. "
+  + "Mots fréquents : Sahbi, wach, kifach, bezzaf, chwiya, mlih, sahit, khoya, wesh, labas, hamdoulah, inchallah, yallah, safi, zwin, bghit, 3afak, ezayak, 3amel eh, shlonak, wesh tabi, Bac, Edahabia.";
 
 // GET = "sveglia" il server appena l'utente preme il microfono, così la trascrizione parte subito dopo.
 export function GET() {
@@ -19,7 +23,8 @@ export async function POST(request) {
   if (!audio || typeof audio === 'string' || !audio.size) return fail('bad_request', 400, 'Audio vide.');
   if (audio.size > MAX_BYTES) return fail('too_big', 413, 'Enregistrement trop long : 2 minutes maximum.');
 
-  const model = env('OPENAI_TRANSCRIBE_MODEL', 'gpt-4o-mini-transcribe');
+  // gpt-4o-transcribe capisce meglio accenti, dialetti e lingue mischiate (costa circa 0,6 centesimi al minuto).
+  const model = env('OPENAI_TRANSCRIBE_MODEL', 'gpt-4o-transcribe');
   const wantStream = form.get('stream') === '1' && model.startsWith('gpt-4o');
 
   // Il controllo del limite e la trascrizione partono INSIEME (prima erano uno dopo l'altro).
@@ -28,6 +33,10 @@ export async function POST(request) {
   const name = (audio.type || '').includes('mp4') ? 'audio.mp4' : 'audio.webm';
   out.append('file', audio, name);
   out.append('model', model);
+  // Istruzioni per il trascrittore: lingue mischiate, darija scritta come la scrive l'utente, parole tipiche.
+  // Più le ultime frasi della chat, così capisce meglio nomi e argomenti.
+  const ctx = String(form.get('context') || '').replace(/\s+/g, ' ').slice(-300);
+  out.append('prompt', `${HINT}${ctx ? ` Contexte de la conversation : ${ctx}` : ''}`);
   if (wantStream) out.append('stream', 'true');
   const call = fetch(`${OPENAI}/audio/transcriptions`, { method: 'POST', headers: openaiHeaders(), body: out });
 

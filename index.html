@@ -1744,12 +1744,14 @@ function drawWave(stream) {
   } catch { /* senza onda va bene lo stesso */ }
 }
 function stopWave() { cancelAnimationFrame(recRaf); recCtx?.close().catch(() => {}); recCtx = null; }
+// Ultime frasi della discussione: aiutano a capire nomi e argomenti quando si parla.
+const chatContext = () => (current?.messages || []).slice(-2).map((m) => String(m.content || '').slice(-200)).join(' ').replace(/\[[^\]]*\]/g, '').trim();
 // Trascrizione in streaming: il testo appare man mano.
 async function transcribe(blob) {
   recBar.classList.add('busy'); $('recStop').disabled = true; $('recStop').innerHTML = '<span class="spin" aria-hidden="true"></span>';
   const before = ta.value ? ta.value.replace(/\s+$/, '') + ' ' : '';
   try {
-    const fd = new FormData(); fd.append('audio', blob, 'audio'); fd.append('stream', '1');
+    const fd = new FormData(); fd.append('audio', blob, 'audio'); fd.append('stream', '1'); fd.append('context', chatContext());
     const r = await api('/api/transcribe', { method: 'POST', body: fd });
     if (!r.ok) { const d = await r.json().catch(() => ({})); toast(d.message || 'Je n’ai pas compris. Réessaie.'); return; }
     let text = '';
@@ -1769,11 +1771,11 @@ async function startMic() {
   if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === 'undefined') { toast('Le micro n’est pas disponible sur ce navigateur.'); return; }
   fetch('/api/transcribe', { method: 'GET' }).catch(() => {}); // sveglia il server mentre parli
   let stream;
-  try { stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, channelCount: 1 } }); }
+  try { stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true, channelCount: 1 } }); }
   catch { toast('Autorise le micro dans les réglages du navigateur.'); return; }
   const type = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4'].find((t) => MediaRecorder.isTypeSupported(t)) || '';
   // File più leggero = invio più veloce (la voce resta chiara).
-  try { recorder = new MediaRecorder(stream, { ...(type ? { mimeType: type } : {}), audioBitsPerSecond: 24000 }); }
+  try { recorder = new MediaRecorder(stream, { ...(type ? { mimeType: type } : {}), audioBitsPerSecond: 32000 }); }
   catch { recorder = new MediaRecorder(stream, type ? { mimeType: type } : undefined); }
   chunks = []; recCancelled = false; recStart = Date.now();
   recorder.ondataavailable = (e) => { if (e.data.size) chunks.push(e.data); };
@@ -1936,7 +1938,7 @@ function listen() {
   vState('listening', 'Je t’écoute…');
   const type = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4'].find((t) => MediaRecorder.isTypeSupported(t)) || '';
   let rec;
-  try { rec = new MediaRecorder(V.stream, { ...(type ? { mimeType: type } : {}), audioBitsPerSecond: 24000 }); }
+  try { rec = new MediaRecorder(V.stream, { ...(type ? { mimeType: type } : {}), audioBitsPerSecond: 32000 }); }
   catch { rec = new MediaRecorder(V.stream, type ? { mimeType: type } : undefined); }
   V.rec = rec;
   const parts = []; let spoke = false, lastLoud = 0, floor = 0, n = 0;
@@ -1988,7 +1990,7 @@ async function turn(blob) {
   if (blob.size < 1500) { listen(); return; }
   let text = '';
   try {
-    const fd = new FormData(); fd.append('audio', blob, 'audio');
+    const fd = new FormData(); fd.append('audio', blob, 'audio'); fd.append('context', chatContext());
     const r = await api('/api/transcribe', { method: 'POST', body: fd });
     const d = await r.json().catch(() => ({}));
     if (r.ok) text = (d.text || '').trim();
