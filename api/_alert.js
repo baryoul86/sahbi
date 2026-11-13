@@ -5,14 +5,14 @@ import { env, rpc } from './_lib.js';
 export const adminEmails = () => env('ADMIN_EMAIL', '').split(',').map((s) => s.trim().toLowerCase()).filter(Boolean);
 export const isAdmin = (email) => !!email && adminEmails().includes(String(email).toLowerCase());
 
-export async function sendMail(subject, text) {
+export async function sendMail(subject, text, replyTo = '') {
   const to = adminEmails();
   if (!to.length || !env('RESEND_API_KEY')) return false;
   try {
     const res = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: { authorization: `Bearer ${env('RESEND_API_KEY')}`, 'content-type': 'application/json' },
-      body: JSON.stringify({ from: env('ALERT_FROM', 'Sahbi <alertes@sahbi.bond>'), to, subject, text }),
+      body: JSON.stringify({ from: env('ALERT_FROM', 'Sahbi <alertes@sahbi.bond>'), to, subject, text, ...(replyTo ? { reply_to: replyTo } : {}) }),
     });
     if (!res.ok) console.error('Resend', res.status);
     return res.ok;

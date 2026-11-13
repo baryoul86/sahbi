@@ -51,9 +51,10 @@ export function GET(request) {
 // POST /api/config?visit=1 → conta una visita (solo numeri per giorno, nessun dato personale).
 export async function POST(request) {
   const url = new URL(request.url);
-  if (url.searchParams.get('visit') !== '1') return json({ ok: false }, 404);
   const origin = request.headers.get('origin') || '';
   if (origin && new URL(origin).host !== url.host) return json({ ok: false }, 403);
+  if (url.searchParams.get('contact') === '1') return contact(request);
+  if (url.searchParams.get('visit') !== '1') return json({ ok: false }, 404);
   let b = {};
   try { b = await request.json(); } catch { /* corpo vuoto */ }
   try {
@@ -61,4 +62,19 @@ export async function POST(request) {
     await rpc('track_visit', { p_new: b?.new === true, p_app: b?.app === true, p_landing: b?.landing === true });
   } catch { /* tabella non ancora creata: si ignora */ }
   return new Response(null, { status: 204 });
+}
+
+// POST /api/config?contact=1 → messaggio dalla pagina Contact, inviato per e-mail all'amministratore.
+async function contact(request) {
+  let b = {};
+  try { b = await request.json(); } catch { /* vuoto */ }
+  const name = String(b.name || '').trim().slice(0, 80), email = String(b.email || '').trim().slice(0, 120), message = String(b.message || '').trim().slice(0, 4000);
+  if (b.website) return json({ ok: true }); // trappola per i robot
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email) || message.length < 10) return json({ ok: false, message: 'Indique une adresse e-mail valide et un message.' }, 400);
+  const { rpc } = await import('./_lib.js');
+  const { sendMail } = await import('./_alert.js');
+  const due = await rpc('admin_alert', { p_kind: 'probe_contact', p_message: 'contact', p_every_minutes: 1 }).catch(() => true);
+  if (!due) return json({ ok: false, message: 'Trop de messages en ce moment. Réessaie dans une minute.' }, 429);
+  const ok = await sendMail(`✉️ Sahbi – message de ${name || email}`, `De : ${name || '(sans nom)'} <${email}>\n\n${message}`, email);
+  return ok ? json({ ok: true }) : json({ ok: false, message: 'Envoi impossible pour le moment. Réessaie plus tard.' }, 502);
 }
