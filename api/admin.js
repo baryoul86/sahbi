@@ -93,7 +93,7 @@ export async function GET(request) {
       ];
       await sendMail(`Sahbi – résumé du jour${allOk(h) ? '' : ' ⚠️'}`, lines.filter((l) => l !== '').join('\n'));
     }
-    return json({ ok: allOk(h), report: due });
+    return json({ ok: allOk(h), report: due, db: h.db.ok ? 'ok' : 'ko', openai: h.openai.ok ? 'ok' : (h.openai.detail === 'crédit épuisé' ? 'credit' : 'ko'), deep });
   }
 
   const user = await getUser(request);
