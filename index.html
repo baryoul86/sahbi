@@ -282,7 +282,10 @@ button.s-row.danger{color:var(--danger)}
 .gbtn:disabled{opacity:.6}
 .or{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:13px;margin-top:14px}
 .or::before,.or::after{content:"";flex:1;height:1px;background:var(--line)}
-.attach.doc{margin-inline-start:-8px}
+.amenu{position:absolute;bottom:calc(100% + 8px);inset-inline-start:0;z-index:5;min-width:220px;background:var(--panel);border:1px solid var(--line);border-radius:18px;box-shadow:0 12px 32px rgba(0,0,0,.18);padding:6px;display:flex;flex-direction:column}
+.amenu button{min-height:48px;border:0;background:none;color:var(--fg);font:inherit;display:flex;align-items:center;gap:12px;padding:0 12px;border-radius:12px;text-align:start;cursor:pointer}
+.amenu button:hover,.amenu button:focus-visible{background:var(--night)}
+.amenu small{color:var(--muted);font-size:12px;margin-inline-start:4px}
 a.s-row{text-decoration:none;color:inherit}
 a.s-row[hidden]{display:none}
 .app-only{display:none}
@@ -443,15 +446,17 @@ html[lang=ar] body{line-height:1.7}
         </div>
       </div>
       <div class="box">
-        <button class="attach" id="attach" type="button" aria-label="Prendre une photo">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+        <button class="attach" id="attach" type="button" aria-label="Ajouter une photo ou un fichier" aria-haspopup="menu" aria-expanded="false" aria-controls="attachMenu">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
         </button>
+        <div class="amenu" id="attachMenu" role="menu" hidden>
+          <button type="button" role="menuitem" id="pickCam"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg><span>Appareil photo</span></button>
+          <button type="button" role="menuitem" id="pickPhoto"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.8"/><path d="M21 15l-5-5L5 21"/></svg><span>Photos</span></button>
+          <button type="button" role="menuitem" id="pickFile"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h6"/></svg><span>Fichiers <small>PDF, Word</small></span></button>
+        </div>
         <input type="file" id="file" accept="image/*" hidden>
         <input type="file" id="camFile" accept="image/*" capture="environment" hidden>
-        <button class="attach doc" id="attachDoc" type="button" aria-label="Joindre une photo ou un document">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21.4 11.1l-9.2 9.2a6 6 0 0 1-8.5-8.5l9.2-9.2a4 4 0 0 1 5.7 5.7l-9.2 9.2a2 2 0 0 1-2.8-2.8l8.5-8.5"/></svg>
-        </button>
-        <input type="file" id="docFile" accept="image/*,.pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document" hidden>
+        <input type="file" id="docFile" accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document" hidden>
         <label for="msg" class="sr">Message</label>
         <textarea id="msg" rows="1" dir="auto" placeholder="Écris ici…"></textarea>
         <button class="mic" id="mic" type="button" aria-label="Parler au micro" aria-pressed="false">
@@ -1640,15 +1645,43 @@ function setPhoto(dataUrl) {
   ta.placeholder = dataUrl ? 'Pose une question ou choisis un style…' : placeholder();
   updateAttachBar(); grow();
 }
+// Riduce la foto a max 1280 px. Su Android le foto della fotocamera sono enormi: si usa createImageBitmap
+// (che riduce mentre decodifica e gira la foto nel verso giusto) e si controlla che il risultato non sia nero.
+const isBlack = (c) => {
+  try {
+    const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data;
+    const step = Math.max(4, Math.floor(d.length / 4 / 400) * 4);
+    for (let i = 0; i < d.length; i += step) if (d[i] > 8 || d[i + 1] > 8 || d[i + 2] > 8) return false;
+    return true;
+  } catch { return false; }
+};
+function toJpeg(src, w, h) {
+  const c = document.createElement('canvas'); c.width = w; c.height = h;
+  const g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, w, h); g.drawImage(src, 0, 0, w, h);
+  return isBlack(c) ? null : c.toDataURL('image/jpeg', 0.85);
+}
 async function shrink(file, max = 1280) {
+  // 1) Metodo moderno: decodifica già ridotta, orientamento corretto.
+  if (window.createImageBitmap) {
+    try {
+      const probe = await createImageBitmap(file, { imageOrientation: 'from-image' });
+      const k = Math.min(1, max / Math.max(probe.width, probe.height));
+      const w = Math.max(1, Math.round(probe.width * k)), h = Math.max(1, Math.round(probe.height * k));
+      probe.close?.();
+      const bmp = await createImageBitmap(file, { imageOrientation: 'from-image', resizeWidth: w, resizeHeight: h, resizeQuality: 'high' });
+      const out = toJpeg(bmp, w, h); bmp.close?.();
+      if (out) return out;
+    } catch { /* si prova l'altro metodo */ }
+  }
+  // 2) Metodo classico con <img>, aspettando che la foto sia davvero decodificata.
   const url = URL.createObjectURL(file);
   try {
-    const img = await new Promise((ok, ko) => { const i = new Image(); i.onload = () => ok(i); i.onerror = ko; i.src = url; });
+    const img = new Image(); img.src = url;
+    await (img.decode ? img.decode() : new Promise((ok, ko) => { img.onload = ok; img.onerror = ko; }));
     const k = Math.min(1, max / Math.max(img.naturalWidth, img.naturalHeight));
-    const c = document.createElement('canvas');
-    c.width = Math.round(img.naturalWidth * k); c.height = Math.round(img.naturalHeight * k);
-    c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
-    return c.toDataURL('image/jpeg', 0.85);
+    const out = toJpeg(img, Math.round(img.naturalWidth * k), Math.round(img.naturalHeight * k));
+    if (out) return out;
+    throw new Error('black');
   } finally { URL.revokeObjectURL(url); }
 }
 // 📷 = fotocamera subito (sul telefono); la graffetta = galleria foto o documento.
@@ -1656,7 +1689,19 @@ async function usePhotoFile(f) {
   if (!f.type.startsWith('image/')) { toast('Choisis une photo.'); return; }
   try { setPhoto(await shrink(f)); ta.focus(); } catch { toast('Impossible de lire cette photo.'); }
 }
-$('attach').addEventListener('click', () => $('camFile').click());
+// "+" come ChatGPT: menu con Appareil photo / Photos / Fichiers.
+const amenu = $('attachMenu');
+function closeAttachMenu() { amenu.hidden = true; $('attach').setAttribute('aria-expanded', 'false'); }
+$('attach').addEventListener('click', (e) => {
+  e.stopPropagation();
+  const open = amenu.hidden; amenu.hidden = !open; $('attach').setAttribute('aria-expanded', String(open));
+  if (open) $('pickCam').focus();
+});
+$('pickCam').addEventListener('click', () => { closeAttachMenu(); $('camFile').click(); });
+$('pickPhoto').addEventListener('click', () => { closeAttachMenu(); $('file').click(); });
+$('pickFile').addEventListener('click', () => { closeAttachMenu(); pickDoc(); });
+document.addEventListener('click', (e) => { if (!amenu.hidden && !amenu.contains(e.target)) closeAttachMenu(); });
+amenu.addEventListener('keydown', (e) => { if (e.key === 'Escape') { closeAttachMenu(); $('attach').focus(); } });
 for (const id of ['file', 'camFile']) {
   $(id).addEventListener('change', async () => {
     const f = $(id).files?.[0]; $(id).value = '';
@@ -1679,7 +1724,10 @@ function setDoc(d) {
   ta.placeholder = d ? 'Que veux-tu faire ? Résumer, traduire, expliquer…' : placeholder();
   updateAttachBar(); grow();
 }
-function pickDoc() { $('docFile').click(); }
+function pickDoc() {
+  if (me && !me.pro) { openSheet(); toast('La lecture de documents est incluse dans Sahbi Pro.'); return; }
+  $('docFile').click();
+}
 async function pdfText(buf) {
   const base = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.4.168/build/';
   const pdfjs = await import(`${base}pdf.min.mjs`);
@@ -1717,7 +1765,6 @@ async function docxText(buf) {
   }
   throw new Error('docx');
 }
-$('attachDoc').addEventListener('click', pickDoc);
 $('docFile').addEventListener('change', async () => {
   const f = $('docFile').files?.[0]; $('docFile').value = '';
   if (!f) return;
