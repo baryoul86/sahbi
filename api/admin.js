@@ -24,7 +24,7 @@ async function checkOpenAI(deep) {
     const r = await timed(fetch(`${OPENAI}/chat/completions`, {
       method: 'POST',
       headers: openaiHeaders({ 'content-type': 'application/json' }),
-      body: JSON.stringify({ model, messages: [{ role: 'user', content: 'ping' }], max_completion_tokens: 16, ...(model.startsWith('gpt-5') ? { reasoning_effort: 'minimal' } : {}) }),
+      body: JSON.stringify({ model, messages: [{ role: 'user', content: 'Réponds juste : ok' }], max_completion_tokens: 300, ...(model.startsWith('gpt-5') ? { reasoning_effort: 'minimal' } : {}) }),
     }), 20000);
     if (r.ok) return { ok: true };
     const t = await r.text().catch(() => '');

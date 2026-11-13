@@ -936,7 +936,31 @@ function load() { try { return JSON.parse(localStorage.getItem(STORE) || '[]'); 
 function persist() {
   // Le discussioni fissate non vengono mai tolte; delle altre si tengono le 50 più recenti.
   const pinned = chats.filter((c) => c.pinned), rest = chats.filter((c) => !c.pinned).slice(0, 50);
-  try { localStorage.setItem(STORE, JSON.stringify([...pinned, ...rest])); } catch { /* memoria piena: ignorato */ }
+  const all = [...pinned, ...rest];
+  try { localStorage.setItem(STORE, JSON.stringify(all)); return; } catch { /* memoria piena */ }
+  // Memoria del telefono piena: si tolgono le miniature delle foto più vecchie (la discussione aperta le tiene).
+  for (const c of [...all].reverse()) {
+    if (c === current) continue;
+    let changed = false;
+    for (const m of c.messages || []) if (m.thumb) { delete m.thumb; changed = true; }
+    if (changed) { try { localStorage.setItem(STORE, JSON.stringify(all)); return; } catch { /* ancora piena */ } }
+  }
+}
+// Miniatura leggera della foto inviata (circa 10-20 KB), per rivederla nella discussione.
+function makeThumb(src, max = 360) {
+  return new Promise((ok) => {
+    const img = new Image();
+    img.onload = () => {
+      try {
+        const k = Math.min(1, max / Math.max(img.width, img.height));
+        const c = document.createElement('canvas'); c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+        c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+        ok(c.toDataURL('image/jpeg', 0.6));
+      } catch { ok(null); }
+    };
+    img.onerror = () => ok(null);
+    img.src = src;
+  });
 }
 let chats = load();
 let current = null;
@@ -1175,7 +1199,7 @@ function render() {
   for (const m of current.messages) {
     if (m.kind === 'image') storedImageBubble(m);
     else if (m.kind === 'video') videoBubble(m.id, m.content);
-    else if (m.role === 'user' && m.photo) userPhotoBubble(null, `📷 ${m.content}`);
+    else if (m.role === 'user' && m.photo) userPhotoBubble(m.thumb || null, m.thumb ? m.content : `📷 ${m.content}`);
     else if (m.role === 'user' && m.doc) bubble('user', `📄 ${m.doc}\n${m.content}`);
     else { const t = bubble(m.role, m.content); if (m.role === 'assistant') addTextActions(t, m.content); }
   }
@@ -1292,7 +1316,7 @@ async function shareVideo(url, caption) {
 }
 async function sendChat(text, pic = null, docAtt = null, opts = {}) {
   const msg = { role: 'user', content: text };
-  if (pic) msg.photo = true;
+  if (pic) { msg.photo = true; msg.thumb = await makeThumb(pic) || undefined; }
   if (docAtt) msg.doc = docAtt.name;
   current.messages.push(msg);
   if (current.messages.length === 1) { render(); if (pic) msgsEl.lastElementChild?.remove(); }
