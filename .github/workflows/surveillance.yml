@@ -1,0 +1,24 @@
+name: Surveillance Sahbi
+
+# Ogni ora controlla che Sahbi funzioni (database, OpenAI, credito OpenAI).
+# Se c'è un problema: e-mail di avviso dal sito (Resend) + e-mail di GitHub perché il controllo è "fallito".
+on:
+  schedule:
+    - cron: '17 * * * *'
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  controllo:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Contrôle de Sahbi
+        run: |
+          code=$(curl -s -o out.json -w '%{http_code}' --max-time 90 'https://www.sahbi.bond/api/admin?cron=1')
+          echo "HTTP $code"; cat out.json; echo
+          if [ "$code" != "200" ] || ! grep -q '"ok":true' out.json; then
+            echo "::error::Sahbi a un problème (OpenAI, crédit ou base de données). Ouvre https://www.sahbi.bond/admin.html"
+            exit 1
+          fi

@@ -63,9 +63,16 @@ export async function GET(request) {
 
   if (q.get('cron')) {
     // Resoconto del mattino: al massimo uno ogni 20 ore, anche se qualcuno chiama questo indirizzo.
-    const h = await health(true);
+    // Chiamato ogni ora da GitHub Actions (.github/workflows/surveillance.yml) e ogni mattina da Vercel.
+    // Il controllo "vero" di OpenAI (che scopre il credito finito) si fa al massimo ogni 25 minuti.
+    let deep = true;
+    try { deep = await rpc('admin_alert', { p_kind: 'probe_openai', p_message: 'contrôle automatique', p_every_minutes: 25 }); } catch { /* db giù */ }
+    const h = await health(deep);
     if (!h.db.ok) await alert('db_down', `La base de données ne répond pas : ${h.db.detail}`, 60);
-    if (!h.openai.ok) await alert(h.openai.detail === 'crédit épuisé' ? 'openai_quota' : 'openai_down', `Contrôle du matin : OpenAI ne marche pas (${h.openai.detail}).`, 60);
+    if (!h.openai.ok) {
+      if (h.openai.detail === 'crédit épuisé') await alert('openai_quota', 'Le crédit OpenAI est épuisé : Sahbi ne peut plus répondre ni créer d’images. Recharge ici : https://platform.openai.com/settings/organization/billing/overview', 60);
+      else await alert('openai_down', `Contrôle automatique : OpenAI ne marche pas (${h.openai.detail}).`, 60);
+    }
     let due = false;
     try { due = await rpc('admin_alert', { p_kind: 'daily_report', p_message: 'résumé du jour', p_every_minutes: 1200 }); } catch { /* db giù */ }
     if (due) {
@@ -81,7 +88,7 @@ export async function GET(request) {
         s ? `Actifs aujourd'hui : ${s.active_today} · messages ${s.usage_today?.chat || 0} · images ${s.usage_today?.image || 0} · vidéos ce mois ${s.videos_month}` : '',
         s ? `\nPaiements ce mois :\n${money(s.payments_month)}` : '',
         st.ok ? `\nStripe : disponible ${st.available} · en attente ${st.pending}${st.live ? '' : ' (mode test)'}` : '',
-        s?.alerts?.length ? `\nProblèmes des 7 derniers jours :\n${s.alerts.map((a) => `- ${a.kind} (${a.count}×) : ${a.message}`).join('\n')}` : '',
+        s?.alerts?.filter((a) => !/^(daily_report|probe_)/.test(a.kind)).length ? `\nProblèmes des 7 derniers jours :\n${s.alerts.filter((a) => !/^(daily_report|probe_)/.test(a.kind)).map((a) => `- ${a.kind} (${a.count}×) : ${a.message}`).join('\n')}` : '',
         '\nPanneau : https://www.sahbi.bond/admin.html',
       ];
       await sendMail(`Sahbi – résumé du jour${allOk(h) ? '' : ' ⚠️'}`, lines.filter((l) => l !== '').join('\n'));

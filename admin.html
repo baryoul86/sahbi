@@ -180,7 +180,7 @@ function render(d) {
 
   // Avvisi
   const al = el('div', 'card full'); al.append(el('h2', '', 'Problèmes des 7 derniers jours'));
-  const list = (s.alerts || []).filter((a) => a.kind !== 'daily_report');
+  const list = (s.alerts || []).filter((a) => a.kind !== 'daily_report' && !a.kind.startsWith('probe_'));
   if (!list.length) al.append(el('p', '', 'Aucun problème. 👍'));
   for (const a of list) { const x = el('div', 'alert'); x.append(el('b', '', `${TITLES[a.kind] || a.kind} · ${a.count}×`), el('div', '', a.message), el('small', '', `Dernière fois : ${when(a.last_at)}`)); al.append(x); }
   if (!d.config?.alertsByEmail) al.append(el('p', '', 'Pour recevoir ces problèmes par e-mail, ajoute RESEND_API_KEY sur Vercel.'));
