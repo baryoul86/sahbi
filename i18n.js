@@ -127,6 +127,7 @@ const D = [
 ['Tes discussions apparaîtront ici.', 'ستظهر محادثاتك هنا.', 'Your chats will appear here.'],
 ['Je prépare ta vidéo…', 'أُحضّر الفيديو…', 'Preparing your video…'],
 ['Je dessine ton image…', 'أرسم صورتك…', 'Drawing your image…'],
+['Je récupère ton image…', 'أسترجع صورتك…', 'Getting your image back…'],
 ['Je crée ta vidéo… (environ 1 minute)', 'أصنع الفيديو… (حوالي دقيقة)', 'Creating your video… (about 1 minute)'],
 ['Vidéo non enregistrée', 'لم يُحفظ الفيديو', 'Video not saved'],
 ['Vidéo créée par Sahbi', 'فيديو صنعه صاحبي', 'Video made by Sahbi'],

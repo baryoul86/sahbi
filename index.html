@@ -1337,6 +1337,23 @@ async function shareVideo(url, caption) {
   } catch (e) { if (e?.name === 'AbortError') return; }
   window.open(url, '_blank', 'noopener');
 }
+let sentAt = 0;
+// Se la connessione si è interrotta mentre si creava l'immagine (app chiusa, rete del telefono...),
+// il server la finisce lo stesso e la salva nella galleria: qui la si va a riprendere.
+async function recoverImage(since, ph) {
+  const lbl = ph.querySelector('.ph-label'); if (lbl) lbl.textContent = tr('Je récupère ton image…');
+  for (let i = 0; i < 36; i++) {
+    await new Promise((ok) => setTimeout(ok, 5000));
+    if (!ph.isConnected) return null;
+    try {
+      const r = await api('/api/library');
+      if (!r.ok) continue;
+      const img = ((await r.json()).images || []).find((x) => x.kind !== 'video' && Date.parse(x.created) > since - 5000);
+      if (img) return img;
+    } catch { /* rete: si riprova */ }
+  }
+  return null;
+}
 async function sendChat(text, pic = null, docAtt = null, opts = {}) {
   const msg = { role: 'user', content: text };
   if (pic) { msg.photo = true; msg.thumb = await makeThumb(pic) || undefined; }
@@ -1357,6 +1374,7 @@ async function sendChat(text, pic = null, docAtt = null, opts = {}) {
   }
   let res;
   try {
+    sentAt = Date.now();
     res = await api('/api/chat', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ messages: history, lang: LANG, ...(pic ? { photo: pic } : (recentPhoto && recentTurns > 0 && !opts.voice ? { photo: recentPhoto, photoEarlier: true } : {})), ...(docAtt ? { doc: { name: docAtt.name, text: docAtt.text } } : {}), ...(opts.voice ? { voice: true } : {}) }) });
   } catch { wait.remove(); bubble('bot', 'Pas de connexion. Vérifie internet et réessaie.', 'err'); return ''; }
   if (!res.ok) {
@@ -1417,7 +1435,15 @@ async function sendChat(text, pic = null, docAtt = null, opts = {}) {
     }
     scroll();
   }
-  if (pending) { pending.remove(); bubble('bot', 'La création a pris trop de temps. Réessaie : ça marche souvent au deuxième essai.', 'err'); }
+  if (pending) {
+    const img = await recoverImage(sentAt, pending);
+    pending.done?.(); pending.remove(); pending = null;
+    if (img) {
+      imageBubble(img.url, img.prompt || tr('Image créée par Sahbi'));
+      extra.push({ role: 'assistant', kind: 'image', content: img.prompt || 'image', id: img.id || null });
+      library = null;
+    } else bubble('bot', 'La création a pris trop de temps. Réessaie : ça marche souvent au deuxième essai.', 'err');
+  }
   if (!reply.trim()) {
     out.closest(".msg").remove();
     if (!extra.length && !handled) bubble('bot', 'Je n’ai pas pu répondre. Réessaie.', 'err');
