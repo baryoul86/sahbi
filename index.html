@@ -1213,6 +1213,23 @@ function render() {
     else { const t = bubble(m.role, m.content); if (m.role === 'assistant') addTextActions(t, m.content); }
   }
   renderHistory();
+  resumeWaiting();
+}
+// L'app era stata chiusa mentre si creava un'immagine: il server l'ha finita, la si riprende dalla galleria.
+async function resumeWaiting() {
+  const chat = current, m = chat.messages[chat.messages.length - 1];
+  if (!m?.waiting || busy || m.resuming) return;
+  if (Date.now() - (m.at || 0) > 15 * 60e3) { delete m.waiting; saveCurrent(); return; }
+  m.resuming = true;
+  const ph = imagePlaceholder(false);
+  const img = await recoverImage(m.at, ph);
+  ph.remove(); delete m.resuming; delete m.waiting;
+  if (img) {
+    chat.messages.push({ role: 'assistant', kind: 'image', content: img.prompt || 'image', id: img.id || null });
+    if (current === chat) imageBubble(img.url, img.prompt || tr('Image créée par Sahbi'));
+    library = null;
+  }
+  persist();
 }
 // Elenco delle discussioni: fissare 📌, rinominare, cancellare (menu ⋯ accanto a ogni discussione).
 let openMenu = null;
@@ -1355,7 +1372,7 @@ async function recoverImage(since, ph) {
   return null;
 }
 async function sendChat(text, pic = null, docAtt = null, opts = {}) {
-  const msg = { role: 'user', content: text };
+  const msg = { role: 'user', content: text, at: Date.now() };
   if (pic) { msg.photo = true; msg.thumb = await makeThumb(pic) || undefined; }
   if (docAtt) msg.doc = docAtt.name;
   current.messages.push(msg);
@@ -1392,7 +1409,11 @@ async function sendChat(text, pic = null, docAtt = null, opts = {}) {
   const onFrame = (f) => {
     if (f.type === 'memory') { toast('🧠 Sahbi s’en souviendra.'); if (me) me.memoryStale = true; return; }
     if (f.type === 'ping') return; // segnale "sono ancora qui" del server: il segnaposto resta
-    if (f.type === 'image_start' || f.type === 'video_start') { if (!pending) pending = imagePlaceholder(f.type === 'video_start'); return; }
+    if (f.type === 'image_start' || f.type === 'video_start') {
+      if (!pending) pending = imagePlaceholder(f.type === 'video_start');
+      if (f.type === 'image_start') { msg.waiting = true; saveCurrent(); } // se l'app viene chiusa, al ritorno si recupera l'immagine
+      return;
+    }
     if (pending) { pending.done?.(); pending.remove(); pending = null; }
     if (f.type === 'video') {
       if (me?.remaining) me.remaining.video = f.remaining;
@@ -1451,6 +1472,7 @@ async function sendChat(text, pic = null, docAtt = null, opts = {}) {
     current.messages.push({ role: 'assistant', content: reply });
     addTextActions(out, reply);
   }
+  delete msg.waiting;
   current.messages.push(...extra);
   saveCurrent(); renderHistory();
   return reply;
