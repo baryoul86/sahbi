@@ -94,7 +94,8 @@ export async function GET(request) {
       ];
       await sendMail(`Sahbi – résumé du jour${allOk(h) ? '' : ' ⚠️'}`, lines.filter((l) => l !== '').join('\n'));
     }
-    return json({ ok: allOk(h), report: due, db: h.db.ok ? 'ok' : 'ko', openai: h.openai.ok ? 'ok' : (h.openai.detail === 'crédit épuisé' ? 'credit' : 'ko'), detail: h.openai.ok ? undefined : String(h.openai.detail || '').slice(0, 80), deep });
+    const img = { model: env('OPENAI_IMAGE_MODEL', 'gpt-image-1-mini'), edit: env('OPENAI_IMAGE_EDIT_MODEL', '') || 'idem', fidelity: env('OPENAI_IMAGE_EDIT_FIDELITY', '') || 'par défaut', quality: env('OPENAI_IMAGE_QUALITY', 'medium') };
+    return json({ ok: allOk(h), report: due, img, db: h.db.ok ? 'ok' : 'ko', openai: h.openai.ok ? 'ok' : (h.openai.detail === 'crédit épuisé' ? 'credit' : 'ko'), detail: h.openai.ok ? undefined : String(h.openai.detail || '').slice(0, 80), deep });
   }
 
   const user = await getUser(request);

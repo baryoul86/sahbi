@@ -200,17 +200,21 @@ export async function generateImage(userId, rawPrompt, { limit, photo = null, us
     form.append('quality', quality);
     form.append('output_format', fmt);
     if (clear) form.append('background', 'transparent');
-    upstream = await fetch(`${OPENAI}/images/edits`, { method: 'POST', headers: openaiHeaders(), body: form, signal: AbortSignal.timeout(240000) }).catch(() => null);
+    upstream = await fetch(`${OPENAI}/images/edits`, { method: 'POST', headers: openaiHeaders(), body: form, signal: AbortSignal.timeout(250000) }).catch((e) => ({ failed: e }));
   } else {
     upstream = await fetch(`${OPENAI}/images/generations`, {
-      method: 'POST', signal: AbortSignal.timeout(240000),
+      method: 'POST', signal: AbortSignal.timeout(250000),
       headers: openaiHeaders({ 'content-type': 'application/json' }),
       body: JSON.stringify({ model, prompt, size, quality, output_format: fmt, n: 1, ...(clear ? { background: 'transparent' } : {}) }),
-    }).catch(() => null);
+    }).catch((e) => ({ failed: e }));
   }
-  if (!upstream) {
+  if (upstream.failed) {
+    // Nessuna risposta da OpenAI: troppo lento (timeout) oppure errore di rete. Si avvisa l'amministratore con il motivo.
     await refundCredit(userId, 'image').catch(() => {});
-    return { ok: false, error: 'upstream', status: 504, message: "La création a pris trop de temps. Réessaie : ça marche souvent au deuxième essai." };
+    const slow = upstream.failed?.name === 'TimeoutError' || upstream.failed?.name === 'AbortError';
+    const { alert } = await import('./_alert.js');
+    await alert('image_fail', `${photo ? 'Transformation de photo' : 'Création d’image'} sans réponse d’OpenAI (${slow ? 'plus de 4 minutes' : `réseau : ${upstream.failed?.message || '?'}`}) – modèle ${photo ? env('OPENAI_IMAGE_EDIT_MODEL', model) : model}.`, 60);
+    return { ok: false, error: 'upstream', status: 504, message: slow ? "La création a pris trop de temps. Réessaie : ça marche souvent au deuxième essai." : "Impossible de créer l'image maintenant. Réessaie dans un instant." };
   }
   const data = await upstream.json().catch(() => null);
   const b64 = data?.data?.[0]?.b64_json;
