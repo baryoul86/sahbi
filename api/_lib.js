@@ -133,11 +133,12 @@ Rules:
 - Do not add subjects, people, animals, objects, text or ideas the user did not ask for. Only add neutral details needed for a good picture (composition, lighting, background coherent with the request).
 - If the user wants written text in the image, copy it EXACTLY inside double quotes and say where it goes.
 - Style: use the style requested; if none, choose the most natural one (photo-realistic for real scenes, illustration for cards/stickers).
-- ${edit ? 'This edits the user\'s photo. Change ONLY the rendering style. Keep EXACTLY the same framing and crop, camera angle, pose and body position (head tilt, arms, hands, legs), body proportions, facial features, hairstyle, expression, clothing and colors, and the same background elements in the same places. Start the prompt with: "Redraw this exact photo in ... style, same pose, same framing".' : 'If the request changes a previous image (see "[Image créée : ...]" in the history), start from that description and change ONLY what is asked.'}
+- ${edit ? 'This edits the user\'s photo. Apply ONLY what the user asks (a style, removing or changing the background, adding or removing an object, changing a color, an expression...). Everything else must stay EXACTLY the same: framing and crop, camera angle, pose and body position (head tilt, arms, hands, legs), proportions, facial features, hairstyle, expression, clothing, colors, and background elements in the same places (unless the background is what must change). For a style change start with: "Redraw this exact photo in ... style, same pose, same framing".' : 'If the request changes a previous image (see "[Image créée : ...]" in the history), start from that description and change ONLY what is asked.'}
 - Darija hints: tswira = picture, dar = house, khobz = bread, 9at/qat = cat, kelb = dog, bhar = sea, tomobil = car, bent = girl, weld = boy, chibani = old man, 3ers = wedding, 3id = Eid, zwin = beautiful, kbir = big, sghir = small.
 - Format: "portrait" for phone wallpapers, stories, posters, full-body people; "landscape" for banners, panoramas, YouTube thumbnails, wide scenes; otherwise "square".
 - Never include sexual content, explicit violence, real famous people or trademarked characters.
-Answer only with JSON: {"prompt": "...", "format": "square|portrait|landscape"}`;
+- "transparent": true ONLY if the user asks to remove the background, for a transparent background, a cut-out, a sticker without background or a logo/PNG without background (e.g. "togli lo sfondo", "sans fond", "fond transparent", "remove background", "بدون خلفية", "حيد الخلفية"). Then describe the subject alone, isolated, with nothing behind it.
+Answer only with JSON: {"prompt": "...", "format": "square|portrait|landscape", "transparent": false}`;
   const user = `Conversation (most recent last):\n${history || '(none)'}\n\nUser's request now: ${userText}\n\nDraft prompt from the assistant (may be incomplete or wrong): ${draft}`;
   const ctrl = new AbortController(); const t = setTimeout(() => ctrl.abort(), 20000);
   try {
@@ -149,7 +150,7 @@ Answer only with JSON: {"prompt": "...", "format": "square|portrait|landscape"}`
     if (!r.ok) return null;
     const out = JSON.parse((await r.json())?.choices?.[0]?.message?.content || '{}');
     const prompt = String(out.prompt || '').trim();
-    return prompt.length > 10 ? { prompt: prompt.slice(0, 3000), size: SIZES[out.format] || null } : null;
+    return prompt.length > 10 ? { prompt: prompt.slice(0, 3000), size: SIZES[out.format] || null, transparent: out.transparent === true } : null;
   } catch { return null; } finally { clearTimeout(t); }
 }
 
@@ -183,6 +184,9 @@ export async function generateImage(userId, rawPrompt, { limit, photo = null, us
   const model = env('OPENAI_IMAGE_MODEL', 'gpt-image-1-mini');
   const size = (photo && photoSize(photo)) || directed?.size || env('OPENAI_IMAGE_SIZE', '1024x1024');
   const quality = env('OPENAI_IMAGE_QUALITY', 'medium');
+  // Sfondo trasparente (richiesto dall'utente): PNG invece di JPEG.
+  const clear = directed?.transparent === true || /(sans fond|fond transparent|transparent background|remove (the )?background|senza sfondo|togli (lo )?sfondo|rimuovi (lo )?sfondo|sfondo trasparente|بدون خلفية|حيد الخلفية|احذف الخلفية)/i.test(String(userText));
+  const fmt = clear ? 'png' : 'jpeg';
   let upstream;
   if (photo) {
     // Trasforma la foto dell'utente (stile cartone, anime, ecc.).
@@ -191,16 +195,17 @@ export async function generateImage(userId, rawPrompt, { limit, photo = null, us
     form.append('image', new Blob([Buffer.from(photo.b64, 'base64')], { type: photo.mime }), `photo.${ext}`);
     form.append('model', env('OPENAI_IMAGE_EDIT_MODEL', model));
     if (env('OPENAI_IMAGE_EDIT_FIDELITY')) form.append('input_fidelity', env('OPENAI_IMAGE_EDIT_FIDELITY'));
-    form.append('prompt', `${prompt}\n\nKeep the exact same pose, framing, camera angle, proportions and background layout as the input photo; change only the drawing style.`);
+    form.append('prompt', `${prompt}\n\nApply ONLY the requested change. Everything the request does not ask to change must stay exactly as in the input photo: same people, face, expression, pose, hands, framing, camera angle, proportions, clothes, colors and background.`);
     form.append('size', size);
     form.append('quality', quality);
-    form.append('output_format', 'jpeg');
+    form.append('output_format', fmt);
+    if (clear) form.append('background', 'transparent');
     upstream = await fetch(`${OPENAI}/images/edits`, { method: 'POST', headers: openaiHeaders(), body: form, signal: AbortSignal.timeout(240000) }).catch(() => null);
   } else {
     upstream = await fetch(`${OPENAI}/images/generations`, {
       method: 'POST', signal: AbortSignal.timeout(240000),
       headers: openaiHeaders({ 'content-type': 'application/json' }),
-      body: JSON.stringify({ model, prompt, size, quality, output_format: 'jpeg', n: 1 }),
+      body: JSON.stringify({ model, prompt, size, quality, output_format: fmt, n: 1, ...(clear ? { background: 'transparent' } : {}) }),
     }).catch(() => null);
   }
   if (!upstream) {
@@ -220,8 +225,8 @@ export async function generateImage(userId, rawPrompt, { limit, photo = null, us
       ? { ok: false, error: 'blocked', status: 400, message: "Je ne peux pas créer cette image. Essaie une autre description." }
       : { ok: false, error: 'upstream', status: 502, message: "Impossible de créer l'image maintenant. Réessaie dans un instant." };
   }
-  const id = await saveImage(userId, b64, directed?.prompt || base).catch((e) => { console.error('Salvataggio immagine', e.message); return null; });
-  return { ok: true, id, image: `data:image/jpeg;base64,${b64}`, remaining: left, limit };
+  const id = await saveImage(userId, b64, directed?.prompt || base, fmt).catch((e) => { console.error('Salvataggio immagine', e.message); return null; });
+  return { ok: true, id, image: `data:image/${fmt};base64,${b64}`, remaining: left, limit };
 }
 
 // ---------- Galleria: immagini salvate in Supabase Storage (cartella privata "images") ----------
@@ -229,12 +234,12 @@ export async function generateImage(userId, rawPrompt, { limit, photo = null, us
 const BUCKET = 'images';
 const isUuid = (v) => typeof v === 'string' && /^[0-9a-f-]{36}$/i.test(v);
 
-async function saveImage(userId, b64, prompt) {
+async function saveImage(userId, b64, prompt, fmt = 'jpeg') {
   const id = crypto.randomUUID();
-  const path = `${userId}/${id}.jpg`;
+  const path = `${userId}/${id}.${fmt === 'png' ? 'png' : 'jpg'}`;
   const up = await fetch(`${supabaseUrl()}/storage/v1/object/${BUCKET}/${path}`, {
     method: 'POST',
-    headers: serviceHeaders({ 'content-type': 'image/jpeg', 'x-upsert': 'false' }),
+    headers: serviceHeaders({ 'content-type': `image/${fmt}`, 'x-upsert': 'false' }),
     body: Buffer.from(b64, 'base64'),
   });
   if (!up.ok) throw new Error(`storage ${up.status}`);

@@ -24,7 +24,7 @@ function detectLang(text) {
   return (scores[0][1] >= 2 && scores[0][1] >= scores[1][1] * 2) || (short && scores[0][1] >= 1 && scores[1][1] === 0) ? scores[0][0] : null;
 }
 // Richieste chiarissime di immagine: lo strumento si chiama SUBITO, senza testo né domande.
-const STYLE_ASK = /(trasform|transform|stile|style|disney|pixar|dreamworks|ghibli|cartoon|cartone|anime|manga|3d|aquarell|acquerell|watercolor|bande dessin|fumetto|comic|حوّل|حول|ستايل|كرتون)/i;
+const STYLE_ASK = /(trasform|transform|stile|style|disney|pixar|dreamworks|ghibli|cartoon|cartone|anime|manga|3d|aquarell|acquerell|watercolor|bande dessin|fumetto|comic|sfondo|fond\b|arrière-plan|background|détour|detour|scontorn|ritaglia|togli|rimuovi|enlève|enleve|retire|remove|aggiungi|ajoute|add |cambia|change|modifi|metti|mets|put |colora|colorie|ringiovan|invecchia|sorrid|حوّل|حول|ستايل|كرتون|خلفية|احذف|شيل|زيد|بدّل|بدل|غيّر|غير)/i;
 const NOT_IMAGE = /(vid[ée]o|فيديو|\banime[rz]?\s+(ma|la|cette|mon)|\banima|\bprompt\b)/i;
 const IMAGE_REQ = /^(dessine|disegna|draw|ارسم|rsem|rsemli)\b|^(?!.*\bprompt\b).*(fammi|fai|crea|creami|disegna|disegnami|genera|dessine|fais[- ]moi|fait[- ]moi|crée|cree|génère|genere|draw|make me|create|generate|ارسم|اصنع|اعمل لي|سوي لي|dir ?li|dirli|sawer|rsem|3mel li).{0,40}(immagine|image|foto|photo|dessin|disegno|picture|drawing|صورة|رسم|tswira|tsawer|poster|affiche|logo|sticker|carte|biglietto)/i;
 // "Rifalla", "encore", "again", "3awed"... e le conferme "sì / oui / ok".
