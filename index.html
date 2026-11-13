@@ -1660,10 +1660,25 @@ const isBlack = (c) => {
     return true;
   } catch { return false; }
 };
+// Screenshot: toglie le bande nere sopra e sotto (barra di stato, barra di navigazione), così il disegno non le copia.
+function trimBars(c) {
+  try {
+    const g = c.getContext('2d'), { width: w, height: h } = c;
+    const d = g.getImageData(0, 0, w, h).data;
+    const dark = (y) => { let sum = 0, n = 0; for (let x = 0; x < w; x += Math.max(1, Math.floor(w / 60))) { const i = (y * w + x) * 4; sum += (d[i] + d[i + 1] + d[i + 2]) / 3; n++; } return sum / n < 28; };
+    const lim = Math.floor(h * 0.25);
+    let top = 0; while (top < lim && dark(top)) top++;
+    let bot = h - 1; while (h - 1 - bot < lim && dark(bot)) bot--;
+    if (top < 8 && h - 1 - bot < 8) return c;
+    const out = document.createElement('canvas'); out.width = w; out.height = bot - top + 1;
+    out.getContext('2d').drawImage(c, 0, top, w, out.height, 0, 0, w, out.height);
+    return out;
+  } catch { return c; }
+}
 function toJpeg(src, w, h) {
   const c = document.createElement('canvas'); c.width = w; c.height = h;
   const g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, w, h); g.drawImage(src, 0, 0, w, h);
-  return isBlack(c) ? null : c.toDataURL('image/jpeg', 0.85);
+  return isBlack(c) ? null : trimBars(c).toDataURL('image/jpeg', 0.85);
 }
 async function shrink(file, max = 1280) {
   // 1) Metodo moderno: decodifica già ridotta, orientamento corretto.

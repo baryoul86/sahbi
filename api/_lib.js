@@ -133,7 +133,7 @@ Rules:
 - Do not add subjects, people, animals, objects, text or ideas the user did not ask for. Only add neutral details needed for a good picture (composition, lighting, background coherent with the request).
 - If the user wants written text in the image, copy it EXACTLY inside double quotes and say where it goes.
 - Style: use the style requested; if none, choose the most natural one (photo-realistic for real scenes, illustration for cards/stickers).
-- ${edit ? 'This edits the user\'s photo: describe ONLY the requested transformation, and keep the same people, faces, poses and composition recognizable.' : 'If the request changes a previous image (see "[Image créée : ...]" in the history), start from that description and change ONLY what is asked.'}
+- ${edit ? 'This edits the user\'s photo. Change ONLY the rendering style. Keep EXACTLY the same framing and crop, camera angle, pose and body position (head tilt, arms, hands, legs), body proportions, facial features, hairstyle, expression, clothing and colors, and the same background elements in the same places. Start the prompt with: "Redraw this exact photo in ... style, same pose, same framing".' : 'If the request changes a previous image (see "[Image créée : ...]" in the history), start from that description and change ONLY what is asked.'}
 - Darija hints: tswira = picture, dar = house, khobz = bread, 9at/qat = cat, kelb = dog, bhar = sea, tomobil = car, bent = girl, weld = boy, chibani = old man, 3ers = wedding, 3id = Eid, zwin = beautiful, kbir = big, sghir = small.
 - Format: "portrait" for phone wallpapers, stories, posters, full-body people; "landscape" for banners, panoramas, YouTube thumbnails, wide scenes; otherwise "square".
 - Never include sexual content, explicit violence, real famous people or trademarked characters.
@@ -153,6 +153,24 @@ Answer only with JSON: {"prompt": "...", "format": "square|portrait|landscape"}`
   } catch { return null; } finally { clearTimeout(t); }
 }
 
+// Proporzioni di una foto JPEG/PNG (per creare il risultato nello stesso formato verticale/orizzontale).
+function photoSize(photo) {
+  try {
+    const b = Buffer.from(photo.b64, 'base64');
+    let w = 0, h = 0;
+    if (b[0] === 0x89 && b[1] === 0x50) { w = b.readUInt32BE(16); h = b.readUInt32BE(20); }
+    else for (let i = 2; i < b.length - 9;) {
+      if (b[i] !== 0xFF) { i++; continue; }
+      const m = b[i + 1];
+      if (m >= 0xC0 && m <= 0xCF && ![0xC4, 0xC8, 0xCC].includes(m)) { h = b.readUInt16BE(i + 5); w = b.readUInt16BE(i + 7); break; }
+      i += 2 + b.readUInt16BE(i + 2);
+    }
+    if (!w || !h) return null;
+    const r = h / w;
+    return r > 1.2 ? '1024x1536' : r < 0.83 ? '1536x1024' : '1024x1024';
+  } catch { return null; }
+}
+
 export async function generateImage(userId, rawPrompt, { limit, photo = null, userText = '', history = '' } = {}) {
   const base = String(rawPrompt || '').trim().slice(0, 2000);
   if (!base) return { ok: false, error: 'bad_request', status: 400, message: "Décris l'image que tu veux." };
@@ -163,7 +181,7 @@ export async function generateImage(userId, rawPrompt, { limit, photo = null, us
   if (left < 0) return { ok: false, error: 'limit', status: 429, message: "Tu as utilisé tes images d'aujourd'hui." };
 
   const model = env('OPENAI_IMAGE_MODEL', 'gpt-image-1-mini');
-  const size = directed?.size || env('OPENAI_IMAGE_SIZE', '1024x1024');
+  const size = (photo && photoSize(photo)) || directed?.size || env('OPENAI_IMAGE_SIZE', '1024x1024');
   const quality = env('OPENAI_IMAGE_QUALITY', 'medium');
   let upstream;
   if (photo) {
@@ -171,8 +189,9 @@ export async function generateImage(userId, rawPrompt, { limit, photo = null, us
     const form = new FormData();
     const ext = photo.mime.split('/')[1];
     form.append('image', new Blob([Buffer.from(photo.b64, 'base64')], { type: photo.mime }), `photo.${ext}`);
-    form.append('model', model);
-    form.append('prompt', prompt);
+    form.append('model', env('OPENAI_IMAGE_EDIT_MODEL', model));
+    if (env('OPENAI_IMAGE_EDIT_FIDELITY')) form.append('input_fidelity', env('OPENAI_IMAGE_EDIT_FIDELITY'));
+    form.append('prompt', `${prompt}\n\nKeep the exact same pose, framing, camera angle, proportions and background layout as the input photo; change only the drawing style.`);
     form.append('size', size);
     form.append('quality', quality);
     form.append('output_format', 'jpeg');
