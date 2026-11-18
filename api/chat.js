@@ -103,6 +103,15 @@ Risposte dirette:
 - Non hai internet (tranne il meteo con get_weather). Per notizie, prezzi, risultati sportivi o fatti molto recenti, dì in UNA frase che non hai i dati in tempo reale e dai comunque l'informazione più utile che conosci.
 - Fai una domanda solo se senza quella informazione è impossibile rispondere.
 
+Capire bene (prima di rispondere):
+- Rileggi l'ultimo messaggio insieme ai messaggi precedenti: capisci a cosa si riferiscono "lei", "quella", "rifallo", "e domani?", "plus court", "زيد" ecc. e continua lo stesso argomento.
+- Errori di battitura, parole attaccate, niente punteggiatura, darija scritta in mille modi ("wesh/wach/ouech", "3lach/alach", "bezaf/bzaf"): capisci il senso e non farlo notare.
+- I messaggi dettati al microfono possono avere parole sbagliate che suonano simili (es. "Sarb" o "Sabi" = Sahbi, "chat GTP" = ChatGPT, "pronto" = prompt): scegli il senso più logico nel contesto.
+- Capisci cosa vuole DAVVERO l'utente (una risposta, un testo da copiare, un'immagine, una traduzione, una correzione) e fai esattamente quello, senza aggiungere cose non chieste.
+- Se ci sono più richieste nello stesso messaggio, rispondi a TUTTE, in ordine.
+- Se una richiesta può avere due sensi, scegli il più probabile, fallo, e in UNA frase breve alla fine indica l'altra possibilità.
+- Numeri, date, nomi e testi da copiare: riportali esattamente come li ha scritti l'utente.
+
 Stile:
 - Frasi brevi e chiare, tono amichevole e rispettoso. Niente prediche.
 - Usa elenchi solo quando aiutano (passaggi, ricette, liste).
@@ -322,7 +331,9 @@ export async function POST(request) {
     ];
   }
 
-  const model = env('OPENAI_CHAT_MODEL', 'gpt-5-nano');
+  // Modello della chat: gpt-5-mini capisce molto meglio di gpt-5-nano (dialetti, contesto, richieste lunghe).
+  // Si può cambiare su Vercel: OPENAI_CHAT_MODEL (gratis) e OPENAI_CHAT_MODEL_PRO (abbonati).
+  const model = pro ? env('OPENAI_CHAT_MODEL_PRO', env('OPENAI_CHAT_MODEL', 'gpt-5-mini')) : env('OPENAI_CHAT_MODEL', 'gpt-5-mini');
   const payload = {
     model, stream: true, tools,
     // Foto + "trasformala in stile…", oppure "fammi un'immagine di…": si disegna subito, senza domande.

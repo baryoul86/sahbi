@@ -20,7 +20,7 @@ async function checkOpenAI(deep) {
       const r = await timed(fetch(`${OPENAI}/models?limit=1`, { headers: openaiHeaders() }));
       return r.ok ? { ok: true } : { ok: false, detail: `HTTP ${r.status}` };
     }
-    const model = env('OPENAI_CHAT_MODEL', 'gpt-5-nano');
+    const model = env('OPENAI_CHAT_MODEL', 'gpt-5-mini');
     const r = await timed(fetch(`${OPENAI}/chat/completions`, {
       method: 'POST',
       headers: openaiHeaders({ 'content-type': 'application/json' }),
@@ -97,7 +97,8 @@ export async function GET(request) {
     // Problemi delle ultime 2 ore (senza dati personali), per capire subito cosa non va.
     const recent = await rpc('admin_stats', {}).then((x) => (x?.alerts || []).filter((a) => !/^(daily_report|probe_)/.test(a.kind) && Date.now() - new Date(a.last_at).getTime() < 2 * 3600e3).map((a) => `${a.kind}: ${a.message}`)).catch(() => []);
     const img = { model: env('OPENAI_IMAGE_MODEL', 'gpt-image-1-mini'), edit: env('OPENAI_IMAGE_EDIT_MODEL', '') || 'idem', fidelity: env('OPENAI_IMAGE_EDIT_FIDELITY', '') || 'par défaut', quality: env('OPENAI_IMAGE_QUALITY', 'medium') };
-    return json({ ok: allOk(h), report: due, img, recent, db: h.db.ok ? 'ok' : 'ko', openai: h.openai.ok ? 'ok' : (h.openai.detail === 'crédit épuisé' ? 'credit' : 'ko'), detail: h.openai.ok ? undefined : String(h.openai.detail || '').slice(0, 80), deep });
+    const chat = { free: env('OPENAI_CHAT_MODEL', 'gpt-5-mini'), pro: env('OPENAI_CHAT_MODEL_PRO', '') || env('OPENAI_CHAT_MODEL', 'gpt-5-mini') };
+    return json({ ok: allOk(h), report: due, chat, img, recent, db: h.db.ok ? 'ok' : 'ko', openai: h.openai.ok ? 'ok' : (h.openai.detail === 'crédit épuisé' ? 'credit' : 'ko'), detail: h.openai.ok ? undefined : String(h.openai.detail || '').slice(0, 80), deep });
   }
 
   const user = await getUser(request);

@@ -42,7 +42,7 @@ Rispondi solo in JSON: {"add": ["..."], "replace": [{"old": "...", "new": "..."}
 export async function learnFromMessage(userId, userText, known) {
   if (!memoryEnabled() || !mightTalkAboutSelf(userText)) return null;
   try {
-    const model = env('OPENAI_CHAT_MODEL', 'gpt-5-nano');
+    const model = env('OPENAI_MEMORY_MODEL', 'gpt-5-nano');
     const res = await fetch(`${OPENAI}/chat/completions`, {
       method: 'POST',
       headers: openaiHeaders({ 'content-type': 'application/json' }),

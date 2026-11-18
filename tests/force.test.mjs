@@ -17,4 +17,6 @@ b = await go('Dessine-moi un chameau dans le désert'); assert.equal(b.tool_choi
 b = await go('Wach rak khoya, kifach nta?'); assert.equal(b.tool_choice, 'auto'); assert.doesNotMatch(b.messages[0].content, /LINGUA DI QUESTA RISPOSTA/);
 b = await go('Anime ma photo en vidéo', true); assert.equal(b.tool_choice, 'auto');
 b = await go('What is the capital of Morocco and how can I get there?'); assert.equal(b.tool_choice, 'auto'); assert.match(b.messages[0].content, /è in inglese/);
+// Modello più potente e regole per capire bene (contesto, errori del microfono, più richieste).
+assert.equal(b.model, 'gpt-5-mini'); assert.match(b.messages[0].content, /Capire bene/); assert.match(b.messages[0].content, /rispondi a TUTTE/);
 console.log('force OK');
