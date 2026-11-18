@@ -1,0 +1,15 @@
+{
+  "appId": "bond.sahbi.app",
+  "appName": "Sahbi",
+  "webDir": "www",
+  "backgroundColor": "#0F2E24",
+  "server": {
+    "url": "https://www.sahbi.bond/?source=ios",
+    "allowNavigation": ["www.sahbi.bond", "sahbi.bond"]
+  },
+  "ios": {
+    "contentInset": "never",
+    "appendUserAgent": "SahbiIOS",
+    "scheme": "Sahbi"
+  }
+}

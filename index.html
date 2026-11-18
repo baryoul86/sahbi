@@ -292,6 +292,7 @@ button.s-row.danger{color:var(--danger)}
 a.s-row{text-decoration:none;color:inherit}
 a.s-row[hidden]{display:none}
 .app-only{display:none}
+.ios-app .android-only,.ios-app #googleBox,.ios-app #adSlot,.ios-app #house,.ios-app #adTag{display:none !important}
 .in-app .app-only{display:block}
 .in-app #payCard,.in-app #payDz,.in-app #planSeg{display:none !important}
 .in-app .pay .cta.app-only{display:flex}
@@ -527,7 +528,7 @@ html[lang=ar] body{line-height:1.7}
     <p class="s-note" id="priceNote" hidden></p>
     <ul class="feats">
       <li><svg width="20" height="20" aria-hidden="true"><use href="#check"/></svg><span><span id="fChat">150</span> messages par jour, dans toutes les langues</span></li>
-      <li><svg width="20" height="20" aria-hidden="true"><use href="#check"/></svg><span><span id="fImg">8</span> images par jour, rechargées chaque nuit</span></li>
+      <li><svg width="20" height="20" aria-hidden="true"><use href="#check"/></svg><span><span id="fImg">5</span> images par jour, rechargées chaque nuit</span></li>
       <li><svg width="20" height="20" aria-hidden="true"><use href="#check"/></svg><span><span id="fVid">5</span> vidéos de 8 secondes par mois</span></li>
       <li><svg width="20" height="20" aria-hidden="true"><use href="#check"/></svg>Transforme tes photos : cartoon, anime, 3D, aquarelle…</li>
       <li><svg width="20" height="20" aria-hidden="true"><use href="#check"/></svg>Conversation vocale : tu parles, Sahbi te répond à voix haute</li>
@@ -777,7 +778,7 @@ html[lang=ar] body{line-height:1.7}
         <p class="s-note">Les compteurs se rechargent chaque jour à minuit (heure du Maghreb). Les vidéos, le 1er de chaque mois.</p>
       </div>
 
-      <div class="s-group app-only">
+      <div class="s-group app-only android-only">
         <h3>Bouton Bluetooth</h3>
         <p class="s-note">Parle à Sahbi sans toucher le téléphone : connecte un écouteur ou un bouton Bluetooth, puis maintiens son bouton appuyé. La première fois, choisis « Sahbi » puis « Toujours ». Tu peux aussi le régler dans les paramètres Android → Applications par défaut → Assistant numérique.</p>
       </div>
@@ -853,7 +854,11 @@ let supabase = null, busy = false, imgLeft = null, imgLimit = 2, userId = null, 
 // Nell'app del Play Store niente pagamenti del sito (regole di Google Play); la pubblicità AdSense invece resta.
 // sessionStorage (non localStorage): Chrome e l'app condividono i dati del sito, quindi un segno permanente
 // nasconderebbe i pagamenti anche nel browser normale dopo aver aperto l'app una volta.
+// App iPhone (Capacitor, App Store): niente pagamenti del sito, niente pubblicità, accesso con e-mail.
+const IOS_APP = /SahbiIOS/.test(navigator.userAgent);
+if (IOS_APP) document.documentElement.classList.add('ios-app');
 const IN_APP = (() => {
+  if (IOS_APP) { document.documentElement.classList.add('in-app'); return true; }
   let v = false;
   try { localStorage.removeItem('sahbi-android'); v = sessionStorage.getItem('sahbi-android') === '1'; } catch { /* ignorato */ }
   if (document.referrer.startsWith('android-app://') || new URLSearchParams(location.search).get('source') === 'android') {
@@ -880,8 +885,28 @@ const ready = (async () => {
   onSession(data.session);
   // "Continuer avec Google" appare solo se Google è attivato in Supabase.
   fetch(`${cfg.supabaseUrl}/auth/v1/settings`, { headers: { apikey: cfg.supabaseAnonKey } })
-    .then((r) => r.json()).then((s) => { $('googleBox').hidden = !s?.external?.google; }).catch(() => {});
+    .then((r) => r.json()).then((s) => { $('googleBox').hidden = IOS_APP || !s?.external?.google; }).catch(() => {});
 })();
+
+// App iPhone: il link dell'e-mail passa da /app-login.html e torna nell'app con bond.sahbi.app://auth#…
+async function iosAuthFromUrl(u) {
+  if (!u || !String(u).startsWith('bond.sahbi.app://')) return;
+  const [, rest = ''] = String(u).split('://');
+  const q = new URLSearchParams(rest.replace(/^[^?#]*[?#]?/, '').replace('#', '&'));
+  await ready.catch(() => {});
+  try {
+    if (q.get('access_token') && q.get('refresh_token')) await supabase.auth.setSession({ access_token: q.get('access_token'), refresh_token: q.get('refresh_token') });
+    else if (q.get('code')) await supabase.auth.exchangeCodeForSession(q.get('code'));
+    else if (q.get('error_description')) $('emailErr').textContent = tr('Lien expiré ou déjà utilisé. Demande un nouveau lien.');
+  } catch { $('emailErr').textContent = tr('Connexion impossible. Demande un nouveau lien.'); }
+}
+if (IOS_APP) {
+  const capApp = window.Capacitor?.Plugins?.App;
+  if (capApp) {
+    capApp.addListener('appUrlOpen', (e) => iosAuthFromUrl(e?.url));
+    capApp.getLaunchUrl?.().then((r) => iosAuthFromUrl(r?.url)).catch(() => {});
+  }
+}
 
 // Accesso con Google
 $('googleBtn').addEventListener('click', async () => {
@@ -918,7 +943,7 @@ async function token() {
 let pendingEmail = '';
 async function sendLink(email) {
   await ready.catch(() => {});
-  const { error } = await supabase.auth.signInWithOtp({ email, options: { shouldCreateUser: true, emailRedirectTo: location.origin } });
+  const { error } = await supabase.auth.signInWithOtp({ email, options: { shouldCreateUser: true, emailRedirectTo: IOS_APP ? `${location.origin}/app-login.html` : location.origin } });
   if (!error) return '';
   return error.status === 429 ? 'Trop de demandes. Attends une minute et réessaie.' : 'Impossible d’envoyer l’e-mail. Vérifie l’adresse et réessaie.';
 }
@@ -1607,6 +1632,7 @@ function startHouse() {
   houseTimer = setInterval(() => { if (!document.hidden) showHouse(++houseI); }, 60000);
 }
 function loadAdsense() {
+  if (IOS_APP) return false; // AdSense non è permesso dentro un'app iPhone
   const a = cfg.ads || {};
   if (!a.client || !a.slot) return false;
   if (!adsenseLoaded) {
@@ -1633,6 +1659,7 @@ function updateAds() {
   $('adbar').hidden = !show;
   if (!show) { clearInterval(houseTimer); return; }
   // Anche nell'app Android: AdSense funziona dentro una Trusted Web Activity (su Play Console: "Contiene annunci" = Sì).
+  if (IOS_APP) return; // app iPhone: nessuna pubblicità
   if (!loadAdsense()) startHouse();
 }
 

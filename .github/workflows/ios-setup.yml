@@ -1,0 +1,16 @@
+# 1ère étape iPhone : vérifie la clé Apple et enregistre l'identifiant bond.sahbi.app.
+name: iPhone – préparation
+on: workflow_dispatch
+permissions: {}
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: pip install -q pyjwt cryptography requests
+      - working-directory: ios-ci
+        run: python setup.py
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}

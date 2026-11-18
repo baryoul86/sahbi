@@ -1,0 +1,16 @@
+{
+  "name": "sahbi-ios",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Sahbi – app iPhone (Capacitor) : ouvre www.sahbi.bond dans une vraie app iOS.",
+  "dependencies": {
+    "@capacitor/core": "^8.0.0",
+    "@capacitor/ios": "^8.0.0",
+    "@capacitor/app": "^8.0.0",
+    "@capacitor/browser": "^8.0.0"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^8.0.0",
+    "@capacitor/assets": "^3.0.5"
+  }
+}
