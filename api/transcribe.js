@@ -2,9 +2,9 @@ import { env, json, fail, getUserId, useCredit, refundCredit, getPlan, openaiHea
 
 const MAX_BYTES = 4 * 1024 * 1024; // circa 2-3 minuti di voce
 const HINT = "Transcris exactement ce qui est dit, dans la langue parlée, sans traduire ni résumer. "
-  + "La personne parle souvent en darija (algérienne, marocaine, tunisienne), en arabe égyptien, en arabe du Golfe, en arabe standard, en français ou en anglais, et mélange parfois ces langues dans la même phrase. "
+  + "La personne parle souvent en darija (algérienne, marocaine, tunisienne), en arabe égyptien, en arabe du Golfe, en levantin (libanais, syrien, palestinien, jordanien), en irakien, en soudanais, en libyen, en arabe standard, en français ou en anglais, et mélange parfois ces langues dans la même phrase. "
   + "Si elle parle darija avec des mots français, garde le mélange tel quel. Écris l'arabe et la darija en lettres arabes quand c'est de l'arabe, et les mots français en français. "
-  + "Mots fréquents : Sahbi, wach, kifach, bezzaf, chwiya, mlih, sahit, khoya, wesh, labas, hamdoulah, inchallah, yallah, safi, zwin, bghit, 3afak, ezayak, 3amel eh, shlonak, wesh tabi, Bac, Edahabia.";
+  + "Mots fréquents : Sahbi, wach, kifach, bezzaf, chwiya, mlih, sahit, khoya, wesh, labas, hamdoulah, inchallah, yallah, safi, zwin, bghit, 3afak, ezayak, 3amel eh, shlonak, wesh tabi, kifak, shu baddak, shaku maku, shino, tawa, bahi, Bac, Edahabia.";
 
 // GET = "sveglia" il server appena l'utente preme il microfono, così la trascrizione parte subito dopo.
 export function GET() {
