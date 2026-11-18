@@ -46,6 +46,22 @@ printf '{"jdkPath":"%s","androidSdkPath":"%s"}\n' "$JAVA_HOME" "$ANDROID_HOME" >
 jq --argjson c "$RUN" --arg n "1.0.$RUN" '.appVersionCode=$c | .appVersionName=$n | .appVersion=$n' twa-manifest.json > t.json && mv t.json twa-manifest.json
 bubblewrap update --skipVersionUpgrade < /dev/null
 
+echo "== Bottone Bluetooth / assistente → Sahbi in modalità voce"
+MAN="app/src/main/AndroidManifest.xml"
+JDIR="app/src/main/java/bond/sahbi/app"
+test -f "$MAN" && test -f "$JDIR/LauncherActivity.java"
+cp extra/VoiceActivity.java "$JDIR/VoiceActivity.java"
+if ! grep -q 'VoiceActivity' "$MAN"; then
+  python3 - "$MAN" extra/voice-activity.xml <<'PY'
+import sys
+man, extra = sys.argv[1], open(sys.argv[2]).read()
+s = open(man).read()
+i = s.rindex('</application>')
+open(man, 'w').write(s[:i] + extra + '    ' + s[i:])
+PY
+fi
+grep -q 'android.intent.action.VOICE_COMMAND' "$MAN"
+
 echo "== Compilazione"
 chmod +x ./gradlew
 ./gradlew --no-daemon -q bundleRelease assembleRelease

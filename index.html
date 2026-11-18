@@ -777,6 +777,11 @@ html[lang=ar] body{line-height:1.7}
         <p class="s-note">Les compteurs se rechargent chaque jour à minuit (heure du Maghreb). Les vidéos, le 1er de chaque mois.</p>
       </div>
 
+      <div class="s-group app-only">
+        <h3>Bouton Bluetooth</h3>
+        <p class="s-note">Parle à Sahbi sans toucher le téléphone : connecte un écouteur ou un bouton Bluetooth, puis maintiens son bouton appuyé. La première fois, choisis « Sahbi » puis « Toujours ». Tu peux aussi le régler dans les paramètres Android → Applications par défaut → Assistant numérique.</p>
+      </div>
+
       <div class="s-group">
         <h3>Invite tes amis</h3>
         <div class="s-card">
@@ -2125,6 +2130,7 @@ async function openVoice() {
   try { V.stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true, channelCount: 1 } }); }
   catch { $('voice').hidden = true; toast('Autorise le micro dans les réglages du navigateur.'); return; }
   V.ctx = new (window.AudioContext || window.webkitAudioContext)();
+  V.ctx.resume?.().catch(() => {}); // aperto dal bottone Bluetooth: nessun tocco sullo schermo
   V.analyser = V.ctx.createAnalyser(); V.analyser.fftSize = 1024;
   V.ctx.createMediaStreamSource(V.stream).connect(V.analyser);
   V.on = true; V.paused = false; $('voicePause').textContent = 'Pause';

@@ -407,6 +407,8 @@ const D = [
 ['150 messages par jour', '150 رسالة يوميًا', '150 messages a day'],
 ['5 images par jour', '5 صور يوميًا', '5 images a day'],
 ['Sticker', 'ملصق', 'Sticker'],
+['Bouton Bluetooth', 'زر البلوتوث', 'Bluetooth button'],
+['Parle à Sahbi sans toucher le téléphone : connecte un écouteur ou un bouton Bluetooth, puis maintiens son bouton appuyé. La première fois, choisis « Sahbi » puis « Toujours ». Tu peux aussi le régler dans les paramètres Android → Applications par défaut → Assistant numérique.', 'تكلّم مع صاحبي بدون ما تلمس الهاتف: وصّل سماعة أو زر بلوتوث، ثم اضغط مطولًا على الزر. في المرة الأولى اختر «صاحبي» ثم «دائمًا». يمكنك أيضًا ضبطه في إعدادات أندرويد ← التطبيقات الافتراضية ← المساعد الرقمي.', 'Talk to Sahbi without touching your phone: connect a Bluetooth earbud or button, then press and hold its button. The first time, choose “Sahbi” then “Always”. You can also set it in Android settings → Default apps → Digital assistant.'],
 ['Sticker enregistré. Dans WhatsApp : Stickers → + → choisis-le.', 'تم حفظ الملصق. في واتساب: الملصقات ← + ← اختره.', 'Sticker saved. In WhatsApp: Stickers → + → pick it.'],
 ['Sticker impossible pour cette image.', 'تعذّر إنشاء ملصق من هذه الصورة.', 'Could not make a sticker from this image.'],
 ['5 vidéos de 8 secondes par mois', '5 فيديوهات من 8 ثوانٍ شهريًا', '5 eight-second videos a month'],
