@@ -508,7 +508,7 @@ html[lang=ar] body{line-height:1.7}
   <ul class="hist" id="hist"></ul>
   <button class="plus-card" id="drawerPlus" type="button">
     <b>Sahbi Pro</b>
-    <span id="drawerProText">8 images par jour, photos, voix</span>
+    <span id="drawerProText">5 images par jour, photos, voix</span>
   </button>
   <button class="settings-btn" id="openSettings" type="button">
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
@@ -526,7 +526,7 @@ html[lang=ar] body{line-height:1.7}
     <div class="price"><b id="priceEur">6,50 €</b> <span id="pricePer">/ mois</span></div>
     <p class="s-note" id="priceNote" hidden></p>
     <ul class="feats">
-      <li><svg width="20" height="20" aria-hidden="true"><use href="#check"/></svg><span><span id="fChat">300</span> messages par jour, dans toutes les langues</span></li>
+      <li><svg width="20" height="20" aria-hidden="true"><use href="#check"/></svg><span><span id="fChat">150</span> messages par jour, dans toutes les langues</span></li>
       <li><svg width="20" height="20" aria-hidden="true"><use href="#check"/></svg><span><span id="fImg">8</span> images par jour, rechargées chaque nuit</span></li>
       <li><svg width="20" height="20" aria-hidden="true"><use href="#check"/></svg><span><span id="fVid">5</span> vidéos de 8 secondes par mois</span></li>
       <li><svg width="20" height="20" aria-hidden="true"><use href="#check"/></svg>Transforme tes photos : cartoon, anime, 3D, aquarelle…</li>
@@ -682,7 +682,7 @@ html[lang=ar] body{line-height:1.7}
     <h2>Gratuit ou Pro</h2>
     <div class="plans">
       <div class="plan"><h3>Gratuit</h3><div class="pr">0 €</div><ul><li>30 messages par jour</li><li>2 images par jour</li><li>Photos et micro</li><li>Avec publicité</li></ul></div>
-      <div class="plan pro"><h3>Sahbi Pro</h3><div class="pr">6,50 € / mois</div><ul><li>300 messages par jour</li><li>8 images par jour</li><li>5 vidéos de 8 secondes par mois</li><li>Conversation vocale et documents PDF</li><li>Sahbi lit ses réponses à voix haute</li><li>Sans publicité</li><li>Aussi en Edahabia / CIB : 1 000 DA pour 30 jours</li></ul></div>
+      <div class="plan pro"><h3>Sahbi Pro</h3><div class="pr">6,50 € / mois</div><ul><li>150 messages par jour</li><li>5 images par jour</li><li>5 vidéos de 8 secondes par mois</li><li>Conversation vocale et documents PDF</li><li>Sahbi lit ses réponses à voix haute</li><li>Sans publicité</li><li>Aussi en Edahabia / CIB : 1 000 DA pour 30 jours</li></ul></div>
     </div>
   </div></div>
 
@@ -1019,6 +1019,7 @@ const ICONS = {
   copy: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>',
   share: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/></svg>',
   open: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3h7v7M10 14L21 3M21 14v7H3V3h7"/></svg>',
+  sticker: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15.5 3H6a3 3 0 0 0-3 3v12a3 3 0 0 0 3 3h7.5L21 13.5V6a3 3 0 0 0-3-3h-2.5"/><path d="M13 21v-4.5a3 3 0 0 1 3-3h5"/><circle cx="9" cy="10" r="1"/><circle cx="14" cy="10" r="1"/><path d="M8.5 14.5c1.5 1.2 3.5 1.2 5 0"/></svg>',
   pdf: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M12 18v-6M9 15l3 3 3-3"/></svg>',
 };
 
@@ -1085,6 +1086,37 @@ async function shareImage(src, caption) {
   window.open(src, '_blank', 'noopener');
   toast('Appuie longuement sur l’image pour l’enregistrer, puis partage-la.');
 }
+// Sticker WhatsApp: 512×512 WebP trasparente (< 100 KB), con bordo bianco se l'immagine è scontornata.
+async function stickerBlob(src) {
+  const bmp = await createImageBitmap(await (await fetch(src)).blob());
+  const S = 512, pad = 16, k = Math.min((S - 2 * pad) / bmp.width, (S - 2 * pad) / bmp.height);
+  const w = Math.round(bmp.width * k), h = Math.round(bmp.height * k), x = (S - w) >> 1, y = (S - h) >> 1;
+  const c = document.createElement('canvas'); c.width = c.height = S; const g = c.getContext('2d');
+  // C'è trasparenza? (angoli vuoti) → bordo bianco tipo sticker.
+  const t = document.createElement('canvas'); t.width = w; t.height = h; const tg = t.getContext('2d'); tg.drawImage(bmp, 0, 0, w, h);
+  const px = tg.getImageData(0, 0, w, h).data, a = (i, j) => px[(j * w + i) * 4 + 3];
+  if (a(0, 0) < 20 && a(w - 1, 0) < 20 && a(0, h - 1) < 20 && a(w - 1, h - 1) < 20) {
+    const sil = document.createElement('canvas'); sil.width = w; sil.height = h; const sg = sil.getContext('2d');
+    sg.drawImage(t, 0, 0); sg.globalCompositeOperation = 'source-in'; sg.fillStyle = '#fff'; sg.fillRect(0, 0, w, h);
+    for (let d = 0; d < 360; d += 20) { const r = d * Math.PI / 180; g.drawImage(sil, x + Math.cos(r) * 7, y + Math.sin(r) * 7); }
+  }
+  g.drawImage(t, x, y);
+  for (const q of [0.9, 0.75, 0.6, 0.45, 0.3]) {
+    const b = await new Promise((ok) => c.toBlob(ok, 'image/webp', q));
+    if (b && b.type === 'image/webp' && b.size < 100 * 1024) return b;
+    if (!b || b.type !== 'image/webp') return new Promise((ok) => c.toBlob(ok, 'image/png'));
+  }
+  return new Promise((ok) => c.toBlob(ok, 'image/webp', 0.2));
+}
+async function shareSticker(src) {
+  try {
+    const blob = await stickerBlob(src);
+    const webp = blob.type === 'image/webp', file = new File([blob], webp ? 'sahbi-sticker.webp' : 'sahbi-sticker.png', { type: blob.type });
+    if (navigator.canShare?.({ files: [file] })) { await navigator.share({ files: [file] }); return; }
+    const a = document.createElement('a'); a.href = URL.createObjectURL(file); a.download = file.name; a.click();
+    toast('Sticker enregistré. Dans WhatsApp : Stickers → + → choisis-le.');
+  } catch (e) { if (e?.name !== 'AbortError') toast('Sticker impossible pour cette image.'); }
+}
 let audio = null, audioBtn = null;
 function stopAudio() {
   if (audio) { audio.pause(); URL.revokeObjectURL(audio.src); audio = null; }
@@ -1136,7 +1168,7 @@ function imageBubble(src, caption, note) {
   if (note) box.appendChild(el('small', '', note));
   if (src) {
     const row = el('div', 'actions');
-    row.append(actBtn('share', 'Partager', () => shareImage(src, caption), true));
+    row.append(actBtn('share', 'Partager', () => shareImage(src, caption), true), actBtn('sticker', 'Sticker', () => shareSticker(src), true));
     box.appendChild(row);
   }
   m.appendChild(box); msgsEl.appendChild(m); scroll();
@@ -1551,7 +1583,7 @@ $('vDelete').addEventListener('click', async () => {
 // Google AdSense: un annuncio per apertura dell'app (le regole di Google vietano di ricaricarlo da soli).
 // Promozioni di Sahbi: girano ogni minuto quando AdSense non è attivo o non ha annunci da mostrare.
 const HOUSE = [
-  { t: 'Sahbi Pro, sans publicité', d: '8 images par jour, voix, 300 messages', c: 'Voir', go: () => openSheet() },
+  { t: 'Sahbi Pro, sans publicité', d: '5 images par jour, voix, 150 messages', c: 'Voir', go: () => openSheet() },
   { t: 'Invite un ami', d: '7 jours de Pro offerts à tous les deux', c: 'Inviter', go: () => shareText(tr('Salam ! J’utilise Sahbi, l’IA qui parle darija, arabe et français. Inscris-toi avec mon lien et on reçoit 7 jours de Pro tous les deux : {l}', { l: inviteLink() })) },
   { t: 'Transforme tes photos', d: 'Cartoon, anime, 3D, aquarelle…', c: 'Essayer', go: () => $('file').click() },
   { t: 'Sahbi lit à voix haute', d: 'Appuie sur le haut-parleur sous une réponse', c: 'Pro', go: () => openSheet() },
@@ -1655,7 +1687,7 @@ function renderSheet() {
   $('payDzSub').textContent = pay.chargily ? (year ? tr('{p} DA pour 1 an', { p: (pay.priceYearDzd || 10000).toLocaleString(LOCALE) }) : tr('{p} DA pour 30 jours', { p: (pay.priceDzd || 1000).toLocaleString(LOCALE) })) : 'Bientôt disponible';
   $('payCardLabel').textContent = pay.lemonsqueezy ? 'Carte bancaire ou PayPal' : 'Payer par carte';
   $('payCard').disabled = !cardOk; $('payDz').disabled = !pay.chargily;
-  $('fChat').textContent = cfg.limits?.pro?.chat ?? 300; $('fImg').textContent = cfg.limits?.pro?.image ?? 8;
+  $('fChat').textContent = cfg.limits?.pro?.chat ?? 150; $('fImg').textContent = cfg.limits?.pro?.image ?? 5;
   $('fVid').textContent = cfg.limits?.pro?.video ?? 5;
   // App Android: Google Play Billing (il pulsante appare solo se l'app lo supporta).
   $('payPlay').hidden = !playOk; $('appNote').hidden = playOk;

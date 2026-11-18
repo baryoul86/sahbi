@@ -73,8 +73,8 @@ export const remainingCredit = (userId, kind, limit) =>
 // Limiti giornalieri: diversi per Gratis e Pro (modificabili dalle variabili di Vercel).
 export const limits = (pro = false) => (pro
   ? {
-      chat: Number(env('PRO_CHAT_DAILY_LIMIT', '300')),
-      image: Number(env('PRO_IMAGE_DAILY_LIMIT', '8')),
+      chat: Number(env('PRO_CHAT_DAILY_LIMIT', '150')),
+      image: Number(env('PRO_IMAGE_DAILY_LIMIT', '5')),
       voice: Number(env('PRO_VOICE_DAILY_LIMIT', '100')),
       tts: Number(env('PRO_TTS_DAILY_LIMIT', '100')),
       video: Number(env('PRO_VIDEO_MONTHLY_LIMIT', '5')), // video al MESE, non al giorno
@@ -137,7 +137,7 @@ Rules:
 - Darija hints: tswira = picture, dar = house, khobz = bread, 9at/qat = cat, kelb = dog, bhar = sea, tomobil = car, bent = girl, weld = boy, chibani = old man, 3ers = wedding, 3id = Eid, zwin = beautiful, kbir = big, sghir = small.
 - Format: "portrait" for phone wallpapers, stories, posters, full-body people; "landscape" for banners, panoramas, YouTube thumbnails, wide scenes; otherwise "square".
 - Never include sexual content, explicit violence, real famous people or trademarked characters.
-- "transparent": true ONLY if the user asks to remove the background, for a transparent background, a cut-out, a sticker without background or a logo/PNG without background (e.g. "togli lo sfondo", "sans fond", "fond transparent", "remove background", "بدون خلفية", "حيد الخلفية"). Then describe the subject alone, isolated, with nothing behind it.
+- "transparent": true ONLY if the user asks to remove the background, for a transparent background, a cut-out, ANY sticker, or a logo/PNG without background (e.g. "togli lo sfondo", "sans fond", "fond transparent", "remove background", "بدون خلفية", "حيد الخلفية"). Then describe the subject alone, isolated, with nothing behind it.
 Answer only with JSON: {"prompt": "...", "format": "square|portrait|landscape", "transparent": false}`;
   const user = `Conversation (most recent last):\n${history || '(none)'}\n\nUser's request now: ${userText}\n\nDraft prompt from the assistant (may be incomplete or wrong): ${draft}`;
   const ctrl = new AbortController(); const t = setTimeout(() => ctrl.abort(), 20000);
