@@ -54,6 +54,7 @@ export async function POST(request) {
   const origin = request.headers.get('origin') || '';
   if (origin && new URL(origin).host !== url.host) return json({ ok: false }, 403);
   if (url.searchParams.get('contact') === '1') return contact(request);
+  if (url.searchParams.get('report') === '1') return report(request);
   if (url.searchParams.get('visit') !== '1') return json({ ok: false }, 404);
   let b = {};
   try { b = await request.json(); } catch { /* corpo vuoto */ }
@@ -65,6 +66,27 @@ export async function POST(request) {
 }
 
 // POST /api/config?contact=1 → messaggio dalla pagina Contact, inviato per e-mail all'amministratore.
+// POST /api/config?report=1 → segnalazione di un contenuto creato dall'IA (pulsante "Signaler" nell'app).
+// Arriva per e-mail all'amministratore, con il testo o il link dell'immagine segnalata.
+async function report(request) {
+  const { getUserId, rpc } = await import('./_lib.js');
+  const userId = await getUserId(request);
+  if (!userId) return json({ ok: false, message: 'Session expirée. Recharge la page.' }, 401);
+  let b = {};
+  try { b = await request.json(); } catch { /* vuoto */ }
+  const kind = ['text', 'image', 'video'].includes(b.kind) ? b.kind : 'text';
+  const reason = String(b.reason || 'Autre').slice(0, 60), note = String(b.note || '').trim().slice(0, 500);
+  const content = String(b.content || '').slice(0, 2000), link = /^https:\/\//.test(String(b.url || '')) ? String(b.url).slice(0, 500) : '';
+  // Massimo una e-mail al minuto per utente (contro gli abusi); la segnalazione è comunque accettata.
+  const due = await rpc('admin_alert', { p_kind: `probe_report_${userId}`, p_message: reason, p_every_minutes: 1 }).catch(() => true);
+  if (due) {
+    const { sendMail } = await import('./_alert.js');
+    await sendMail(`🚩 Sahbi – contenu signalé (${kind}) : ${reason}`,
+      `Utilisateur : ${userId}\nType : ${kind}\nMotif : ${reason}\nDétails : ${note || '—'}\n${link ? `Lien : ${link}\n` : ''}\nContenu :\n${content || '—'}`);
+  }
+  return json({ ok: true });
+}
+
 async function contact(request) {
   let b = {};
   try { b = await request.json(); } catch { /* vuoto */ }

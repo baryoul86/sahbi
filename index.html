@@ -170,6 +170,14 @@ footer.composer .col{padding-block:10px 12px;display:flex;flex-direction:column;
 .stack{display:flex;flex-direction:column;gap:4px;min-width:0;max-width:85%}
 .stack .text{max-width:100%}
 .actions{display:flex;gap:2px;flex-wrap:wrap;margin-inline-start:-8px}
+dialog.report{border:1px solid var(--line);border-radius:18px;background:var(--bg);color:var(--fg);padding:18px;width:min(92vw,420px)}
+dialog.report::backdrop{background:rgba(0,0,0,.45)}
+dialog.report h3{margin:0 0 6px}
+dialog.report .rr{display:flex;align-items:center;gap:10px;min-height:44px;cursor:pointer}
+dialog.report textarea{width:100%;min-height:70px;margin-top:8px;border-radius:12px;border:1px solid var(--line);background:var(--bg);color:var(--fg);font:inherit;padding:10px;box-sizing:border-box}
+dialog.report .rbtns{display:flex;gap:10px;justify-content:flex-end;margin-top:12px}
+dialog.report .rbtns button{min-height:44px;padding:0 18px;border-radius:999px;font:inherit}
+.text.reported{color:var(--muted);font-style:italic}
 .act{min-height:36px;min-width:36px;padding:0 8px;border:0;border-radius:10px;background:transparent;color:var(--muted);display:inline-flex;align-items:center;gap:6px;font-size:13px}
 .act:hover{background:var(--panel);color:var(--fg)}
 .act.on{color:var(--mint-text)}
@@ -1047,6 +1055,7 @@ const ICONS = {
   speak: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M19 5a10 10 0 0 1 0 14"/></svg>',
   stop: '<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>',
   copy: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>',
+  flag: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 21V4"/><path d="M5 4h11l-2 4 2 4H5"/></svg>',
   share: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/></svg>',
   open: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3h7v7M10 14L21 3M21 14v7H3V3h7"/></svg>',
   sticker: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15.5 3H6a3 3 0 0 0-3 3v12a3 3 0 0 0 3 3h7.5L21 13.5V6a3 3 0 0 0-3-3h-2.5"/><path d="M13 21v-4.5a3 3 0 0 1 3-3h5"/><circle cx="9" cy="10" r="1"/><circle cx="14" cy="10" r="1"/><path d="M8.5 14.5c1.5 1.2 3.5 1.2 5 0"/></svg>',
@@ -1095,6 +1104,28 @@ async function withSignature(blob) {
     g.fillStyle = '#fff'; g.fillText(label, x, y);
     return await new Promise((ok) => c.toBlob((b) => ok(b || blob), 'image/jpeg', 0.92));
   } catch { return blob; }
+}
+// Segnalare un contenuto creato dall'IA (regola Google Play "contenuti generati dall'IA"): senza uscire dall'app.
+const REPORT_REASONS = ['Choquant ou violent', 'Sexuel ou inapproprié', 'Haineux ou insultant', 'Faux ou dangereux', 'Autre problème'];
+function reportContent(kind, content, msgEl, url = '') {
+  const d = document.createElement('dialog'); d.className = 'report';
+  d.innerHTML = `<form method="dialog"><h3>${tr('Signaler ce contenu')}</h3><p class="s-note">${tr('Pourquoi ce contenu pose-t-il problème ? Notre équipe le vérifiera.')}</p>`
+    + REPORT_REASONS.map((r, i) => `<label class="rr"><input type="radio" name="r" value="${r}"${i ? '' : ' checked'}> ${tr(r)}</label>`).join('')
+    + `<textarea name="note" maxlength="500" placeholder="${tr('Détails (facultatif)')}"></textarea>`
+    + `<div class="rbtns"><button value="cancel" class="ghost">${tr('Annuler')}</button><button value="send" class="cta">${tr('Envoyer')}</button></div></form>`;
+  document.body.appendChild(d); d.showModal();
+  d.addEventListener('close', async () => {
+    const f = d.querySelector('form'), reason = f.r.value, note = f.note.value.trim(); d.remove();
+    if (d.returnValue !== 'send') return;
+    try {
+      const r = await fetch('/api/config?report=1', { method: 'POST', headers: { 'content-type': 'application/json', authorization: `Bearer ${await token()}` },
+        body: JSON.stringify({ kind, reason, note, content: String(content || '').slice(0, 2000), url }) });
+      if (!r.ok) throw new Error();
+      // Il contenuto segnalato viene nascosto subito.
+      if (msgEl) { const s = el('div', 'text reported', tr('Contenu signalé et masqué. Merci !')); msgEl.querySelectorAll('.stack,.gen').forEach((x) => x.replaceWith(s)); }
+      toast(tr('Merci, ton signalement a été envoyé.'));
+    } catch { toast(tr('Envoi impossible. Réessaie.')); }
+  });
 }
 function actBtn(icon, label, onClick, showLabel = false) {
   const b = el('button', 'act'); b.type = 'button'; b.setAttribute('aria-label', label); b.title = label;
@@ -1179,6 +1210,7 @@ function addTextActions(textEl, text) {
       try { await navigator.clipboard.writeText(text); toast('Copié.'); } catch { toast('Copie impossible.'); }
     }),
     actBtn('share', 'Partager', () => shareText(text)),
+    actBtn('flag', 'Signaler', () => reportContent('text', text, st.closest('.msg'))),
   );
   // PDF per le risposte lunghe o strutturate (CV, lettere, fiches).
   if (text.length > 400 || text.split('\n').length >= 6) row.appendChild(actBtn('pdf', 'PDF', () => printText(text), true));
@@ -1198,7 +1230,7 @@ function imageBubble(src, caption, note) {
   if (note) box.appendChild(el('small', '', note));
   if (src) {
     const row = el('div', 'actions');
-    row.append(actBtn('share', 'Partager', () => shareImage(src, caption), true), actBtn('sticker', 'Sticker', () => shareSticker(src), true));
+    row.append(actBtn('share', 'Partager', () => shareImage(src, caption), true), actBtn('sticker', 'Sticker', () => shareSticker(src), true), actBtn('flag', 'Signaler', () => reportContent('image', caption, m, src), true));
     box.appendChild(row);
   }
   m.appendChild(box); msgsEl.appendChild(m); scroll();
@@ -1395,7 +1427,7 @@ function videoBubble(id, caption, note) {
     ph.replaceWith(v);
     if (note) box.appendChild(el('small', '', note));
     const row = el('div', 'actions');
-    row.append(actBtn('share', 'Partager', () => shareVideo(url, caption), true));
+    row.append(actBtn('share', 'Partager', () => shareVideo(url, caption), true), actBtn('flag', 'Signaler', () => reportContent('video', caption, box.closest('.msg'), url), true));
     box.appendChild(row);
   };
   if (videoUrls.has(id)) { show(videoUrls.get(id)); return; }
