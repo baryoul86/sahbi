@@ -10,6 +10,7 @@ import re as _re
 _body = _re.sub(r'[^A-Za-z0-9+/=]', '', _re.sub(r'(?i)[-—–\s]*(BEGIN|END)\s+PRIVATE\s+KEY[-—–\s]*', ' ', P8))
 if len(_body) < 150:
     raise SystemExit(f"::error title=ASC_KEY_P8::Il testo del file .p8 è troppo corto ({len(_body)} caratteri utili): copia TUTTO il testo del file .p8 e rimettilo in ASC_KEY_P8.")
+print(f'Chiave .p8: {len(P8)} caratteri, {len(P8.strip().splitlines())} righe, parte utile {len(_body)} caratteri (giusto: 184), BEGIN={"BEGIN" in P8}, END={"END" in P8}')
 P8_PEM = '-----BEGIN PRIVATE KEY-----\n' + '\n'.join(_body[i:i + 64] for i in range(0, len(_body), 64)) + '\n-----END PRIVATE KEY-----'
 BID, NAME, PNAME = 'bond.sahbi.app', 'Sahbi Maghreb AI', 'Sahbi AppStore CI'
 A = 'https://api.appstoreconnect.apple.com/v1'
