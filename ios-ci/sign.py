@@ -6,7 +6,8 @@ from asc import call, BID, PNAME
 T = os.environ['RUNNER_TEMP']; ENC, P12, PW = 'ios-ci/dist.p12.enc', T + '/dist.p12', 'motivex'
 def sh(*a, **kw): subprocess.run(a, check=True, **kw)
 raw = os.environ['ASC_KEY_P8']; ok = False
-for v in dict.fromkeys([raw, raw.strip(), raw.strip() + '\n', raw.replace('\r\n', '\n')]):
+from asc import P8_PEM
+for v in dict.fromkeys([raw, raw.strip(), raw.strip() + '\n', raw.replace('\r\n', '\n'), P8_PEM, P8_PEM + '\n']):
     r = subprocess.run(['openssl', 'enc', '-d', '-aes-256-cbc', '-pbkdf2', '-salt', '-in', ENC, '-out', P12, '-pass', 'env:PW8'], env={**os.environ, 'PW8': v}, capture_output=True)
     if r.returncode == 0 and open(P12, 'rb').read(1) == b'\x30': ok = True; break  # un .p12 commence toujours par 0x30
 if not ok:
