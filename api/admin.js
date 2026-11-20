@@ -98,7 +98,9 @@ export async function GET(request) {
     const recent = await rpc('admin_stats', {}).then((x) => (x?.alerts || []).filter((a) => !/^(daily_report|probe_)/.test(a.kind) && Date.now() - new Date(a.last_at).getTime() < 2 * 3600e3).map((a) => `${a.kind}: ${a.message}`)).catch(() => []);
     const img = { model: env('OPENAI_IMAGE_MODEL', 'gpt-image-1-mini'), edit: env('OPENAI_IMAGE_EDIT_MODEL', '') || 'idem', fidelity: env('OPENAI_IMAGE_EDIT_FIDELITY', '') || 'par défaut', quality: env('OPENAI_IMAGE_QUALITY', 'medium') };
     const chat = { free: env('OPENAI_CHAT_MODEL', 'gpt-5-mini'), pro: env('OPENAI_CHAT_MODEL_PRO', '') || env('OPENAI_CHAT_MODEL', 'gpt-5-mini'), proLimits: `${env('PRO_CHAT_DAILY_LIMIT', '150')} msg / ${env('PRO_IMAGE_DAILY_LIMIT', '5')} img` };
-    return json({ ok: allOk(h), report: due, chat, img, recent, db: h.db.ok ? 'ok' : 'ko', openai: h.openai.ok ? 'ok' : (h.openai.detail === 'crédit épuisé' ? 'credit' : 'ko'), detail: h.openai.ok ? undefined : String(h.openai.detail || '').slice(0, 80), deep });
+    // Collegamenti esterni (senza mostrare chiavi): pagamenti, Google Play, e-mail, AdSense, app Android.
+    const links = { lemon: !!env('LEMONSQUEEZY_API_KEY'), lemonWebhook: !!env('LEMONSQUEEZY_WEBHOOK_SECRET'), googlePlay: !!env('GOOGLE_PLAY_SERVICE_ACCOUNT'), emails: !!(env('RESEND_API_KEY') && env('ADMIN_EMAIL')), androidLink: !!env('ANDROID_SHA256'), video: videoEnabled() };
+    return json({ ok: allOk(h), report: due, chat, links, img, recent, db: h.db.ok ? 'ok' : 'ko', openai: h.openai.ok ? 'ok' : (h.openai.detail === 'crédit épuisé' ? 'credit' : 'ko'), detail: h.openai.ok ? undefined : String(h.openai.detail || '').slice(0, 80), deep });
   }
 
   const user = await getUser(request);
