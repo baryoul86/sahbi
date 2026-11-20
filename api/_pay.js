@@ -105,3 +105,19 @@ export async function lemonIds(year = false) {
   }
   return (lemonCache[key] = { store: String(store), variant: String(variant) });
 }
+
+// Prezzo VERO dell'abbonamento mensile su Lemon Squeezy (es. "6,50 €"), così il sito mostra quello che il cliente paga.
+// Si aggiorna da solo quando il proprietario cambia il prezzo su Lemon (cache 10 minuti).
+let lemonPriceCache = { at: 0, label: '' };
+export async function lemonPriceLabel() {
+  if (!env('LEMONSQUEEZY_API_KEY')) return '';
+  if (Date.now() - lemonPriceCache.at < 10 * 60 * 1000) return lemonPriceCache.label;
+  try {
+    const ids = await lemonIds(false);
+    const v = ids && (await lemon(`variants/${ids.variant}`))?.data?.attributes;
+    const cents = Number(v?.price);
+    const label = cents > 0 ? `${(cents / 100).toFixed(2).replace('.', ',').replace(',00', '')} €` : '';
+    lemonPriceCache = { at: Date.now(), label };
+    return label;
+  } catch { return lemonPriceCache.label; }
+}

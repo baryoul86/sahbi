@@ -28,5 +28,5 @@ assert.deepEqual(payments, ['ls_9']);
 r = await send({ meta: { event_name: 'subscription_updated', custom_data: { user_id: U } }, data: { type: 'subscriptions', id: '1', attributes: { status: 'expired' } } });
 const n = until.length; assert.equal(n, 2, 'scaduto: niente proroga');
 r = await send({ meta: { event_name: 'subscription_created' }, data: {} }, 'falsa'); assert.equal(r.status, 400);
-r = cfg(new Request('https://www.sahbi.bond/api/config')); const c = await r.json(); assert.equal(c.payments.lemonsqueezy, true); assert.equal(c.payments.lemonsqueezyYear, true);
+r = await cfg(new Request('https://www.sahbi.bond/api/config')); const c = await r.json(); assert.equal(c.payments.lemonsqueezy, true); assert.equal(c.payments.lemonsqueezyYear, true);
 console.log('Test Lemon Squeezy OK');

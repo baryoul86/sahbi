@@ -25,7 +25,7 @@ globalThis.fetch = async (url, opt = {}) => {
   throw new Error('unexpected ' + url);
 };
 const { POST } = await import('../api/checkout.js');
-const cfg = (await (await import('../api/config.js')).GET(new Request('https://w/api/config')).json()).payments;
+const cfg = (await (await (await import('../api/config.js')).GET(new Request('https://w/api/config'))).json()).payments;
 assert.equal(cfg.googleplay, true); assert.equal(cfg.playSku, 'sahbi_pro');
 const req = (b) => new Request('https://www.sahbi.bond/api/checkout', { method: 'POST', headers: { authorization: 'Bearer t' }, body: JSON.stringify(b) });
 let r = await POST(req({ provider: 'googleplay', token: 'tok-aaaaaaaaaa', sku: 'sahbi_pro' })); let d = await r.json();

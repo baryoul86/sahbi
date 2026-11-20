@@ -1,12 +1,13 @@
 import { json, env, limits } from './_lib.js';
 import { playReady, playSku } from './_play.js';
+import { lemonPriceLabel } from './_pay.js';
 
 const adsenseClient = () => env('ADSENSE_CLIENT', 'ca-pub-4750815574904840');
 
 // Dati pubblici per la pagina: indirizzo Supabase, chiave "anon" (pensata per stare nel browser),
 // limiti dei piani, pubblicità e quali pagamenti sono attivi.
 // Con ?file=ads.txt restituisce il file ads.txt di Google AdSense (servito su /ads.txt).
-export function GET(request) {
+export async function GET(request) {
   // /.well-known/assetlinks.json: collega l'app Android (Google Play) al sito, così si apre a schermo intero.
   // Su Vercel: ANDROID_PACKAGE (es. bond.sahbi.app) e ANDROID_SHA256 (impronte separate da virgola).
   if (new URL(request.url).searchParams.get('file') === 'assetlinks') {
@@ -39,6 +40,8 @@ export function GET(request) {
       stripeYear: !!(env('STRIPE_SECRET_KEY') && env('STRIPE_PRICE_ID_YEAR')),
       // Lemon Squeezy (carta e PayPal, IVA gestita da loro): se è configurato, il pulsante "Carte" usa lui.
       lemonsqueezy: !!env('LEMONSQUEEZY_API_KEY'),
+      // Prezzo reale della carta (Lemon Squeezy); al massimo 1,5 secondi di attesa.
+      cardPriceEur: await Promise.race([lemonPriceLabel(), new Promise((ok) => setTimeout(() => ok(''), 1500))]),
       // App Android: abbonamento con Google Play Billing.
       googleplay: playReady(), playSku: playSku(),
       lemonsqueezyYear: !!(env('LEMONSQUEEZY_API_KEY') && env('LEMONSQUEEZY_VARIANT_ID_YEAR')),

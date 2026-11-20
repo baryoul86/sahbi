@@ -5,6 +5,7 @@ let sent = null, calls = [];
 globalThis.fetch = async (url, opt = {}) => {
   calls.push(url);
   if (url.startsWith('https://sb.test/auth/v1/user')) return J({ id: '11111111-1111-4111-8111-111111111111', email: 'u@x.com' });
+  if (url.endsWith('/variants/901')) return J({ data: { id: '901', attributes: { price: 650 } } });
   if (url.includes('/variants')) return J({ data: [
     { id: '900', attributes: { is_subscription: false, interval: null, status: 'pending', product_id: 5 } },
     { id: '901', attributes: { is_subscription: true, interval: 'month', status: 'pending', product_id: 7 } } ] });
@@ -13,12 +14,12 @@ globalThis.fetch = async (url, opt = {}) => {
   return J({}, 404);
 };
 const { POST } = await import('../api/checkout.js');
-const cfg = (await (await import('../api/config.js')).GET(new Request('https://www.sahbi.bond/api/config')).json()).payments;
-assert.equal(cfg.lemonsqueezy, true); assert.equal(cfg.lemonsqueezyYear, false);
+const cfg = (await (await (await import('../api/config.js')).GET(new Request('https://www.sahbi.bond/api/config'))).json()).payments;
+assert.equal(cfg.lemonsqueezy, true); assert.equal(cfg.lemonsqueezyYear, false); assert.equal(cfg.cardPriceEur, '6,50 €'); // prezzo vero di Lemon
 const req = (b) => new Request('https://www.sahbi.bond/api/checkout', { method: 'POST', headers: { authorization: 'Bearer t' }, body: JSON.stringify(b) });
 let r = await POST(req({ provider: 'lemonsqueezy' })); const d = await r.json();
 assert.equal(d.url, 'https://x/checkout');
 assert.equal(sent.data.relationships.variant.data.id, '901'); assert.equal(sent.data.relationships.store.data.id, '321');
-const n = calls.length; await POST(req({ provider: 'lemonsqueezy' })); assert.equal(calls.filter((u) => u.includes('variants')).length, 1, 'cache');
+const n = calls.length; await POST(req({ provider: 'lemonsqueezy' })); assert.equal(calls.filter((u) => u.includes('variants?')).length, 1, 'cache');
 r = await POST(req({ provider: 'lemonsqueezy', plan: 'year' })); assert.equal(r.status, 503);
 console.log('lemon2 OK');

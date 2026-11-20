@@ -1738,16 +1738,18 @@ function renderSheet() {
   // L'annuale si mostra quando almeno un pagamento annuale è attivo.
   $('planSeg').hidden = !(pay.stripeYear || pay.lemonsqueezyYear || pay.chargily);
   $('planMonth').setAttribute('aria-pressed', String(!year)); $('planYear').setAttribute('aria-pressed', String(year));
-  $('priceEur').textContent = year ? (pay.priceYearEur || '59 €') : (pay.priceEur || '7 €');
+  // Sul sito il prezzo mensile è quello VERO della carta (Lemon Squeezy); nell'app Android quello di Google Play.
+  const monthLabel = (!IN_APP && pay.lemonsqueezy && pay.cardPriceEur) || pay.priceEur || '7 €';
+  $('priceEur').textContent = year ? (pay.priceYearEur || '59 €') : monthLabel;
   $('pricePer').textContent = year ? '/ an' : '/ mois';
-  const monthly = parseFloat(String(pay.priceEur || '7').replace(',', '.')), yearly = parseFloat(String(pay.priceYearEur || '59').replace(',', '.'));
+  const monthly = parseFloat(String(monthLabel).replace(',', '.')), yearly = parseFloat(String(pay.priceYearEur || '59').replace(',', '.'));
   const save = monthly && yearly ? Math.round((1 - yearly / (monthly * 12)) * 100) : 0;
   $('saveBadge').textContent = save > 0 ? `−${save} %` : '';
   $('priceNote').hidden = !year;
   $('priceNote').textContent = year ? tr('Soit {p} € par mois, payé en une fois.', { p: (yearly / 12).toFixed(2).replace('.', LANG === 'en' ? '.' : ',') }) : '';
   // Carta: Lemon Squeezy se configurato (anche PayPal), altrimenti Stripe.
   const cardOk = pay.lemonsqueezy ? (year ? pay.lemonsqueezyYear : true) : (year ? pay.stripeYear : pay.stripe);
-  $('payCardSub').textContent = cardOk ? (year ? tr('{p} par an', { p: pay.priceYearEur || '59 €' }) : tr('{p} par mois', { p: pay.priceEur || '7 €' })) : 'Bientôt disponible';
+  $('payCardSub').textContent = cardOk ? (year ? tr('{p} par an', { p: pay.priceYearEur || '59 €' }) : tr('{p} par mois', { p: (pay.lemonsqueezy && pay.cardPriceEur) || pay.priceEur || '7 €' })) : 'Bientôt disponible';
   $('payDzSub').textContent = pay.chargily ? (year ? tr('{p} DA pour 1 an', { p: (pay.priceYearDzd || 10000).toLocaleString(LOCALE) }) : tr('{p} DA pour 30 jours', { p: (pay.priceDzd || 1000).toLocaleString(LOCALE) })) : 'Bientôt disponible';
   $('payCardLabel').textContent = pay.lemonsqueezy ? 'Carte bancaire ou PayPal' : 'Payer par carte';
   $('payCard').disabled = !cardOk; $('payDz').disabled = !pay.chargily;
