@@ -109,6 +109,7 @@ Risposte dirette:
 - Rispondi SUBITO alla domanda, con la risposta vera già nella prima frase.
 - Non scrivere mai frasi come "vado a cercare", "un attimo", "controllo e ti dico", "se vuoi posso…", "fammi sapere se vuoi che…" al posto della risposta. Non promettere di fare dopo: fai adesso.
 - Internet: per notizie, prezzi (oro, valute, crypto, carburante…), risultati e calendari sportivi, eventi, orari, chi ricopre OGGI una carica, uscite e novità, o qualsiasi cosa che può essere cambiata di recente, chiama SUBITO web_search (senza dire "vado a cercare"). Non usarlo per cose stabili (storia, definizioni, ricette, esercizi, traduzioni).
+- Promemoria ("ricordami", "rappelle-moi", "فكرني", "remind me"): chiama SUBITO create_reminder con data e ora locali calcolate dall'ora dell'utente; se manca l'ora usa 09:00. Non chiedere conferma.
 - Dopo web_search: rispondi diretto con i fatti trovati (date e cifre esatte), nella lingua dell'utente; alla fine scrivi "Sources :" con 1-3 link nel formato "Titolo – https://…" (niente markdown). Se la ricerca non trova niente, dillo in una frase.
 - Fai una domanda solo se senza quella informazione è impossibile rispondere.
 
@@ -240,6 +241,24 @@ export async function webSearch({ query } = {}) {
 }
 const runInfoTool = (name, args) => (name === 'web_search' ? webSearch(args) : getWeather(args));
 const INFO_TOOLS = ['get_weather', 'web_search'];
+// Promemoria: il telefono lo aggiunge al calendario (file .ics) e il calendario manda la notifica all'ora giusta.
+const REMINDER_TOOL = {
+  type: 'function',
+  function: {
+    name: 'create_reminder',
+    description: 'Crea un promemoria con data e ora (l\'utente lo aggiunge al calendario del telefono, che lo avvisa). Usalo quando chiede di ricordargli qualcosa ("ricordami", "rappelle-moi", "فكرني", "remind me").',
+    parameters: {
+      type: 'object',
+      properties: {
+        title: { type: 'string', description: 'Cosa ricordare, breve, nella lingua dell\'utente (es. "Appeler maman")' },
+        start: { type: 'string', description: 'Data e ora LOCALI dell\'utente, formato YYYY-MM-DDTHH:MM (calcolala dalla sua ora attuale)' },
+        notes: { type: 'string', description: 'Dettagli facoltativi' },
+      },
+      required: ['title', 'start'],
+      additionalProperties: false,
+    },
+  },
+};
 
 const SKY = { clearsky: 'ciel dégagé', fair: 'beau temps', partlycloudy: 'partiellement nuageux', cloudy: 'nuageux', fog: 'brouillard', lightrain: 'pluie faible', rain: 'pluie', heavyrain: 'forte pluie', lightrainshowers: 'averses faibles', rainshowers: 'averses', heavyrainshowers: 'fortes averses', thunder: 'orage', rainandthunder: 'pluie et orage', heavyrainandthunder: 'orages violents', rainshowersandthunder: 'averses orageuses', lightsleet: 'neige fondue', sleet: 'neige fondue', lightsnow: 'neige faible', snow: 'neige', heavysnow: 'forte neige', snowshowers: 'averses de neige' };
 const sky = (code) => { const k = String(code || '').replace(/_(day|night|polartwilight)$/, ''); return SKY[k] || k; };
@@ -281,6 +300,8 @@ export async function getWeather({ city, latitude, longitude, days } = {}) {
   finally { clearTimeout(t); }
 }
 
+// Ora locale del telefono (per i promemoria: "tra 2 ore", "domani alle 8").
+const clientNowPrompt = (now) => (typeof now === 'string' && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(now) ? `\nOra locale dell'utente: ${now.slice(0, 16).replace('T', ' ')} (${new Date(now.slice(0, 10)).toLocaleDateString('fr-FR', { weekday: 'long' })}).` : '');
 // Data di oggi: serve per "domani", "sabato", ecc.
 const todayPrompt = () => `\n\nOggi è ${new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Africa/Algiers' })}.`;
 // Messaggi per la seconda risposta dopo il meteo.
@@ -346,7 +367,9 @@ export async function POST(request) {
   const doc = body?.doc ? parseDoc(body.doc) : null;
   if (body?.doc && !doc) return fail('bad_request', 400, 'Document vide ou illisible.');
 
-  const [{ limits, pro }, memory] = await Promise.all([getPlan(userId), getMemory(userId)]);
+  // Chat temporanea: niente memoria (né letta né salvata).
+  const temp = body?.temp === true;
+  const [{ limits, pro }, memory] = await Promise.all([getPlan(userId), temp ? [] : getMemory(userId)]);
   if (doc && !pro) return fail('pro', 402, 'La lecture de documents est incluse dans Sahbi Pro.');
   const userText = messages[messages.length - 1].content;
   const left = await useCredit(userId, 'chat', limits.chat);
@@ -364,7 +387,7 @@ export async function POST(request) {
   const imgOpts = (edit) => ({ limit: limits.image, photo: edit ? photo : null, userText: ownWords.slice(0, 1500), history: recent });
   const vidOpts = (fromPhoto) => ({ pro, limit: limits.video, photo: fromPhoto ? photo : null });
   const media = videoEnabled() ? [...TOOLS, VIDEO_TOOL] : TOOLS;
-  const tools = [...media, WEATHER_TOOL, SEARCH_TOOL];
+  const tools = [...media, WEATHER_TOOL, SEARCH_TOOL, REMINDER_TOOL];
   const NAMES = media.map((t) => t.function.name); // strumenti che creano immagini o video
   // Esegue lo strumento scelto dal modello e restituisce i messaggi di controllo per il telefono.
   // Foto + "trasformala": si parte SEMPRE dalla foto dell'utente, anche se il modello dimentica edit_photo.
@@ -396,7 +419,7 @@ export async function POST(request) {
     // Foto + "trasformala in stile…", oppure "fammi un'immagine di…": si disegna subito, senza domande.
     tool_choice: again || (!NOT_IMAGE.test(nowText) && ((photo && !body?.photoEarlier && STYLE_ASK.test(nowText)) || (!photo && IMAGE_REQ.test(nowText))))
       ? { type: 'function', function: { name: 'create_image' } } : 'auto',
-    messages: [{ role: 'system', content: SYSTEM.replace('{{VIDEO}}', videoEnabled() ? VIDEO_ON : VIDEO_OFF) + memoryPrompt(memory) + uiLangPrompt(body?.lang) + todayPrompt() + langPrompt(detectLang(nowText) ? nowText : (again ? prevUserText : nowText)) + (body?.voice === true ? VOICE_STYLE : '') }, ...messages],
+    messages: [{ role: 'system', content: SYSTEM.replace('{{VIDEO}}', videoEnabled() ? VIDEO_ON : VIDEO_OFF) + memoryPrompt(memory) + uiLangPrompt(body?.lang) + todayPrompt() + clientNowPrompt(body?.now) + langPrompt(detectLang(nowText) ? nowText : (again ? prevUserText : nowText)) + (body?.voice === true ? VOICE_STYLE : '') }, ...messages],
   };
   if (model.startsWith('gpt-5')) payload.reasoning_effort = env('OPENAI_REASONING_EFFORT', 'minimal');
 
@@ -407,7 +430,7 @@ export async function POST(request) {
   });
   const headers = { 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'no-store', 'x-remaining': String(left) };
   // La memoria si aggiorna in parallelo alla risposta (solo se il messaggio parla dell'utente).
-  const learning = learnFromMessage(userId, userText, memory);
+  const learning = temp ? Promise.resolve(null) : learnFromMessage(userId, userText, memory);
   const memoryFrame = async () => { const saved = await learning; return saved ? frame({ type: 'memory', count: saved.length }) : ''; };
   const upstream = await call(payload);
 
@@ -562,6 +585,14 @@ export async function POST(request) {
 
   async function finishTools(controller) {
       if (INFO_TOOLS.includes(tool.name)) { await weatherFollowUp(controller); return; }
+      if (tool.name === 'create_reminder') {
+        const a = parseJSON(tool.args);
+        const title = String(a.title || '').slice(0, 120), start = String(a.start || '').slice(0, 16), notes = String(a.notes || '').slice(0, 300);
+        controller.enqueue(encoder.encode(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(start) && title
+          ? frame({ type: 'reminder', title, start, notes })
+          : "Je n'ai pas compris la date du rappel. Dis-moi le jour et l'heure."));
+        return;
+      }
       const forcedName = promised();
       if (forcedName) {
         const video = forcedName === 'create_video';

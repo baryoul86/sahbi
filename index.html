@@ -123,6 +123,13 @@ footer.composer .col{padding-block:10px 12px;display:flex;flex-direction:column;
 .drawer h2{margin:0;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:500}
 .new{min-height:48px;border-radius:14px;border:0;background:var(--mint);color:var(--mint-ink);font-weight:500;display:flex;align-items:center;gap:10px;padding:0 16px}
 .hist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px;overflow-y:auto;flex:1}
+.temp-note{font-size:14px;color:var(--muted);background:var(--panel-2);border-radius:12px;padding:8px 12px;margin:8px 0;text-align:center}
+.remind{border:1px solid var(--line);background:var(--panel);border-radius:16px;padding:12px 14px;display:flex;flex-direction:column;gap:8px;max-width:340px}
+.remind b{font-size:16px}
+.remind .when{color:var(--muted);font-size:14px}
+.remind .rb{display:flex;gap:8px;flex-wrap:wrap}
+.remind .rb a,.remind .rb button{min-height:40px;padding:0 14px;border-radius:999px;border:1px solid var(--line);background:var(--bg);color:var(--fg);font:inherit;font-size:14px;text-decoration:none;display:inline-flex;align-items:center;cursor:pointer}
+.remind .rb a.main{background:var(--mint);border-color:var(--mint);color:var(--mint-ink)}
 .hist-search{width:100%;min-height:40px;border-radius:12px;border:1px solid var(--line);background:var(--bg);color:var(--fg);font:inherit;font-size:15px;padding:0 12px;margin:0 0 8px;box-sizing:border-box}
 .msg.me .edit-btn{display:block;margin:4px 0 0 auto;border:0;background:transparent;color:var(--muted);min-height:32px;min-width:32px;border-radius:8px;cursor:pointer}
 .msg.me .edit-btn:hover{background:var(--panel-2)}
@@ -470,11 +477,11 @@ html[lang=ar] body{line-height:1.7}
         <div class="amenu" id="attachMenu" role="menu" hidden>
           <button type="button" role="menuitem" id="pickCam"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg><span>Appareil photo</span></button>
           <button type="button" role="menuitem" id="pickPhoto"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.8"/><path d="M21 15l-5-5L5 21"/></svg><span>Photos</span></button>
-          <button type="button" role="menuitem" id="pickFile"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h6"/></svg><span>Fichiers <small>PDF, Word</small></span></button>
+          <button type="button" role="menuitem" id="pickFile"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h6"/></svg><span>Fichiers <small>PDF, Word, Excel</small></span></button>
         </div>
         <input type="file" id="file" accept="image/*" hidden>
         <input type="file" id="camFile" accept="image/*" capture="environment" hidden>
-        <input type="file" id="docFile" accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document" hidden>
+        <input type="file" id="docFile" accept=".pdf,.docx,.xlsx,.xls,.csv,.txt,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv,text/plain" hidden>
         <label for="msg" class="sr">Message</label>
         <textarea id="msg" rows="1" dir="auto" placeholder="Écris ici…"></textarea>
         <button class="mic" id="mic" type="button" aria-label="Parler au micro" aria-pressed="false">
@@ -504,6 +511,10 @@ html[lang=ar] body{line-height:1.7}
   <button class="new" id="newChat" type="button">
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
     Nouvelle discussion
+  </button>
+  <button class="lib-btn" id="tempChat" type="button">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12s3.5-6 9-6 9 6 9 6-3.5 6-9 6-9-6-9-6z"/><path d="M4 4l16 16"/></svg>
+    Discussion temporaire
   </button>
   <button class="lib-btn" id="openLib" type="button">
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5L5 21"/></svg>
@@ -1025,7 +1036,7 @@ let current = null;
 let recentPhoto = null, recentTurns = 0;
 function newChat() { recentPhoto = null; current = { id: (crypto.randomUUID?.() || Date.now().toString(36) + Math.random().toString(36).slice(2)), title: '', messages: [], updated: Date.now() }; render(); }
 function saveCurrent() {
-  if (!current.messages.length) return;
+  if (!current.messages.length || current.temp) return; // chat temporanea: mai salvata
   current.updated = Date.now();
   if (!current.title) current.title = (current.messages.find((m) => m.role === 'user')?.content || 'Discussion').slice(0, 60);
   chats = [current, ...chats.filter((c) => c.id !== current.id)];
@@ -1085,6 +1096,40 @@ function startEdit(index) {
   }
 }
 function cancelEdit() { editIdx = null; $('editBar')?.remove(); ta.value = ''; grow(); }
+// Ora locale del telefono (YYYY-MM-DDTHH:MM) per i promemoria.
+const localNow = () => new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+// ⏰ Promemoria: scheda con "Google Agenda" e file .ics (altri calendari); il calendario del telefono manda la notifica.
+function reminderCard(r) {
+  const m = el('div', 'msg bot'); const st = el('div', 'stack'); const box = el('div', 'remind');
+  const d = new Date(r.start);
+  const when = isNaN(d) ? r.start : d.toLocaleString(LOCALE, { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' });
+  const t = el('b', '', `⏰ ${r.title}`); t.dataset.noi18n = ''; t.dir = 'auto';
+  const rb = el('div', 'rb');
+  const ymd = r.start.replace(/[-:]/g, '').slice(0, 13) + '00';
+  const end = isNaN(d) ? ymd : new Date(d.getTime() + 15 * 60000 - d.getTimezoneOffset() * 60000).toISOString().replace(/[-:]/g, '').slice(0, 13) + '00';
+  const g = el('a', 'main', tr('Ajouter à Google Agenda'));
+  g.href = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(r.title)}&dates=${ymd}/${end}&details=${encodeURIComponent((r.notes ? r.notes + '\n' : '') + 'Sahbi')}`;
+  g.target = '_blank'; g.rel = 'noopener';
+  const ics = el('button', '', tr('Autre calendrier (.ics)')); ics.type = 'button';
+  ics.addEventListener('click', () => downloadIcs(r, ymd, end));
+  rb.append(g, ics);
+  box.append(t, el('div', 'when', when), rb);
+  st.appendChild(box); m.append(avatar(), st); msgsEl.appendChild(m); scroll();
+}
+function downloadIcs(r, ymd, end) {
+  const esc = (x) => String(x || '').replace(/[\\;,]/g, (c) => '\\' + c).replace(/\n/g, '\\n');
+  const body = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Sahbi//FR', 'BEGIN:VEVENT', `UID:${Date.now()}-${Math.random().toString(36).slice(2)}@sahbi.bond`,
+    `DTSTAMP:${new Date().toISOString().replace(/[-:]/g, '').slice(0, 15)}Z`, `DTSTART:${ymd}`, `DTEND:${end}`, `SUMMARY:${esc(r.title)}`, `DESCRIPTION:${esc(r.notes || 'Sahbi')}`,
+    'BEGIN:VALARM', 'TRIGGER:PT0M', 'ACTION:DISPLAY', `DESCRIPTION:${esc(r.title)}`, 'END:VALARM', 'END:VEVENT', 'END:VCALENDAR'].join('\r\n');
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([body], { type: 'text/calendar' })); a.download = 'rappel-sahbi.ics'; a.click();
+  toast(tr('Ouvre le fichier pour l’ajouter à ton calendrier.'));
+}
+// 📤 Condividere una discussione intera come testo.
+function shareChat(c) {
+  const lines = (c.messages || []).filter((m) => typeof m.content === 'string' && m.content)
+    .map((m) => `${m.role === 'user' ? tr('Moi') : 'Sahbi'} : ${m.kind === 'image' ? '🖼️ ' : m.kind === 'video' ? '🎬 ' : ''}${m.content}`);
+  shareText(`${c.title || 'Sahbi'}\n\n${lines.join('\n\n').slice(0, 20000)}`);
+}
 // 🔄 Rifare l'ultima risposta.
 async function redoLast() {
   if (busy) return;
@@ -1329,7 +1374,7 @@ const SHORTCUTS = [
   { t: 'Transformer une photo', d: 'Cartoon, anime, 3D…', photo: true },
   { t: 'Créer une image', d: 'Décris, Sahbi dessine', p: 'Fais-moi une image de ' },
   { t: 'Créer une vidéo', d: '8 secondes, avec Sahbi Pro', p: 'Fais-moi une vidéo de ' },
-  { t: 'Lire un document', d: 'PDF ou Word, avec Sahbi Pro', doc: true },
+  { t: 'Lire un document', d: 'PDF, Word ou Excel, avec Sahbi Pro', doc: true },
   { t: 'Parler avec Sahbi', d: 'Conversation à voix haute', voice: true },
 ];
 function render() {
@@ -1361,8 +1406,10 @@ function render() {
     e.append(logo, el('h1', '', 'Salam, ana Sahbi'), el('p', '', 'Écris, parle ou envoie une photo, dans ta langue. Je crée aussi des images, des vidéos et des cartes de vœux.'), chips, el('div', 'label-sm', 'Cartes de vœux à partager'), occ, tip);
     msgsEl.appendChild(e);
   }
+  if (current.temp) msgsEl.prepend(el('div', 'temp-note', tr('🕶️ Discussion temporaire : elle ne sera pas enregistrée et Sahbi ne retiendra rien.')));
   current.messages.forEach((m, i, all) => {
-    if (m.kind === 'image') storedImageBubble(m);
+    if (m.kind === 'reminder') reminderCard(m);
+    else if (m.kind === 'image') storedImageBubble(m);
     else if (m.kind === 'video') videoBubble(m.id, m.content);
     else if (m.role === 'user' && m.photo) userPhotoBubble(m.thumb || null, m.thumb ? m.content : `📷 ${m.content}`);
     else if (m.role === 'user' && m.doc) bubble('user', `📄 ${m.doc}\n${m.content}`);
@@ -1426,6 +1473,7 @@ function histItem(c) {
     const item = (label, fn, cls) => { const x = el('button', cls || '', label); x.type = 'button'; x.setAttribute('role', 'menuitem'); x.addEventListener('click', (ev) => { ev.stopPropagation(); fn(x); }); m.appendChild(x); };
     item(c.pinned ? '📌 Désépingler' : '📌 Épingler', () => { c.pinned = !c.pinned; persist(); closeHistMenu(); renderHistory(); });
     item('✏️ Renommer', () => renameChat(c, li));
+    item('📤 Partager', () => { closeHistMenu(); shareChat(c); });
     item('🗑️ Supprimer', (x) => {
       if (!x.dataset.sure) { x.dataset.sure = '1'; x.textContent = '🗑️ Appuie encore pour supprimer'; return; }
       closeHistMenu(); deleteChat(c);
@@ -1455,11 +1503,13 @@ function renderHistory() {
 }
 document.addEventListener('click', (e) => { if (openMenu && !openMenu.contains(e.target)) closeHistMenu(); });
 $('histSearch')?.addEventListener('input', () => renderHistory());
+$('tempChat')?.addEventListener('click', () => { closeAll(); newChat(); current.temp = true; render(); });
 
 // ---------- Chat (testo e immagini nella stessa casella) ----------
 const SEP = '\u001e';
 const toApi = (m, isLast) => {
   if (m.kind === 'image') return { role: 'assistant', content: `[Image créée : ${m.content}]` };
+  if (m.kind === 'reminder') return { role: 'assistant', content: `[Rappel créé : ${m.title} le ${m.start}]` };
   if (m.kind === 'video') return { role: 'assistant', content: `[Vidéo créée : ${m.content}]` };
   if (m.photo && !isLast) return { role: m.role, content: `${m.content}\n[Photo envoyée]` };
   if (m.doc && !isLast) return { role: m.role, content: `${m.content}\n[Document envoyé : ${m.doc}]` };
@@ -1562,7 +1612,7 @@ async function sendChat(text, pic = null, docAtt = null, opts = {}) {
   let res;
   try {
     sentAt = Date.now();
-    res = await api('/api/chat', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ messages: history, lang: LANG, ...(pic ? { photo: pic } : (recentPhoto && recentTurns > 0 && !opts.voice ? { photo: recentPhoto, photoEarlier: true } : {})), ...(docAtt ? { doc: { name: docAtt.name, text: docAtt.text } } : {}), ...(opts.voice ? { voice: true } : {}) }) });
+    res = await api('/api/chat', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ messages: history, lang: LANG, ...(pic ? { photo: pic } : (recentPhoto && recentTurns > 0 && !opts.voice ? { photo: recentPhoto, photoEarlier: true } : {})), ...(docAtt ? { doc: { name: docAtt.name, text: docAtt.text } } : {}), ...(opts.voice ? { voice: true } : {}), now: localNow(), ...(current.temp ? { temp: true } : {}) }) });
   } catch { wait.remove(); bubble('bot', 'Pas de connexion. Vérifie internet et réessaie.', 'err'); return ''; }
   if (!res.ok) {
     wait.remove();
@@ -1578,6 +1628,7 @@ async function sendChat(text, pic = null, docAtt = null, opts = {}) {
   const extra = []; let pending = null, handled = 0, raw = '', reply = '';
   const onFrame = (f) => {
     if (f.type === 'memory') { toast('🧠 Sahbi s’en souviendra.'); if (me) me.memoryStale = true; return; }
+    if (f.type === 'reminder') { const r = { role: 'assistant', kind: 'reminder', content: `📅 ${f.title}`, title: f.title, start: f.start, notes: f.notes || '' }; reminderCard(r); extra.push(r); return; }
     if (f.type === 'ping') return; // segnale "sono ancora qui" del server: il segnaposto resta
     if (f.type === 'image_start' || f.type === 'video_start') {
       if (!pending) pending = imagePlaceholder(f.type === 'video_start');
@@ -2002,6 +2053,12 @@ async function pdfText(buf) {
   }
   return out;
 }
+// Excel (.xlsx / .xls): ogni foglio diventa una tabella CSV che Sahbi sa leggere, sommare e riassumere.
+async function sheetText(buf) {
+  const XLSX = await import('https://cdn.jsdelivr.net/npm/xlsx@0.18.5/+esm');
+  const wb = XLSX.read(new Uint8Array(buf), { type: 'array' });
+  return wb.SheetNames.slice(0, 10).map((n) => `### Feuille : ${n}\n${XLSX.utils.sheet_to_csv(wb.Sheets[n], { blankrows: false })}`).join('\n\n');
+}
 // Un .docx è uno zip: si cerca word/document.xml e si tiene solo il testo.
 async function docxText(buf) {
   const v = new DataView(buf); const u8 = new Uint8Array(buf);
@@ -2033,11 +2090,13 @@ $('docFile').addEventListener('change', async () => {
   if (me && !me.pro) { openSheet(); toast('La lecture de documents est incluse dans Sahbi Pro.'); return; }
   if (f.size > 15 * 1024 * 1024) { toast('Document trop lourd (15 Mo maximum).'); return; }
   const isPdf = /pdf$/i.test(f.type) || /\.pdf$/i.test(f.name), isDocx = /\.docx$/i.test(f.name) || /wordprocessingml/.test(f.type);
-  if (!isPdf && !isDocx) { toast('Choisis un PDF ou un fichier Word (.docx).'); return; }
+  const isSheet = /\.(xlsx|xls)$/i.test(f.name) || /spreadsheetml|ms-excel/.test(f.type), isText = /\.(csv|txt)$/i.test(f.name) || /^text\//.test(f.type);
+  if (!isPdf && !isDocx && !isSheet && !isText) { toast('Choisis un PDF, un fichier Word, Excel ou CSV.'); return; }
   toast('Lecture du document…');
   try {
     const buf = await f.arrayBuffer();
-    const text = (isPdf ? await pdfText(buf) : await docxText(buf)).replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim();
+    const raw = isPdf ? await pdfText(buf) : isDocx ? await docxText(buf) : isSheet ? await sheetText(buf) : new TextDecoder().decode(buf);
+    const text = raw.replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim();
     if (text.length < 20) { toast(isPdf ? 'Ce PDF est une image scannée : envoie plutôt une photo de la page.' : 'Ce document est vide.'); return; }
     setDoc({ name: f.name.slice(0, 120), text: text.slice(0, MAX_DOC) });
     if (text.length > MAX_DOC) toast('Document long : Sahbi lira le début.');
