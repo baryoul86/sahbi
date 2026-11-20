@@ -6,6 +6,7 @@ import { json, fail, env, getUser, rpc, openaiHeaders, OPENAI } from './_lib.js'
 import { isAdmin, alert, sendMail, adminEmails } from './_alert.js';
 import { stripe } from './_pay.js';
 import { videoEnabled } from './_video.js';
+import { playCheck } from './_play.js';
 
 const timed = (p, ms = 8000) => Promise.race([p, new Promise((_, no) => setTimeout(() => no(new Error('timeout')), ms))]);
 
@@ -99,7 +100,7 @@ export async function GET(request) {
     const img = { model: env('OPENAI_IMAGE_MODEL', 'gpt-image-1-mini'), edit: env('OPENAI_IMAGE_EDIT_MODEL', '') || 'idem', fidelity: env('OPENAI_IMAGE_EDIT_FIDELITY', '') || 'par défaut', quality: env('OPENAI_IMAGE_QUALITY', 'medium') };
     const chat = { free: env('OPENAI_CHAT_MODEL', 'gpt-5-mini'), pro: env('OPENAI_CHAT_MODEL_PRO', '') || env('OPENAI_CHAT_MODEL', 'gpt-5-mini'), proLimits: `${env('PRO_CHAT_DAILY_LIMIT', '150')} msg / ${env('PRO_IMAGE_DAILY_LIMIT', '5')} img` };
     // Collegamenti esterni (senza mostrare chiavi): pagamenti, Google Play, e-mail, AdSense, app Android.
-    const links = { lemon: !!env('LEMONSQUEEZY_API_KEY'), lemonWebhook: !!env('LEMONSQUEEZY_WEBHOOK_SECRET'), googlePlay: !!env('GOOGLE_PLAY_SERVICE_ACCOUNT'), emails: !!(env('RESEND_API_KEY') && env('ADMIN_EMAIL')), androidLink: !!env('ANDROID_SHA256'), video: videoEnabled() };
+    const links = { lemon: !!env('LEMONSQUEEZY_API_KEY'), lemonWebhook: !!env('LEMONSQUEEZY_WEBHOOK_SECRET'), googlePlay: await playCheck(), emails: !!(env('RESEND_API_KEY') && env('ADMIN_EMAIL')), androidLink: !!env('ANDROID_SHA256'), video: videoEnabled() };
     return json({ ok: allOk(h), report: due, chat, links, img, recent, db: h.db.ok ? 'ok' : 'ko', openai: h.openai.ok ? 'ok' : (h.openai.detail === 'crédit épuisé' ? 'credit' : 'ko'), detail: h.openai.ok ? undefined : String(h.openai.detail || '').slice(0, 80), deep });
   }
 

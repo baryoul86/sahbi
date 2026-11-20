@@ -44,6 +44,16 @@ async function google(path, method = 'GET') {
   return data;
 }
 
+// Controllo per la sorveglianza: la chiave funziona e l'abbonamento sahbi_pro esiste ed è attivo su Google Play?
+export async function playCheck() {
+  if (!playReady()) return 'no-key';
+  try {
+    const d = await google(`subscriptions/${encodeURIComponent(playSku())}`);
+    const plans = (d.basePlans || []).map((b) => `${b.basePlanId}:${b.state}`);
+    return plans.some((x) => x.endsWith(':ACTIVE')) ? `ok (${plans.join(', ')})` : `abonnement inactif (${plans.join(', ') || 'aucun forfait'})`;
+  } catch (e) { return String(e.message || e).slice(0, 160); }
+}
+
 // Chi possiede già questo abbonamento? (stesso ordine di base "GPA.xxx", i rinnovi aggiungono "..0", "..1")
 async function ownerOf(baseOrder) {
   const url = `${supabaseUrl()}/rest/v1/payments?select=user_id&provider=eq.googleplay&id=like.${encodeURIComponent(`gp_${baseOrder}*`)}&limit=1`;
