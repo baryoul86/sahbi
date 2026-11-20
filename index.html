@@ -532,7 +532,7 @@ html[lang=ar] body{line-height:1.7}
       <button type="button" id="planMonth" aria-pressed="true">Mensuel</button>
       <button type="button" id="planYear" aria-pressed="false">Annuel <span class="save-badge" id="saveBadge">−25 %</span></button>
     </div>
-    <div class="price"><b id="priceEur">6,50 €</b> <span id="pricePer">/ mois</span></div>
+    <div class="price"><b id="priceEur">7 €</b> <span id="pricePer">/ mois</span></div>
     <p class="s-note" id="priceNote" hidden></p>
     <ul class="feats">
       <li><svg width="20" height="20" aria-hidden="true"><use href="#check"/></svg><span><span id="fChat">150</span> messages par jour, dans toutes les langues</span></li>
@@ -546,9 +546,9 @@ html[lang=ar] body{line-height:1.7}
     </ul>
     <p class="s-note" id="proStatus" hidden></p>
     <div class="pay" id="payBox">
-      <button class="cta" id="payCard" type="button"><span id="payCardLabel">Payer par carte</span><small id="payCardSub">6,50 € par mois</small></button>
+      <button class="cta" id="payCard" type="button"><span id="payCardLabel">Payer par carte</span><small id="payCardSub">7 € par mois</small></button>
       <button class="alt" id="payDz" type="button">Edahabia ou CIB<small id="payDzSub">1 000 DA pour 30 jours</small></button>
-      <button class="cta app-only" id="payPlay" type="button"><span>S’abonner avec Google Play</span><small id="payPlaySub">6,50 € par mois</small></button>
+      <button class="cta app-only" id="payPlay" type="button"><span>S’abonner avec Google Play</span><small id="payPlaySub">7 € par mois</small></button>
       <p class="s-note app-only" id="appNote">L’abonnement Sahbi Pro arrive très bientôt directement dans l’application.</p>
     </div>
     <button class="ghost" id="closeSheet" type="button">Plus tard</button>
@@ -691,7 +691,7 @@ html[lang=ar] body{line-height:1.7}
     <h2>Gratuit ou Pro</h2>
     <div class="plans">
       <div class="plan"><h3>Gratuit</h3><div class="pr">0 €</div><ul><li>30 messages par jour</li><li>2 images par jour</li><li>Photos et micro</li><li>Avec publicité</li></ul></div>
-      <div class="plan pro"><h3>Sahbi Pro</h3><div class="pr">6,50 € / mois</div><ul><li>150 messages par jour</li><li>5 images par jour</li><li>5 vidéos de 8 secondes par mois</li><li>Conversation vocale et documents PDF</li><li>Sahbi lit ses réponses à voix haute</li><li>Sans publicité</li><li>Aussi en Edahabia / CIB : 1 000 DA pour 30 jours</li></ul></div>
+      <div class="plan pro"><h3>Sahbi Pro</h3><div class="pr">7 € / mois</div><ul><li>150 messages par jour</li><li>5 images par jour</li><li>5 vidéos de 8 secondes par mois</li><li>Conversation vocale et documents PDF</li><li>Sahbi lit ses réponses à voix haute</li><li>Sans publicité</li><li>Aussi en Edahabia / CIB : 1 000 DA pour 30 jours</li></ul></div>
     </div>
   </div></div>
 
@@ -1738,16 +1738,16 @@ function renderSheet() {
   // L'annuale si mostra quando almeno un pagamento annuale è attivo.
   $('planSeg').hidden = !(pay.stripeYear || pay.lemonsqueezyYear || pay.chargily);
   $('planMonth').setAttribute('aria-pressed', String(!year)); $('planYear').setAttribute('aria-pressed', String(year));
-  $('priceEur').textContent = year ? (pay.priceYearEur || '59 €') : (pay.priceEur || '6,50 €');
+  $('priceEur').textContent = year ? (pay.priceYearEur || '59 €') : (pay.priceEur || '7 €');
   $('pricePer').textContent = year ? '/ an' : '/ mois';
-  const monthly = parseFloat(String(pay.priceEur || '6,50').replace(',', '.')), yearly = parseFloat(String(pay.priceYearEur || '59').replace(',', '.'));
+  const monthly = parseFloat(String(pay.priceEur || '7').replace(',', '.')), yearly = parseFloat(String(pay.priceYearEur || '59').replace(',', '.'));
   const save = monthly && yearly ? Math.round((1 - yearly / (monthly * 12)) * 100) : 0;
   $('saveBadge').textContent = save > 0 ? `−${save} %` : '';
   $('priceNote').hidden = !year;
   $('priceNote').textContent = year ? tr('Soit {p} € par mois, payé en une fois.', { p: (yearly / 12).toFixed(2).replace('.', LANG === 'en' ? '.' : ',') }) : '';
   // Carta: Lemon Squeezy se configurato (anche PayPal), altrimenti Stripe.
   const cardOk = pay.lemonsqueezy ? (year ? pay.lemonsqueezyYear : true) : (year ? pay.stripeYear : pay.stripe);
-  $('payCardSub').textContent = cardOk ? (year ? tr('{p} par an', { p: pay.priceYearEur || '59 €' }) : tr('{p} par mois', { p: pay.priceEur || '6,50 €' })) : 'Bientôt disponible';
+  $('payCardSub').textContent = cardOk ? (year ? tr('{p} par an', { p: pay.priceYearEur || '59 €' }) : tr('{p} par mois', { p: pay.priceEur || '7 €' })) : 'Bientôt disponible';
   $('payDzSub').textContent = pay.chargily ? (year ? tr('{p} DA pour 1 an', { p: (pay.priceYearDzd || 10000).toLocaleString(LOCALE) }) : tr('{p} DA pour 30 jours', { p: (pay.priceDzd || 1000).toLocaleString(LOCALE) })) : 'Bientôt disponible';
   $('payCardLabel').textContent = pay.lemonsqueezy ? 'Carte bancaire ou PayPal' : 'Payer par carte';
   $('payCard').disabled = !cardOk; $('payDz').disabled = !pay.chargily;

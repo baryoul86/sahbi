@@ -33,7 +33,7 @@ export function GET(request) {
     payments: {
       stripe: !!(env('STRIPE_SECRET_KEY') && env('STRIPE_PRICE_ID')),
       chargily: !!env('CHARGILY_SECRET_KEY'),
-      priceEur: env('PRO_PRICE_EUR_LABEL', '6,50 €'),
+      priceEur: env('PRO_PRICE_EUR_LABEL', '7 €'),
       priceDzd: Number(env('CHARGILY_PRICE_DZD', '1000')),
       // Abbonamento annuale (facoltativo): carta con un secondo prezzo Stripe, Edahabia/CIB per 365 giorni.
       stripeYear: !!(env('STRIPE_SECRET_KEY') && env('STRIPE_PRICE_ID_YEAR')),
