@@ -108,7 +108,8 @@ Meteo:
 Risposte dirette:
 - Rispondi SUBITO alla domanda, con la risposta vera già nella prima frase.
 - Non scrivere mai frasi come "vado a cercare", "un attimo", "controllo e ti dico", "se vuoi posso…", "fammi sapere se vuoi che…" al posto della risposta. Non promettere di fare dopo: fai adesso.
-- Non hai internet (tranne il meteo con get_weather). Per notizie, prezzi, risultati sportivi o fatti molto recenti, dì in UNA frase che non hai i dati in tempo reale e dai comunque l'informazione più utile che conosci.
+- Internet: per notizie, prezzi (oro, valute, crypto, carburante…), risultati e calendari sportivi, eventi, orari, chi ricopre OGGI una carica, uscite e novità, o qualsiasi cosa che può essere cambiata di recente, chiama SUBITO web_search (senza dire "vado a cercare"). Non usarlo per cose stabili (storia, definizioni, ricette, esercizi, traduzioni).
+- Dopo web_search: rispondi diretto con i fatti trovati (date e cifre esatte), nella lingua dell'utente; alla fine scrivi "Sources :" con 1-3 link nel formato "Titolo – https://…" (niente markdown). Se la ricerca non trova niente, dillo in una frase.
 - Fai una domanda solo se senza quella informazione è impossibile rispondere.
 
 Capire bene (prima di rispondere):
@@ -192,6 +193,54 @@ const WEATHER_TOOL = {
     },
   },
 };
+const SEARCH_TOOL = {
+  type: 'function',
+  function: {
+    name: 'web_search',
+    description: 'Cerca su internet informazioni aggiornate: notizie, prezzi, risultati sportivi, eventi, orari, chi ricopre oggi una carica, novità. Usalo per tutto ciò che può essere cambiato di recente.',
+    parameters: {
+      type: 'object',
+      properties: { query: { type: 'string', description: 'La ricerca, precisa e completa (es. "prix de l\'or au Maroc aujourd\'hui", "résultat Algérie Égypte football")' } },
+      required: ['query'],
+      additionalProperties: false,
+    },
+  },
+};
+// Ricerca su internet con OpenAI (Responses API + strumento web_search): testo riassunto + fonti.
+export async function webSearch({ query } = {}) {
+  const q = String(query || '').trim().slice(0, 300);
+  if (!q) return { error: 'recherche vide' };
+  const ctrl = new AbortController(); const t = setTimeout(() => ctrl.abort(), 35000);
+  try {
+    const r = await fetch(`${OPENAI}/responses`, {
+      method: 'POST', signal: ctrl.signal,
+      headers: openaiHeaders({ 'content-type': 'application/json' }),
+      body: JSON.stringify({
+        model: env('OPENAI_SEARCH_MODEL', 'gpt-5-mini'),
+        tools: [{ type: 'web_search' }],
+        reasoning: { effort: 'low' },
+        input: `Cherche sur internet et résume les faits importants et récents, avec les dates, les chiffres et les noms exacts (aujourd'hui : ${new Date().toISOString().slice(0, 10)}). Question : ${q}`,
+      }),
+    });
+    const d = await r.json().catch(() => null);
+    if (!r.ok) {
+      console.error('web_search', r.status, d?.error?.code);
+      if (r.status !== 400) { const { openaiAlert } = await import('./_alert.js'); await openaiAlert(r.status, JSON.stringify(d?.error || {})).catch(() => {}); }
+      return { error: 'recherche indisponible' };
+    }
+    const parts = (d?.output || []).filter((o) => o.type === 'message').flatMap((o) => o.content || []).filter((c) => c.type === 'output_text');
+    const seen = new Set();
+    const sources = parts.flatMap((c) => c.annotations || []).filter((a) => a.type === 'url_citation' && a.url)
+      .filter((a) => { const k = a.url.split('?')[0]; if (seen.has(k)) return false; seen.add(k); return true; })
+      .slice(0, 5).map((a) => ({ title: a.title || '', url: a.url.replace(/[?&]utm_source=openai$/, '') }));
+    const text = parts.map((c) => c.text).join('\n').slice(0, 6000);
+    return text ? { query: q, results: text, sources } : { error: 'aucun résultat' };
+  } catch (e) { return { error: e.name === 'AbortError' ? 'recherche trop lente' : 'recherche indisponible' }; }
+  finally { clearTimeout(t); }
+}
+const runInfoTool = (name, args) => (name === 'web_search' ? webSearch(args) : getWeather(args));
+const INFO_TOOLS = ['get_weather', 'web_search'];
+
 const SKY = { clearsky: 'ciel dégagé', fair: 'beau temps', partlycloudy: 'partiellement nuageux', cloudy: 'nuageux', fog: 'brouillard', lightrain: 'pluie faible', rain: 'pluie', heavyrain: 'forte pluie', lightrainshowers: 'averses faibles', rainshowers: 'averses', heavyrainshowers: 'fortes averses', thunder: 'orage', rainandthunder: 'pluie et orage', heavyrainandthunder: 'orages violents', rainshowersandthunder: 'averses orageuses', lightsleet: 'neige fondue', sleet: 'neige fondue', lightsnow: 'neige faible', snow: 'neige', heavysnow: 'forte neige', snowshowers: 'averses de neige' };
 const sky = (code) => { const k = String(code || '').replace(/_(day|night|polartwilight)$/, ''); return SKY[k] || k; };
 // Previsioni da MET Norway (gratuito anche per uso commerciale, con citazione della fonte).
@@ -235,8 +284,8 @@ export async function getWeather({ city, latitude, longitude, days } = {}) {
 // Data di oggi: serve per "domani", "sabato", ecc.
 const todayPrompt = () => `\n\nOggi è ${new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Africa/Algiers' })}.`;
 // Messaggi per la seconda risposta dopo il meteo.
-const weatherMessages = (base, reply, id, args, data) => [...base,
-  { role: 'assistant', content: reply || null, tool_calls: [{ id, type: 'function', function: { name: 'get_weather', arguments: args } }] },
+const weatherMessages = (base, reply, id, args, data, name = 'get_weather') => [...base,
+  { role: 'assistant', content: reply || null, tool_calls: [{ id, type: 'function', function: { name, arguments: args } }] },
   { role: 'tool', tool_call_id: id, content: JSON.stringify(data) }];
 
 const parseJSON = (t) => { try { return JSON.parse(t || '{}'); } catch { return {}; } };
@@ -315,7 +364,7 @@ export async function POST(request) {
   const imgOpts = (edit) => ({ limit: limits.image, photo: edit ? photo : null, userText: ownWords.slice(0, 1500), history: recent });
   const vidOpts = (fromPhoto) => ({ pro, limit: limits.video, photo: fromPhoto ? photo : null });
   const media = videoEnabled() ? [...TOOLS, VIDEO_TOOL] : TOOLS;
-  const tools = [...media, WEATHER_TOOL];
+  const tools = [...media, WEATHER_TOOL, SEARCH_TOOL];
   const NAMES = media.map((t) => t.function.name); // strumenti che creano immagini o video
   // Esegue lo strumento scelto dal modello e restituisce i messaggi di controllo per il telefono.
   // Foto + "trasformala": si parte SEMPRE dalla foto dell'utente, anche se il modello dimentica edit_photo.
@@ -369,10 +418,10 @@ export async function POST(request) {
       const plain = await call({ ...payload, stream: false });
       const data = await plain.json().catch(() => null);
       const msg = data?.choices?.[0]?.message;
-      const wCall = msg?.tool_calls?.find((t) => t.function?.name === 'get_weather');
+      const wCall = msg?.tool_calls?.find((t) => INFO_TOOLS.includes(t.function?.name));
       if (plain.ok && wCall) {
-        const wd = await getWeather(parseJSON(wCall.function.arguments));
-        const r2 = await call({ ...payload, stream: false, tool_choice: 'none', messages: weatherMessages(payload.messages, msg.content, wCall.id, wCall.function.arguments, wd) });
+        const wd = await runInfoTool(wCall.function.name, parseJSON(wCall.function.arguments));
+        const r2 = await call({ ...payload, stream: false, tool_choice: 'none', messages: weatherMessages(payload.messages, msg.content, wCall.id, wCall.function.arguments, wd, wCall.function.name) });
         const d2 = await r2.json().catch(() => null);
         return new Response((d2?.choices?.[0]?.message?.content || '') + await memoryFrame(), { headers });
       }
@@ -491,12 +540,13 @@ export async function POST(request) {
     cancel() { gone = true; },
   });
 
-  // Meteo: prende i dati veri e chiede al modello la risposta finale, che arriva in streaming.
+  // Meteo o ricerca su internet: prende i dati veri e chiede al modello la risposta finale, che arriva in streaming.
   async function weatherFollowUp(controller) {
     let args = {}; try { args = JSON.parse(tool.args || '{}'); } catch { /* argomenti rotti */ }
-    const data = await getWeather(args);
-    const r = await call({ ...payload, tool_choice: 'none', messages: weatherMessages(payload.messages, reply, tool.id || 'call_weather', tool.args || '{}', data) }).catch(() => null);
-    if (!r?.ok || !r.body) { controller.enqueue(encoder.encode(data.error ? `Je n'ai pas pu obtenir la météo (${data.error}).` : '')); return; }
+    const search = tool.name === 'web_search';
+    const data = await runInfoTool(tool.name, args);
+    const r = await call({ ...payload, tool_choice: 'none', messages: weatherMessages(payload.messages, reply, tool.id || (search ? 'call_search' : 'call_weather'), tool.args || '{}', data, tool.name) }).catch(() => null);
+    if (!r?.ok || !r.body) { controller.enqueue(encoder.encode(data.error ? (search ? `Je n'ai pas pu chercher sur internet (${data.error}).` : `Je n'ai pas pu obtenir la météo (${data.error}).`) : '')); return; }
     const rd = r.body.getReader(); let buf = '';
     for (;;) {
       const { value, done } = await rd.read(); if (done) break;
@@ -511,7 +561,7 @@ export async function POST(request) {
   }
 
   async function finishTools(controller) {
-      if (tool.name === 'get_weather') { await weatherFollowUp(controller); return; }
+      if (INFO_TOOLS.includes(tool.name)) { await weatherFollowUp(controller); return; }
       const forcedName = promised();
       if (forcedName) {
         const video = forcedName === 'create_video';
