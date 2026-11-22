@@ -78,6 +78,7 @@ export async function POST(request) {
   if (origin && new URL(origin).host !== url.host) return json({ ok: false }, 403);
   if (url.searchParams.get('contact') === '1') return contact(request);
   if (url.searchParams.get('report') === '1') return report(request);
+  if (url.searchParams.get('review') === '1') return review(request);
   if (url.searchParams.get('visit') !== '1') return json({ ok: false }, 404);
   let b = {};
   try { b = await request.json(); } catch { /* corpo vuoto */ }
@@ -108,6 +109,30 @@ async function report(request) {
       `Utilisateur : ${userId}\nType : ${kind}\nMotif : ${reason}\nDétails : ${note || '—'}\n${link ? `Lien : ${link}\n` : ''}\nContenu :\n${content || '—'}`);
   }
   return json({ ok: true });
+}
+
+// POST /api/config?review=1 → accesso per chi controlla l'app per Apple (non può ricevere e-mail).
+// Solo per l'indirizzo review@sahbi.bond; nel codice c'è solo l'impronta della password, mai la password.
+export const REVIEW_EMAIL = 'review@sahbi.bond';
+const REVIEW_HASH = 'da969865febba3293368c39af2b11f28d9ac51fd9e0ffc33ffdeb90d84be7502';
+async function review(request) {
+  const { createHash, timingSafeEqual } = await import('node:crypto');
+  const { supabaseUrl, serviceHeaders, rpc } = await import('./_lib.js');
+  let b = {};
+  try { b = await request.json(); } catch { /* vuoto */ }
+  const due = await rpc('admin_alert', { p_kind: 'probe_review_login', p_message: 'review', p_every_minutes: 1 }).catch(() => true);
+  if (!due) return json({ ok: false, message: 'Trop de tentatives. Réessaie dans une minute.' }, 429);
+  const h = createHash('sha256').update(String(b.password || '')).digest();
+  if (String(b.email || '').trim().toLowerCase() !== REVIEW_EMAIL || !timingSafeEqual(h, Buffer.from(env('REVIEW_PASSWORD_SHA256', REVIEW_HASH), 'hex'))) {
+    return json({ ok: false, message: 'Mot de passe incorrect.' }, 401);
+  }
+  const H = serviceHeaders({ 'content-type': 'application/json' });
+  await fetch(`${supabaseUrl()}/auth/v1/admin/users`, { method: 'POST', headers: H, body: JSON.stringify({ email: REVIEW_EMAIL, email_confirm: true }) }).catch(() => {});
+  const r = await fetch(`${supabaseUrl()}/auth/v1/admin/generate_link`, { method: 'POST', headers: H, body: JSON.stringify({ type: 'magiclink', email: REVIEW_EMAIL }) });
+  const d = await r.json().catch(() => ({}));
+  const tokenHash = d.hashed_token || d.properties?.hashed_token;
+  if (!r.ok || !tokenHash) return json({ ok: false, message: 'Connexion impossible pour le moment.' }, 502);
+  return json({ ok: true, tokenHash });
 }
 
 async function contact(request) {
