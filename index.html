@@ -218,6 +218,9 @@ dialog.report .rbtns button{min-height:44px;padding:0 18px;border-radius:999px;f
 .shortcuts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;width:100%;max-width:520px;margin-top:6px}
 .sc{min-height:64px;padding:10px 12px;border-radius:14px;border:1px solid var(--line);background:var(--panel);text-align:start;display:flex;flex-direction:column;justify-content:center;gap:2px}
 .sc:hover{border-color:var(--mint)}
+.sc{flex-direction:row !important;align-items:center;justify-content:flex-start !important;gap:10px !important}
+.sc .sc-ic{font-style:normal;font-size:22px;line-height:1;flex:none;width:36px;height:36px;border-radius:10px;background:var(--bg);display:grid;place-items:center}
+.sc .sc-tx{display:flex;flex-direction:column;gap:2px;min-width:0}
 .sc b{font-weight:500;font-size:15px}
 .sc span{font-size:12px;color:var(--muted)}
 .pay{display:flex;flex-direction:column;gap:10px}
@@ -1536,19 +1539,19 @@ const TIPS = [
   ['Invite tes amis', 'Paramètres → partage ton lien : 7 jours de Pro pour vous deux.'],
 ];
 const SHORTCUTS = [
-  { t: 'Écrire un livre', d: 'Raconte, Sahbi structure, « FIN » = ton livre PDF', book: true },
-  { t: 'Gérer mon business', d: 'Plan, prix, clients, publicités, posts', p: 'Aide-moi à gérer et développer mon business. Mon activité : ' },
-  { t: 'Guide touristique', d: 'Hôtels, taxis, visites, Omra et Hajj', travel: true },
-  { t: 'Créer un site internet', d: 'Le code, l’aperçu, et la mise en ligne pas à pas', website: true },
-  { t: 'Aide au Bac', d: 'Quiz, fiches, exercices', bac: true },
-  { t: 'Mon CV', d: 'Un CV clair et pro', p: 'Aide-moi à écrire mon CV. Voici mon parcours : ' },
-  { t: 'Lettre administrative', d: 'Mairie, banque, employeur', p: 'Écris une lettre administrative pour ' },
-  { t: 'Traduire', d: 'Darija ↔ français ↔ arabe', p: 'Traduis en français : ' },
-  { t: 'Transformer une photo', d: 'Cartoon, anime, 3D…', photo: true },
-  { t: 'Créer une image', d: 'Décris, Sahbi dessine', p: 'Fais-moi une image de ' },
-  { t: 'Créer une vidéo', d: '8 secondes, avec Sahbi Pro', p: 'Fais-moi une vidéo de ' },
-  { t: 'Lire un document', d: 'PDF, Word ou Excel, avec Sahbi Pro', doc: true },
-  { t: 'Parler avec Sahbi', d: 'Conversation à voix haute', voice: true },
+  { i: '📖', t: 'Écrire un livre', d: 'Raconte, Sahbi structure, « FIN » = ton livre PDF', book: true },
+  { i: '💼', t: 'Gérer mon business', d: 'Plan, prix, clients, publicités, posts', p: 'Aide-moi à gérer et développer mon business. Mon activité : ' },
+  { i: '🧭', t: 'Guide touristique', d: 'Hôtels, taxis, visites, Omra et Hajj', travel: true },
+  { i: '🌐', t: 'Créer un site internet', d: 'Le code, l’aperçu, et la mise en ligne pas à pas', website: true },
+  { i: '🎓', t: 'Aide au Bac', d: 'Quiz, fiches, exercices', bac: true },
+  { i: '📄', t: 'Mon CV', d: 'Un CV clair et pro', p: 'Aide-moi à écrire mon CV. Voici mon parcours : ' },
+  { i: '✉️', t: 'Lettre administrative', d: 'Mairie, banque, employeur', p: 'Écris une lettre administrative pour ' },
+  { i: '🌍', t: 'Traduire', d: 'Darija ↔ français ↔ arabe', p: 'Traduis en français : ' },
+  { i: '📷', t: 'Transformer une photo', d: 'Cartoon, anime, 3D…', photo: true },
+  { i: '🎨', t: 'Créer une image', d: 'Décris, Sahbi dessine', p: 'Fais-moi une image de ' },
+  { i: '🎬', t: 'Créer une vidéo', d: '8 secondes, avec Sahbi Pro', p: 'Fais-moi une vidéo de ' },
+  { i: '📑', t: 'Lire un document', d: 'PDF, Word ou Excel, avec Sahbi Pro', doc: true },
+  { i: '🎙️', t: 'Parler avec Sahbi', d: 'Conversation à voix haute', voice: true },
 ];
 function render() {
   msgsEl.replaceChildren();
@@ -1560,7 +1563,9 @@ function render() {
     const chips = el('div', 'shortcuts');
     for (const s of SHORTCUTS) {
       const c = el('button', 'sc'); c.type = 'button';
-      c.append(el('b', '', s.t), el('span', '', s.d));
+      const ic = el('i', 'sc-ic', s.i || ''); ic.setAttribute('aria-hidden', 'true');
+      const tx = el('div', 'sc-tx'); tx.append(el('b', '', s.t), el('span', '', s.d));
+      c.append(ic, tx);
       c.addEventListener('click', () => {
         if (s.photo) { $('file').click(); return; }
         if (s.doc) { pickDoc(); return; }
