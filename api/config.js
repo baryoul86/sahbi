@@ -42,6 +42,8 @@ export async function GET(request) {
       lemonsqueezy: !!env('LEMONSQUEEZY_API_KEY'),
       // Prezzo reale della carta (Lemon Squeezy); al massimo 1,5 secondi di attesa.
       cardPriceEur: await Promise.race([lemonPriceLabel(), new Promise((ok) => setTimeout(() => ok(''), 1500))]),
+      // Moneta del paese di chi guarda (dal server Vercel) e cambio indicativo dall'euro: per mostrare « ≈ 380 EGP ».
+      local: await Promise.race([localCurrency(request), new Promise((ok) => setTimeout(() => ok(null), 1200))]),
       // App Android: abbonamento con Google Play Billing.
       googleplay: playReady(), playSku: playSku(),
       lemonsqueezyYear: !!(env('LEMONSQUEEZY_API_KEY') && env('LEMONSQUEEZY_VARIANT_ID_YEAR')),
@@ -49,6 +51,23 @@ export async function GET(request) {
       priceYearDzd: Number(env('CHARGILY_PRICE_YEAR_DZD', '10000')),
     },
   });
+}
+
+// Paese → moneta (paesi arabi, Africa del Nord e principali paesi della diaspora). Euro e paesi non elencati: niente conversione.
+const CUR = { DZ: 'DZD', MA: 'MAD', TN: 'TND', EG: 'EGP', LY: 'LYD', MR: 'MRU', SA: 'SAR', AE: 'AED', QA: 'QAR', KW: 'KWD', BH: 'BHD', OM: 'OMR', JO: 'JOD', LB: 'LBP', IQ: 'IQD', YE: 'YER', SD: 'SDG', SY: 'SYP', PS: 'ILS', IL: 'ILS', TR: 'TRY', US: 'USD', CA: 'CAD', GB: 'GBP', CH: 'CHF', SE: 'SEK', NO: 'NOK', DK: 'DKK', PL: 'PLN', RU: 'RUB', IN: 'INR', PK: 'PKR', BD: 'BDT', ID: 'IDR', MY: 'MYR', NG: 'NGN', SN: 'XOF', CI: 'XOF', ML: 'XOF', CM: 'XAF', ZA: 'ZAR', AU: 'AUD', BR: 'BRL', MX: 'MXN', JP: 'JPY', CN: 'CNY', KR: 'KRW' };
+let rates = { at: 0, eur: null };
+async function localCurrency(request) {
+  const country = request.headers.get('x-vercel-ip-country') || '';
+  const cur = CUR[country];
+  if (!cur) return null;
+  if (!rates.eur || Date.now() - rates.at > 12 * 3600 * 1000) {
+    try {
+      const d = await fetch('https://open.er-api.com/v6/latest/EUR').then((r) => r.json());
+      if (d?.result === 'success' && d.rates) rates = { at: Date.now(), eur: d.rates };
+    } catch { /* senza cambio: niente conversione */ }
+  }
+  const rate = rates.eur?.[cur];
+  return rate ? { country, currency: cur, rate } : null;
 }
 
 // POST /api/config?visit=1 → conta una visita (solo numeri per giorno, nessun dato personale).

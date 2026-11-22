@@ -574,6 +574,7 @@ html[lang=ar] body{line-height:1.7}
       <button type="button" id="planYear" aria-pressed="false">Annuel <span class="save-badge" id="saveBadge">−25 %</span></button>
     </div>
     <div class="price"><b id="priceEur">7 €</b> <span id="pricePer">/ mois</span></div>
+    <div class="s-note" id="priceLocal" hidden data-noi18n></div>
     <p class="s-note" id="priceNote" hidden></p>
     <ul class="feats">
       <li><svg width="20" height="20" aria-hidden="true"><use href="#check"/></svg><span><span id="fChat">150</span> messages par jour, dans toutes les langues</span></li>
@@ -2048,7 +2049,12 @@ function renderSheet() {
   $('planMonth').setAttribute('aria-pressed', String(!year)); $('planYear').setAttribute('aria-pressed', String(year));
   // Sul sito il prezzo mensile è quello VERO della carta (Lemon Squeezy); nell'app Android quello di Google Play.
   const monthLabel = (!IN_APP && pay.lemonsqueezy && pay.cardPriceEur) || pay.priceEur || '7 €';
-  $('priceEur').textContent = year ? (pay.priceYearEur || '59 €') : monthLabel;
+  // Nell'app: il prezzo che Google Play mostra già nella moneta del paese. Sul sito: euro + « ≈ » nella moneta locale.
+  $('priceEur').textContent = year ? (pay.priceYearEur || '59 €') : (IN_APP && playPrice) || monthLabel;
+  const loc = !IN_APP && pay.local, eur = parseFloat(String(year ? (pay.priceYearEur || '59') : monthLabel).replace(',', '.'));
+  let approx = '';
+  if (loc && eur) { try { approx = '≈ ' + new Intl.NumberFormat(LOCALE, { style: 'currency', currency: loc.currency, maximumFractionDigits: eur * loc.rate >= 100 ? 0 : 2 }).format(eur * loc.rate); } catch { /* moneta sconosciuta */ } }
+  $('priceLocal').textContent = approx; $('priceLocal').hidden = !approx;
   $('pricePer').textContent = year ? '/ an' : '/ mois';
   const monthly = parseFloat(String(monthLabel).replace(',', '.')), yearly = parseFloat(String(pay.priceYearEur || '59').replace(',', '.'));
   const save = monthly && yearly ? Math.round((1 - yearly / (monthly * 12)) * 100) : 0;
