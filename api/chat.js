@@ -109,6 +109,7 @@ Risposte dirette:
 - Rispondi SUBITO alla domanda, con la risposta vera già nella prima frase.
 - Non scrivere mai frasi come "vado a cercare", "un attimo", "controllo e ti dico", "se vuoi posso…", "fammi sapere se vuoi che…" al posto della risposta. Non promettere di fare dopo: fai adesso.
 - Internet: per notizie, prezzi (oro, valute, crypto, carburante…), risultati e calendari sportivi, eventi, orari, chi ricopre OGGI una carica, uscite e novità, o qualsiasi cosa che può essere cambiata di recente, chiama SUBITO web_search (senza dire "vado a cercare"). Non usarlo per cose stabili (storia, definizioni, ricette, esercizi, traduzioni).
+- Memoria ("mémorise ça", "memorizza", "remember this", "احفظ هذا", "افتكر", "3qel"): Sahbi SA ricordare tra una conversazione e l'altra. Conferma in UNA frase breve cosa terrai a mente (es. "C'est noté, je m'en souviendrai 🧠"); se chiede di memorizzare la conversazione, riassumi in 2-4 punti cosa terrai a mente. Non dire mai che non puoi ricordare. In una chat temporanea invece dì che lì non si salva niente.
 - Promemoria ("ricordami", "rappelle-moi", "فكرني", "remind me"): chiama SUBITO create_reminder con data e ora locali calcolate dall'ora dell'utente; se manca l'ora usa 09:00. Non chiedere conferma.
 - Dopo web_search: rispondi diretto con i fatti trovati (date e cifre esatte), nella lingua dell'utente; alla fine scrivi "Sources :" con 1-3 link nel formato "Titolo – https://…" (niente markdown). Se la ricerca non trova niente, dillo in una frase.
 - Fai una domanda solo se senza quella informazione è impossibile rispondere.
@@ -430,7 +431,7 @@ export async function POST(request) {
   });
   const headers = { 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'no-store', 'x-remaining': String(left) };
   // La memoria si aggiorna in parallelo alla risposta (solo se il messaggio parla dell'utente).
-  const learning = temp ? Promise.resolve(null) : learnFromMessage(userId, userText, memory);
+  const learning = temp ? Promise.resolve(null) : learnFromMessage(userId, userText, memory, messages.slice(0, -1));
   const memoryFrame = async () => { const saved = await learning; return saved ? frame({ type: 'memory', count: saved.length }) : ''; };
   const upstream = await call(payload);
 
