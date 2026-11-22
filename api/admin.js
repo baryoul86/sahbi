@@ -101,7 +101,10 @@ export async function GET(request) {
     const chat = { free: env('OPENAI_CHAT_MODEL', 'gpt-5-mini'), pro: env('OPENAI_CHAT_MODEL_PRO', '') || env('OPENAI_CHAT_MODEL', 'gpt-5-mini'), proLimits: `${env('PRO_CHAT_DAILY_LIMIT', '150')} msg / ${env('PRO_IMAGE_DAILY_LIMIT', '5')} img` };
     // Collegamenti esterni (senza mostrare chiavi): pagamenti, Google Play, e-mail, AdSense, app Android.
     const links = { lemon: !!env('LEMONSQUEEZY_API_KEY'), lemonWebhook: !!env('LEMONSQUEEZY_WEBHOOK_SECRET'), googlePlay: await playCheck(), emails: !!(env('RESEND_API_KEY') && env('ADMIN_EMAIL')), androidLink: !!env('ANDROID_SHA256'), video: videoEnabled() };
-    return json({ ok: allOk(h), report: due, chat, links, img, recent, db: h.db.ok ? 'ok' : 'ko', openai: h.openai.ok ? 'ok' : (h.openai.detail === 'crédit épuisé' ? 'credit' : 'ko'), detail: h.openai.ok ? undefined : String(h.openai.detail || '').slice(0, 80), deep });
+    // Ultimi giorni di visite (solo numeri): per vedere se il contatore si muove.
+    const vs = await rpc('visit_stats', {}).catch((e) => ({ error: String(e.message || e).slice(0, 120) }));
+    const visitDays = vs?.error ? vs : (vs?.days || []).slice(-4).map((d) => `${String(d.day).slice(5)}:${d.visitors}/${d.views}`);
+    return json({ ok: allOk(h), report: due, chat, links, visitDays, img, recent, db: h.db.ok ? 'ok' : 'ko', openai: h.openai.ok ? 'ok' : (h.openai.detail === 'crédit épuisé' ? 'credit' : 'ko'), detail: h.openai.ok ? undefined : String(h.openai.detail || '').slice(0, 80), deep });
   }
 
   const user = await getUser(request);
