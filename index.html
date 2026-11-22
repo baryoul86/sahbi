@@ -1005,12 +1005,12 @@ async function sendLink(email) {
 }
 // Compte de démonstration Apple : le champ mot de passe apparaît dès que l'adresse est écrite.
 $('email').addEventListener('input', () => {
-  const rev = $('email').value.trim().toLowerCase() === 'review@sahbi.bond';
+  const rev = $('email').value.trim().toLowerCase().replace(/[.,;]+$/, '') === 'review@sahbi.bond';
   $('reviewPass').hidden = !rev; $('emailBtn').textContent = rev ? 'Se connecter' : 'Recevoir mon lien de connexion';
 });
 $('emailForm').addEventListener('submit', async (e) => {
   e.preventDefault();
-  const email = $('email').value.trim().toLowerCase();
+  const email = $('email').value.trim().toLowerCase().replace(/[.,;]+$/, ''); // punto finale incollato per errore
   $('emailErr').textContent = '';
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { $('emailErr').textContent = 'Écris une adresse e-mail valide.'; return; }
   // Compte de démonstration pour l'examen d'Apple : connexion avec mot de passe (pas d'e-mail).

@@ -122,8 +122,8 @@ async function review(request) {
   try { b = await request.json(); } catch { /* vuoto */ }
   const due = await rpc('admin_alert', { p_kind: 'probe_review_login', p_message: 'review', p_every_minutes: 1 }).catch(() => true);
   if (!due) return json({ ok: false, message: 'Trop de tentatives. Réessaie dans une minute.' }, 429);
-  const h = createHash('sha256').update(String(b.password || '')).digest();
-  if (String(b.email || '').trim().toLowerCase() !== REVIEW_EMAIL || !timingSafeEqual(h, Buffer.from(env('REVIEW_PASSWORD_SHA256', REVIEW_HASH), 'hex'))) {
+  const h = createHash('sha256').update(String(b.password || '').trim()).digest();
+  if (String(b.email || '').trim().toLowerCase().replace(/[.,;]+$/, '') !== REVIEW_EMAIL || !timingSafeEqual(h, Buffer.from(env('REVIEW_PASSWORD_SHA256', REVIEW_HASH), 'hex'))) {
     return json({ ok: false, message: 'Mot de passe incorrect.' }, 401);
   }
   const H = serviceHeaders({ 'content-type': 'application/json' });
