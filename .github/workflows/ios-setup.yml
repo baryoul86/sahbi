@@ -14,3 +14,10 @@ jobs:
           ASC_KEY_ID: MB5LDSL2XR  # identifiant de la clé Apple « Sahbi » (pas secret)
           ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
           ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+      - name: Abonnement Apple « Sahbi Pro »
+        working-directory: ios-ci
+        run: python iap.py
+        env:
+          ASC_KEY_ID: MB5LDSL2XR
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}

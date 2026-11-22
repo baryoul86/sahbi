@@ -332,6 +332,7 @@ a.s-row[hidden]{display:none}
 .in-app .pay .cta.app-only{display:flex}
 .ios-app #payPlay{display:none !important}
 .ios-app .no-ios{display:none !important}
+.linkish{background:none;border:0;padding:0;color:inherit;text-decoration:underline;font:inherit;cursor:pointer}
 .send[hidden],.talk[hidden]{display:none}
 .drawer{overflow-y:auto}
 .tools{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
@@ -593,6 +594,8 @@ html[lang=ar] body{line-height:1.7}
       <button class="cta" id="payCard" type="button"><span id="payCardLabel">Payer par carte</span><small id="payCardSub">7 € par mois</small></button>
       <button class="alt" id="payDz" type="button">Edahabia ou CIB<small id="payDzSub">1 000 DA pour 30 jours</small></button>
       <button class="cta app-only" id="payPlay" type="button"><span>S’abonner avec Google Play</span><small id="payPlaySub">7 € par mois</small></button>
+      <button class="cta" id="payApple" type="button" hidden><span>S’abonner – Sahbi Pro</span><small id="payAppleSub">par mois</small></button>
+      <p class="s-note" id="appleLegal" hidden>Abonnement mensuel renouvelé automatiquement, payé avec ton identifiant Apple. Tu peux l’annuler à tout moment dans les réglages de l’App Store, au moins 24 h avant la fin de la période. <a href="/conditions-utilisation" target="_blank" rel="noopener">Conditions d'utilisation</a> · <a href="/confidentialite.html" target="_blank" rel="noopener">Confidentialité</a><br><button class="linkish" id="appleRestore" type="button">Restaurer mes achats</button> · <button class="linkish" id="appleManage" type="button">Gérer mon abonnement</button></p>
       <p class="s-note app-only" id="appNote">L’abonnement Sahbi Pro arrive très bientôt directement dans l’application.</p>
     </div>
     <button class="ghost" id="closeSheet" type="button">Plus tard</button>
@@ -981,7 +984,7 @@ function onSession(session) {
   if (id === userId) return;
   userId = id; library = null;
   STORE = `sahbi-chats-v1-${id}`;
-  chats = load(); newChat(); refreshMe().then(applyPendingReferral).then(runPendingAction).then(initPlay);
+  chats = load(); newChat(); refreshMe().then(applyPendingReferral).then(runPendingAction).then(initPlay).then(initApple);
 }
 
 async function token() {
@@ -2075,7 +2078,7 @@ function renderSheet() {
   // Sul sito il prezzo mensile è quello VERO della carta (Lemon Squeezy); nell'app Android quello di Google Play.
   const monthLabel = (!IN_APP && pay.lemonsqueezy && pay.cardPriceEur) || pay.priceEur || '7 €';
   // Nell'app: il prezzo che Google Play mostra già nella moneta del paese. Sul sito: euro + « ≈ » nella moneta locale.
-  $('priceEur').textContent = year ? (pay.priceYearEur || '59 €') : (IN_APP && playPrice) || monthLabel;
+  $('priceEur').textContent = year ? (pay.priceYearEur || '59 €') : (IN_APP && (applePrice || playPrice)) || monthLabel;
   const loc = !IN_APP && pay.local, eur = parseFloat(String(year ? (pay.priceYearEur || '59') : monthLabel).replace(',', '.'));
   let approx = '';
   if (loc && eur) { try { approx = '≈ ' + new Intl.NumberFormat(LOCALE, { style: 'currency', currency: loc.currency, maximumFractionDigits: eur * loc.rate >= 100 ? 0 : 2 }).format(eur * loc.rate); } catch { /* moneta sconosciuta */ } }
@@ -2096,6 +2099,9 @@ function renderSheet() {
   $('fVid').textContent = cfg.limits?.pro?.video ?? 5;
   // App Android: Google Play Billing (il pulsante appare solo se l'app lo supporta).
   $('payPlay').hidden = !playOk; $('appNote').hidden = playOk;
+  // App iPhone: abbonamento Apple (StoreKit).
+  $('payApple').hidden = !appleOk; $('appleLegal').hidden = !appleOk; if (appleOk) $('appNote').hidden = true;
+  if (applePrice) $('payAppleSub').textContent = tr('{p} par mois', { p: applePrice });
   if (playPrice) $('payPlaySub').textContent = tr('{p} par mois', { p: playPrice });
   const st = $('proStatus');
   if (me?.pro && IN_APP) { st.hidden = false; st.textContent = tr('Tu es Pro jusqu’au {d}.', { d: fmtDate(me.proUntil) }); }
@@ -2135,6 +2141,52 @@ async function payWithPlay(b) {
   } catch (e) { if (e?.name !== 'AbortError') toast('Le paiement Google Play n’a pas pu démarrer.'); }
   b.disabled = false;
 }
+// ---------- Abbonamento Apple (solo app iPhone, StoreKit 2 tramite il plugin "SahbiStore") ----------
+let appleOk = false, applePrice = '', appleStore = null, appleListen = false;
+async function initApple() {
+  if (!IOS_APP || !cfg.payments?.appleSku) return;
+  try {
+    appleStore = window.Capacitor?.Plugins?.SahbiStore || window.Capacitor?.registerPlugin?.('SahbiStore');
+    if (!appleStore) return;
+    const p = await appleStore.product({ id: cfg.payments.appleSku });
+    if (!p?.id) return;
+    appleOk = true; applePrice = p.price || '';
+    if (!appleListen) { appleListen = true; appleStore.addListener?.('transaction', (e) => { if (e?.jws) sendApple(e.jws); }); }
+    // Abbonamenti già comprati (anche rinnovi): si ricontrollano per tenere il Pro aggiornato.
+    const { jws = [] } = await appleStore.owned();
+    for (const j of jws) await sendApple(j);
+  } catch { /* StoreKit non disponibile */ }
+}
+async function sendApple(jws) {
+  const r = await api('/api/checkout', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ provider: 'appstore', jws }) }).catch(() => null);
+  const d = await r?.json().catch(() => ({})) || {};
+  if (r?.ok) await refreshMe();
+  return { ok: !!r?.ok, message: d.message };
+}
+async function payWithApple(b) {
+  if (!appleOk) { toast(tr('Le paiement Apple n’est pas disponible pour le moment.')); return; }
+  b.disabled = true;
+  try {
+    const r = await appleStore.buy({ id: cfg.payments.appleSku, user: userId || '' });
+    if (r?.status === 'ok' && r.jws) {
+      const v = await sendApple(r.jws);
+      if (v.ok) { closeAll(); toast(tr('Bienvenue dans Sahbi Pro ! 🎉')); } else toast(v.message || tr('Le paiement n’a pas pu être confirmé. Réessaie.'));
+    } else if (r?.status === 'pending') toast(tr('Paiement en attente de validation.'));
+  } catch { toast(tr('Le paiement Apple n’a pas pu démarrer.')); }
+  b.disabled = false;
+}
+async function restoreApple(b) {
+  if (!appleStore) return;
+  b.disabled = true;
+  try {
+    const { jws = [] } = await appleStore.restore();
+    let ok = false; for (const j of jws) ok = (await sendApple(j)).ok || ok;
+    toast(ok ? tr('Ton abonnement Sahbi Pro est restauré ✅') : tr('Aucun abonnement actif trouvé sur ce compte Apple.'));
+    if (ok) renderSheet();
+  } catch { toast(tr('Impossible de restaurer les achats.')); }
+  b.disabled = false;
+}
+
 async function startCheckout(provider, b) {
   b.disabled = true;
   const r = await api('/api/checkout', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ provider, plan }) }).catch(() => null);
@@ -2704,6 +2756,9 @@ $('closeSheet').addEventListener('click', closeAll);
 $('payCard').addEventListener('click', () => startCheckout(cfg.payments?.lemonsqueezy ? 'lemonsqueezy' : 'stripe', $('payCard')));
 $('payDz').addEventListener('click', () => startCheckout('chargily', $('payDz')));
 $('payPlay').addEventListener('click', () => payWithPlay($('payPlay')));
+$('payApple').addEventListener('click', () => payWithApple($('payApple')));
+$('appleRestore').addEventListener('click', () => restoreApple($('appleRestore')));
+$('appleManage').addEventListener('click', () => appleStore?.manage?.().catch(() => {}));
 $('newChat').addEventListener('click', () => { closeAll(); newChat(); ta.focus(); });
 
 // ---------- Tema chiaro / scuro ----------

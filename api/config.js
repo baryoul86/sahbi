@@ -1,5 +1,6 @@
 import { json, env, limits } from './_lib.js';
 import { playReady, playSku } from './_play.js';
+import { appleSku } from './_apple.js';
 import { lemonPriceLabel } from './_pay.js';
 
 const adsenseClient = () => env('ADSENSE_CLIENT', 'ca-pub-4750815574904840');
@@ -45,7 +46,7 @@ export async function GET(request) {
       // Moneta del paese di chi guarda (dal server Vercel) e cambio indicativo dall'euro: per mostrare « ≈ 380 EGP ».
       local: await Promise.race([localCurrency(request), new Promise((ok) => setTimeout(() => ok(null), 1200))]),
       // App Android: abbonamento con Google Play Billing.
-      googleplay: playReady(), playSku: playSku(),
+      googleplay: playReady(), playSku: playSku(), appleSku: appleSku(),
       lemonsqueezyYear: !!(env('LEMONSQUEEZY_API_KEY') && env('LEMONSQUEEZY_VARIANT_ID_YEAR')),
       priceYearEur: env('PRO_PRICE_YEAR_LABEL', '59 €'),
       priceYearDzd: Number(env('CHARGILY_PRICE_YEAR_DZD', '10000')),
