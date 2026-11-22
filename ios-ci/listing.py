@@ -182,3 +182,17 @@ if ok:
     print('Build attachée :', b['attributes']['version'])
 else: print('::warning::Aucune build prête (Apple la prépare encore) : relance plus tard.')
 print('::notice title=Fiche App Store::textes, captures et build OK')
+
+# Copyright, droits sur le contenu, et abonnement Pro joint à la prochaine soumission.
+call('PATCH', f'/appStoreVersions/{vid}', json={'data': {'type': 'appStoreVersions', 'id': vid, 'attributes': {'copyright': '2026 Manuel Baryoul'}}})
+try:
+    call('PATCH', f'/apps/{aid}', json={'data': {'type': 'apps', 'id': aid, 'attributes': {'contentRightsDeclaration': 'DOES_NOT_USE_THIRD_PARTY_CONTENT'}}})
+    print('Copyright et droits sur le contenu OK')
+except Exception as e: print('Droits sur le contenu :', e)
+for g in call('GET', f'/apps/{aid}/subscriptionGroups')['data']:
+    for s in call('GET', f"/subscriptionGroups/{g['id']}/subscriptions")['data']:
+        if s['attributes']['state'] == 'READY_TO_SUBMIT':
+            try:
+                call('POST', '/subscriptionSubmissions', json={'data': {'type': 'subscriptionSubmissions', 'relationships': {'subscription': {'data': {'type': 'subscriptions', 'id': s['id']}}}}})
+                print('Abonnement joint à la soumission :', s['attributes']['productId'])
+            except Exception as e: print('Abonnement :', e)
