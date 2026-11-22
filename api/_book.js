@@ -65,12 +65,13 @@ async function compileStream(b) {
       messages: [
         { role: 'system', content: `Tu es un éditeur et écrivain professionnel. À partir de la CONVERSATION entre l'auteur et Sahbi, rédige le LIVRE FINAL complet, prêt à être imprimé.
 - Utilise tout ce que l'auteur a raconté, dans l'ordre du dernier plan validé (ou crée un plan logique s'il n'y en a pas). Garde ses idées, ses personnages, ses noms et ses souvenirs ; améliore le style, ajoute les transitions et les descriptions nécessaires, sans changer le sens.
-- Langue : celle que l'auteur a choisie pour le livre (sinon la langue dans laquelle il parle).
+- Langue : celle que l'auteur a choisie pour le livre ; sinon la langue dans laquelle il écrit le plus (n'importe quelle langue du monde : arabe, darija, turc, anglais, espagnol, italien, russe, ourdou, chinois…). Titres, chapitres et texte dans cette même langue. Seules les étiquettes TITRE/SOUS-TITRE/SOMMAIRE restent en français.
 - Chaque chapitre : plusieurs paragraphes bien écrits (environ 600 à 1500 mots selon la matière disponible).
 - Contenu respectueux. Pas de Markdown à part le format ci-dessous, pas de commentaires de ta part.
 FORMAT EXACT :
 TITRE: le titre du livre
 SOUS-TITRE: le sous-titre (ou rien)
+SOMMAIRE: les mots « Table des matières » traduits dans la langue du livre
 ## Titre du chapitre 1
 paragraphes…
 ## Titre du chapitre 2

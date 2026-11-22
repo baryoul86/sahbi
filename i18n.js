@@ -407,6 +407,7 @@ const D = [
 ['150 messages par jour', '150 رسالة يوميًا', '150 messages a day'],
 ['5 images par jour', '5 صور يوميًا', '5 images a day'],
 ['Sticker', 'ملصق', 'Sticker'],
+['Tu peux écrire dans n’importe quelle langue : je te réponds et j’écris le livre dans ta langue.', 'تقدر تكتب بأي لغة: نجاوبك ونكتب الكتاب بلغتك.', 'You can write in any language: I’ll answer and write the book in your language.'],
 ['Écrire un livre', 'اكتب كتابًا', 'Write a book'],
 ['Raconte, Sahbi structure, « FIN » = ton livre PDF', 'احكِ، صاحبي يرتّب، «النهاية» = كتابك PDF', 'Tell it, Sahbi structures it, “END” = your PDF book'],
 ['📖 Mon livre', '📖 كتابي', '📖 My book'],

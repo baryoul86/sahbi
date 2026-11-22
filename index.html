@@ -1147,11 +1147,26 @@ function shareChat(c) {
   shareText(`${c.title || 'Sahbi'}\n\n${lines.join('\n\n').slice(0, 20000)}`);
 }
 // 📖 Chat "Écrire un livre": Sahbi accompagna l'autore; con "FIN" tutto diventa un libro PDF (con la copertina creata nella chat).
-const BOOK_END = /^\s*(fin|la fin|c['’]est fini|fine|finito|end|the end|finished|done|النهاية|نهاية|انتهى|خلاص|safi|sali|kemmelt|خلصت)\s*[.!]*\s*$/i;
+// "FIN" in tutte le lingue: francese, italiano, inglese, spagnolo, portoghese, tedesco, olandese, turco, russo, arabo/darija/egiziano, persiano, urdu, hindi, cinese, giapponese, coreano…
+const BOOK_END = /^\s*(fin|la fin|c['’]est fini|j['’]ai fini|fine|finito|ho finito|end|the end|finished|done|i['’]?m done|final|terminado|he terminado|fim|acabou|ende|fertig|einde|klaar|son|bitti|bitirdim|koniec|конец|всё|все|готово|tamat|selesai|kwisha|mwisho|النهاية|نهاية|انتهى|انتهيت|خلاص|خلصت|كملت|safi|sali|kemmelt|khlast|خلصنا|تمام|پایان|تمام شد|ختم|ख़त्म|खत्म|समाप्त|完|结束|終わり|おわり|끝|τέλος|קץ|סוף)\s*[.!。！]*\s*$/i;
+// Benvenuto del libro nella lingua del telefono, anche se l'app è in francese, arabo o inglese.
+const BOOK_HELLO = {
+  it: 'Salam! Sono Sahbi e ti aiuto a creare il tuo libro 📖\n\nScrivi qui (o parla al microfono 🎤) quello che vuoi raccontare: ti faccio delle domande, ordino tutto in capitoli e ti propongo una copertina.\n\nQuando il libro è finito, scrivi la parola « FINE »: lo trasformo automaticamente in un libro PDF.\n\nPer cominciare: di cosa parla il tuo libro?',
+  es: '¡Salam! Soy Sahbi y te ayudo a crear tu libro 📖\n\nEscribe aquí (o habla al micrófono 🎤) lo que quieres contar: te hago preguntas, lo ordeno todo en capítulos y te propongo una portada.\n\nCuando tu libro esté terminado, escribe la palabra « FIN »: lo convierto automáticamente en un libro PDF.\n\nPara empezar: ¿de qué trata tu libro?',
+  pt: 'Salam! Sou o Sahbi e ajudo-te a criar o teu livro 📖\n\nEscreve aqui (ou fala ao microfone 🎤) o que queres contar: faço-te perguntas, organizo tudo em capítulos e proponho-te uma capa.\n\nQuando o livro estiver terminado, escreve a palavra « FIM »: transformo-o automaticamente num livro PDF.\n\nPara começar: sobre o que é o teu livro?',
+  de: 'Salam! Ich bin Sahbi und helfe dir, dein Buch zu schreiben 📖\n\nSchreib hier (oder sprich ins Mikrofon 🎤), was du erzählen willst: Ich stelle dir Fragen, ordne alles in Kapitel und schlage dir ein Cover vor.\n\nWenn dein Buch fertig ist, schreib das Wort « ENDE »: Ich verwandle es automatisch in ein PDF-Buch.\n\nZum Start: Worum geht es in deinem Buch?',
+  tr: 'Selam! Ben Sahbi, kitabını yazmana yardım ediyorum 📖\n\nAnlatmak istediklerini buraya yaz (ya da mikrofona konuş 🎤): sana sorular sorarım, her şeyi bölümlere ayırırım ve sana bir kapak öneririm.\n\nKitabın bittiğinde « SON » yaz: onu otomatik olarak PDF kitaba dönüştürürüm.\n\nBaşlamak için: kitabın ne hakkında?',
+  nl: 'Salam! Ik ben Sahbi en ik help je je boek te maken 📖\n\nSchrijf hier (of spreek in de microfoon 🎤) wat je wilt vertellen: ik stel je vragen, orden alles in hoofdstukken en stel een cover voor.\n\nAls je boek klaar is, schrijf het woord « EINDE »: ik maak er automatisch een PDF-boek van.\n\nOm te beginnen: waar gaat je boek over?',
+  ru: 'Салам! Я Sahbi и помогу тебе создать книгу 📖\n\nПиши здесь (или говори в микрофон 🎤), что хочешь рассказать: я задам вопросы, разложу всё по главам и предложу обложку.\n\nКогда книга будет готова, напиши слово « КОНЕЦ »: я автоматически превращу её в PDF-книгу.\n\nДля начала: о чём твоя книга?',
+  ur: 'السلام! میں صاحبی ہوں اور آپ کی کتاب بنانے میں مدد کرتا ہوں 📖\n\nیہاں لکھیں (یا مائیک میں بولیں 🎤) جو آپ بتانا چاہتے ہیں: میں سوال پوچھوں گا، سب کچھ ابواب میں ترتیب دوں گا اور سرورق تجویز کروں گا۔\n\nجب کتاب مکمل ہو جائے تو « ختم » لکھیں: میں اسے خودبخود PDF کتاب بنا دوں گا۔\n\nشروع کرنے کے لیے: آپ کی کتاب کس بارے میں ہے؟',
+  id: 'Salam! Aku Sahbi dan aku membantumu membuat bukumu 📖\n\nTulis di sini (atau bicara ke mikrofon 🎤) apa yang ingin kamu ceritakan: aku akan bertanya, menyusun semuanya menjadi bab, dan mengusulkan sampul.\n\nKalau bukumu sudah selesai, tulis kata « SELESAI »: aku ubah otomatis menjadi buku PDF.\n\nUntuk mulai: bukumu tentang apa?',
+};
 function startBookChat() {
   closeAll(); newChat();
   current.mode = 'book'; current.title = tr('📖 Mon livre');
-  current.messages.push({ role: 'assistant', content: tr('Salam ! Je suis Sahbi et je t’aide à créer ton livre 📖\n\nÉcris ici (ou parle au micro 🎤) ce que tu veux raconter : je te pose des questions, je range tout en chapitres et je te propose une couverture.\n\nQuand ton livre est terminé, écris le mot « FIN » : je le transforme automatiquement en livre PDF.\n\nPour commencer : de quoi parle ton livre ?') });
+  const phone = (navigator.languages?.[0] || navigator.language || '').slice(0, 2).toLowerCase();
+  const own = LANG_AUTO && BOOK_HELLO[phone];
+  current.messages.push({ role: 'assistant', content: own || tr('Salam ! Je suis Sahbi et je t’aide à créer ton livre 📖\n\nÉcris ici (ou parle au micro 🎤) ce que tu veux raconter : je te pose des questions, je range tout en chapitres et je te propose une couverture.\n\nQuand ton livre est terminé, écris le mot « FIN » : je le transforme automatiquement en livre PDF.\n\nPour commencer : de quoi parle ton livre ?') + '\n\n🌍 ' + tr('Tu peux écrire dans n’importe quelle langue : je te réponds et j’écris le livre dans ta langue.') });
   saveCurrent(); render(); renderHistory(); ta.focus();
 }
 async function finishBook(word) {
@@ -1179,6 +1194,7 @@ function parseBook(text) {
     let mm;
     if ((mm = line.match(/^(TITRE|TITLE|TITOLO|العنوان)\s*:\s*(.+)$/i)) && !bk.title) { bk.title = mm[2].trim(); continue; }
     if ((mm = line.match(/^(SOUS-TITRE|SUBTITLE|SOTTOTITOLO|العنوان الفرعي)\s*:\s*(.*)$/i))) { bk.subtitle = mm[2].trim(); continue; }
+    if ((mm = line.match(/^(SOMMAIRE|TOC)\s*:\s*(.*)$/i))) { bk.toc = mm[2].trim(); continue; }
     if ((mm = line.match(/^#{1,3}\s*(.+)$/))) { cur = { title: mm[1].trim(), paras: [] }; bk.chapters.push(cur); continue; }
     if (!line) continue;
     if (!cur) { cur = { title: '', paras: [] }; bk.chapters.push(cur); }
@@ -1196,14 +1212,15 @@ async function bookCover() {
 }
 async function printBook(bk) {
   const area = $('printArea'); area.replaceChildren(); area.dataset.noi18n = '';
-  area.dir = /[\u0600-\u06FF]/.test(bk.title + (bk.chapters[0]?.paras[0] || '')) ? 'rtl' : 'ltr';
+  area.dir = /[\u0590-\u08FF]/.test(bk.title + (bk.chapters[0]?.paras[0] || '')) ? 'rtl' : 'ltr'; // arabo, persiano, urdu, ebraico
+  area.lang = '';
   const cover = await bookCover();
   if (cover) { const c = el('div', 'bk-cover'); const img = el('img'); img.src = cover; img.alt = ''; c.appendChild(img); area.appendChild(c); await new Promise((ok) => { img.onload = img.onerror = ok; setTimeout(ok, 4000); }); }
   const tp = el('div', `bk-title${cover ? ' pb' : ''}`); tp.appendChild(el('h1', '', bk.title));
   if (bk.subtitle) tp.appendChild(el('div', 'sub', bk.subtitle));
   tp.appendChild(el('div', 'by', 'Écrit avec Sahbi · sahbi.bond'));
   area.appendChild(tp);
-  const toc = el('div', 'pb'); toc.appendChild(el('h2', '', area.dir === 'rtl' ? 'الفهرس' : 'Table des matières'));
+  const toc = el('div', 'pb'); toc.appendChild(el('h2', '', bk.toc || (area.dir === 'rtl' ? 'الفهرس' : 'Table des matières')));
   const ol = el('ol', 'bk-toc'); bk.chapters.forEach((c) => ol.appendChild(el('li', '', c.title || '…'))); toc.appendChild(ol); area.appendChild(toc);
   bk.chapters.forEach((c, i) => {
     const ch = el('div', 'pb'); ch.appendChild(el('h2', 'bk-ch', c.title || `${i + 1}`));
