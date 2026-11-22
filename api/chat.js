@@ -1,4 +1,4 @@
-import { env, fail, getUserId, useCredit, refundCredit, getPlan, openaiHeaders, OPENAI, generateImage, parsePhoto } from './_lib.js';
+import { env, fail, getUserId, useCredit, refundCredit, useSiteCredit, refundSiteCredit, getPlan, openaiHeaders, OPENAI, generateImage, parsePhoto } from './_lib.js';
 import { startVideo, videoEnabled } from './_video.js';
 import { getMemory, learnFromMessage, memoryPrompt } from './_memory.js';
 import { openaiAlert } from './_alert.js';
@@ -427,7 +427,10 @@ export async function POST(request) {
   const [{ limits, pro }, memory] = await Promise.all([getPlan(userId), temp ? [] : getMemory(userId)]);
   if (doc && !pro) return fail('pro', 402, 'La lecture de documents est incluse dans Sahbi Pro.');
   const userText = messages[messages.length - 1].content;
-  const left = await useCredit(userId, 'chat', limits.chat);
+  // Chat "sito internet" per i gratuiti: 20 messaggi al giorno a parte (il sito resta salvato per domani).
+  const siteFree = body?.mode === 'website' && !pro;
+  const left = siteFree ? await useSiteCredit(userId, limits.site) : await useCredit(userId, 'chat', limits.chat);
+  if (left < 0 && siteFree) return fail('site_limit', 429, `Tu as utilisé tes ${limits.site} messages gratuits du site pour aujourd’hui.`);
   if (left < 0) return fail('limit', 429, pro ? 'Limite de messages atteinte pour aujourd’hui.' : 'Limite gratuite atteinte pour aujourd’hui.');
   // Le parole esatte dell'utente vanno anche al disegnatore, così non può "inventare" un'altra scena.
   const clean = (t) => String(t || '').replace(/\(photo envoyée juste avant, jointe à nouveau\)/g, '').trim();
@@ -512,12 +515,12 @@ export async function POST(request) {
         return new Response(out, { headers });
       }
     }
-    await refundCredit(userId, 'chat').catch(() => {});
+    await (siteFree ? refundSiteCredit(userId) : refundCredit(userId, 'chat')).catch(() => {});
     console.error('OpenAI chat error', 400, errText.slice(0, 300));
     return fail('upstream', 502, 'Sahbi ne peut pas répondre maintenant. Réessaie dans un instant.');
   }
   if (!upstream.ok || !upstream.body) {
-    await refundCredit(userId, 'chat').catch(() => {});
+    await (siteFree ? refundSiteCredit(userId) : refundCredit(userId, 'chat')).catch(() => {});
     const errBody = await upstream.text().catch(() => '');
     console.error('OpenAI chat error', upstream.status, errBody.slice(0, 300));
     await openaiAlert(upstream.status, errBody);

@@ -67,6 +67,15 @@ export const useCredit = (userId, kind, limit) =>
 export const refundCredit = (userId, kind) =>
   rpc('refund_credit', { p_user: userId, p_kind: kind });
 
+// Messaggi della chat "sito internet" per gli utenti gratuiti: contatore a parte (tipo 'site').
+// Se il database non conosce ancora il tipo 'site' (manca 007_site.sql) si usa 'tts', che i gratuiti non usano mai (limite 0).
+export async function useSiteCredit(userId, limit) {
+  try { return await useCredit(userId, 'site', limit); } catch { return useCredit(userId, 'tts', limit); }
+}
+export async function refundSiteCredit(userId) {
+  try { await refundCredit(userId, 'site'); } catch { try { await refundCredit(userId, 'tts'); } catch { /* niente */ } }
+}
+
 export const remainingCredit = (userId, kind, limit) =>
   rpc('remaining_credit', { p_user: userId, p_kind: kind, p_limit: limit });
 
@@ -78,6 +87,7 @@ export const limits = (pro = false) => (pro
       voice: Number(env('PRO_VOICE_DAILY_LIMIT', '100')),
       tts: Number(env('PRO_TTS_DAILY_LIMIT', '100')),
       video: Number(env('PRO_VIDEO_MONTHLY_LIMIT', '5')), // video al MESE, non al giorno
+      site: Number(env('PRO_SITE_DAILY_LIMIT', '150')),
     }
   : {
       chat: Number(env('FREE_CHAT_DAILY_LIMIT', '30')),
@@ -85,6 +95,7 @@ export const limits = (pro = false) => (pro
       voice: Number(env('FREE_VOICE_DAILY_LIMIT', '20')),
       tts: Number(env('FREE_TTS_DAILY_LIMIT', '0')),
       video: Number(env('FREE_VIDEO_MONTHLY_LIMIT', '0')),
+      site: Number(env('FREE_SITE_DAILY_LIMIT', '20')), // messaggi al giorno nella chat "Créer un site internet"
     });
 
 // Profilo dell'utente (creato se manca) con il campo "pro" già calcolato.

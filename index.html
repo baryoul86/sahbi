@@ -1027,7 +1027,9 @@ async function api(path, options = {}) {
 function load() { try { return JSON.parse(localStorage.getItem(STORE) || '[]'); } catch { return []; } }
 function persist() {
   // Le discussioni fissate non vengono mai tolte; delle altre si tengono le 50 più recenti.
-  const pinned = chats.filter((c) => c.pinned), rest = chats.filter((c) => !c.pinned).slice(0, 50);
+  // Anche i siti internet non vengono mai tolti: si riprendono il giorno dopo.
+  const keep = (c) => c.pinned || c.mode === 'website';
+  const pinned = chats.filter(keep), rest = chats.filter((c) => !keep(c)).slice(0, 50);
   const all = [...pinned, ...rest];
   try { localStorage.setItem(STORE, JSON.stringify(all)); return; } catch { /* memoria piena */ }
   // Memoria del telefono piena: si tolgono le miniature delle foto più vecchie (la discussione aperta le tiene).
@@ -1188,6 +1190,23 @@ function startModeChat(mode, title, own, fallback) {
   current.messages.push({ role: 'assistant', content: (LANG_AUTO && own) || fallback });
   saveCurrent(); render(); renderHistory(); ta.focus();
 }
+// Sito internet già cominciato: si riapre la stessa discussione per continuare (con il pulsante "Nouveau site").
+function resumeSite() {
+  const old = chats.find((c) => c.mode === 'website' && c.messages.some((m) => m.role === 'user'));
+  if (!old) return false;
+  closeAll(); recentPhoto = null; current = old;
+  const hi = tr('👋 Bon retour ! Ton site est enregistré : on reprend là où on s’est arrêtés. Dis-moi ce que tu veux changer ou ajouter.');
+  if (current.messages[current.messages.length - 1]?.content !== hi) current.messages.push({ role: 'assistant', content: hi });
+  saveCurrent(); render(); renderHistory();
+  const last = msgsEl.lastElementChild?.querySelector('.text')?.parentElement;
+  if (last) {
+    const b = el('button', 'inline-cta', tr('➕ Nouveau site')); b.type = 'button';
+    b.addEventListener('click', () => { current.messages.pop(); saveCurrent(); startModeChat('website', tr('🌐 Mon site internet'), WEB_HELLO[(navigator.languages?.[0] || navigator.language || '').slice(0, 2).toLowerCase()], tr(WEB_FALLBACK)); });
+    last.appendChild(b);
+  }
+  ta.focus(); return true;
+}
+const WEB_FALLBACK = 'Salam ! Je suis Sahbi et je t’aide à créer ton site internet 🌐, du code jusqu’à la mise en ligne.\n\nRéponds à mes questions : je fabrique ton site, tu le vois avec « Aperçu », tu télécharges le fichier, puis je te guide pas à pas pour le publier sur internet.\n\nPour commencer : ton site, c’est pour quoi ? (boutique, restaurant, services, portfolio, association…) et comment s’appelle-t-il ?';
 const WEB_HELLO = {
   it: 'Salam! Sono Sahbi e ti aiuto a creare il tuo sito internet 🌐, dal codice fino alla pubblicazione.\n\nRispondi alle mie domande: costruisco il sito, lo vedi con « Aperçu », scarichi il file e poi ti guido passo passo per pubblicarlo su internet.\n\nPer cominciare: a cosa serve il tuo sito (negozio, ristorante, servizi, portfolio, associazione…) e come si chiama?',
   es: '¡Salam! Soy Sahbi y te ayudo a crear tu sitio web 🌐, desde el código hasta la publicación.\n\nResponde a mis preguntas: construyo tu sitio, lo ves con « Aperçu », descargas el archivo y luego te guío paso a paso para publicarlo en internet.\n\nPara empezar: ¿para qué es tu sitio (tienda, restaurante, servicios, portafolio, asociación…) y cómo se llama?',
@@ -1576,7 +1595,8 @@ function render() {
         if (s.bac) { openBac(); return; }
         if (s.book) { startBookChat(); return; }
         if (s.travel) { startTravelChat(); return; }
-        if (s.website) { startModeChat('website', tr('🌐 Mon site internet'), WEB_HELLO[(navigator.languages?.[0] || navigator.language || '').slice(0, 2).toLowerCase()], tr('Salam ! Je suis Sahbi et je t’aide à créer ton site internet 🌐, du code jusqu’à la mise en ligne.\n\nRéponds à mes questions : je fabrique ton site, tu le vois avec « Aperçu », tu télécharges le fichier, puis je te guide pas à pas pour le publier sur internet.\n\nPour commencer : ton site, c’est pour quoi ? (boutique, restaurant, services, portfolio, association…) et comment s’appelle-t-il ?')); return; }
+        if (s.website && resumeSite()) return;
+        if (s.website) { startModeChat('website', tr('🌐 Mon site internet'), WEB_HELLO[(navigator.languages?.[0] || navigator.language || '').slice(0, 2).toLowerCase()], tr(WEB_FALLBACK)); return; }
         prefill(s.p);
       });
       chips.appendChild(c);
@@ -1804,6 +1824,7 @@ async function sendChat(text, pic = null, docAtt = null, opts = {}) {
     wait.remove();
     const err = await res.json().catch(() => ({}));
     if (err.error === 'pro') limitBubble(err.message || 'Cette fonction est incluse dans Sahbi Pro.');
+    else if (err.error === 'site_limit') limitBubble(tr('Tu as utilisé tes 20 messages gratuits du site pour aujourd’hui. 💾 Ton site est enregistré : reviens demain, on reprend là où on s’est arrêtés. Avec Sahbi Pro tu continues tout de suite et tu as le site complet.'));
     else if (err.error === 'limit') limitBubble(me?.pro ? 'Tu as atteint la limite de messages pour aujourd’hui. Ça se recharge à minuit.' : 'Tu as utilisé tes messages gratuits d’aujourd’hui. Passe à Sahbi Pro pour continuer, ou reviens demain.');
     else bubble('bot', err.message || 'Sahbi ne peut pas répondre maintenant. Réessaie.', 'err');
     return '';
