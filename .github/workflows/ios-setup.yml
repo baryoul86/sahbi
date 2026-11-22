@@ -21,3 +21,10 @@ jobs:
           ASC_KEY_ID: MB5LDSL2XR
           ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
           ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+      - name: Fiche App Store (textes, captures, build)
+        working-directory: ios-ci
+        run: python listing.py
+        env:
+          ASC_KEY_ID: MB5LDSL2XR
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
