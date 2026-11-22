@@ -6,7 +6,7 @@ import { json, fail, env, getUser, rpc, openaiHeaders, OPENAI } from './_lib.js'
 import { isAdmin, alert, sendMail, adminEmails } from './_alert.js';
 import { stripe } from './_pay.js';
 import { videoEnabled } from './_video.js';
-import { playCheck } from './_play.js';
+import { playCheck, playRegions } from './_play.js';
 
 const timed = (p, ms = 8000) => Promise.race([p, new Promise((_, no) => setTimeout(() => no(new Error('timeout')), ms))]);
 
@@ -104,7 +104,11 @@ export async function GET(request) {
     // Ultimi giorni di visite (solo numeri): per vedere se il contatore si muove.
     const vs = await rpc('visit_stats', {}).catch((e) => ({ error: String(e.message || e).slice(0, 120) }));
     const visitDays = vs?.error ? vs : (vs?.days || []).slice(-4).map((d) => `${String(d.day).slice(5)}:${d.visitors}/${d.views}`);
-    return json({ ok: allOk(h), report: due, chat, links, visitDays, img, recent, db: h.db.ok ? 'ok' : 'ko', openai: h.openai.ok ? 'ok' : (h.openai.detail === 'crédit épuisé' ? 'credit' : 'ko'), detail: h.openai.ok ? undefined : String(h.openai.detail || '').slice(0, 80), deep });
+    // Paesi arabi dove si può pagare l'abbonamento con Google Play.
+    const ARAB = ['DZ', 'BH', 'KM', 'DJ', 'EG', 'IQ', 'JO', 'KW', 'LB', 'LY', 'MR', 'MA', 'OM', 'PS', 'QA', 'SA', 'SO', 'SD', 'SY', 'TN', 'AE', 'YE'];
+    const regions = await playRegions();
+    const playArab = { yes: ARAB.filter((c) => regions.includes(c)), no: ARAB.filter((c) => !regions.includes(c)), total: regions.length };
+    return json({ ok: allOk(h), report: due, chat, links, playArab, visitDays, img, recent, db: h.db.ok ? 'ok' : 'ko', openai: h.openai.ok ? 'ok' : (h.openai.detail === 'crédit épuisé' ? 'credit' : 'ko'), detail: h.openai.ok ? undefined : String(h.openai.detail || '').slice(0, 80), deep });
   }
 
   const user = await getUser(request);

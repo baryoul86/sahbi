@@ -54,6 +54,15 @@ export async function playCheck() {
   } catch (e) { return String(e.message || e).slice(0, 160); }
 }
 
+// Paesi dove l'abbonamento ha un prezzo (= dove la gente può pagare con Google Play): codici ISO.
+export async function playRegions() {
+  if (!playReady()) return [];
+  try {
+    const d = await google(`subscriptions/${encodeURIComponent(playSku())}`);
+    return [...new Set((d.basePlans || []).flatMap((b) => (b.regionalConfigs || []).map((r) => r.regionCode)))].sort();
+  } catch { return []; }
+}
+
 // Chi possiede già questo abbonamento? (stesso ordine di base "GPA.xxx", i rinnovi aggiungono "..0", "..1")
 async function ownerOf(baseOrder) {
   const url = `${supabaseUrl()}/rest/v1/payments?select=user_id&provider=eq.googleplay&id=like.${encodeURIComponent(`gp_${baseOrder}*`)}&limit=1`;
