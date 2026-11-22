@@ -120,7 +120,7 @@ try:
     terr = []
     url = '/territories'; p = {'limit': 200}
     while url:
-        d = call('GET', url, params=p); terr += [t['id'] for t in d['data']]
+        d = call('GET', url, params=p); terr += [t['id'] for t in d['data'] if t['id'] != 'CHN']  # Chine : règles IA (AIGC) à part
         url = (d.get('links') or {}).get('next'); p = None
         if url: url = url.replace('https://api.appstoreconnect.apple.com/v1', '')
     body = {'data': {'type': 'appAvailabilities', 'attributes': {'availableInNewTerritories': True}, 'relationships': {
@@ -129,6 +129,17 @@ try:
         'included': [{'type': 'territoryAvailabilities', 'id': f'${{{t}}}', 'attributes': {'available': True},
                       'relationships': {'territory': {'data': {'type': 'territories', 'id': t}}}} for t in terr]}
     r = requests.post('https://api.appstoreconnect.apple.com/v2/appAvailabilities', headers=H(), json=body)
+    if r.status_code == 409:  # déjà réglé : on retire seulement la Chine
+        cur = requests.get(f'https://api.appstoreconnect.apple.com/v1/apps/{aid}/appAvailabilityV2', headers=H()).json()['data']['id']
+        nxt = f'https://api.appstoreconnect.apple.com/v2/appAvailabilities/{cur}/territoryAvailabilities?limit=200&include=territory'
+        while nxt:
+            d = requests.get(nxt, headers=H()).json()
+            for ta in d['data']:
+                if ta['relationships']['territory']['data']['id'] == 'CHN' and ta['attributes'].get('available'):
+                    x = requests.patch(f"https://api.appstoreconnect.apple.com/v1/territoryAvailabilities/{ta['id']}", headers=H(),
+                                       json={'data': {'type': 'territoryAvailabilities', 'id': ta['id'], 'attributes': {'available': False}}})
+                    print('Chine retirée' if x.ok else f'Chine : {x.status_code} {x.text[:200]}')
+            nxt = (d.get('links') or {}).get('next')
     print('Pays :', len(terr), 'OK' if r.ok else f'{r.status_code} {r.text[:300]}')
 except Exception as e: print('Pays :', e)
 
