@@ -1003,6 +1003,11 @@ async function sendLink(email) {
   if (!error) return '';
   return error.status === 429 ? 'Trop de demandes. Attends une minute et réessaie.' : 'Impossible d’envoyer l’e-mail. Vérifie l’adresse et réessaie.';
 }
+// Compte de démonstration Apple : le champ mot de passe apparaît dès que l'adresse est écrite.
+$('email').addEventListener('input', () => {
+  const rev = $('email').value.trim().toLowerCase() === 'review@sahbi.bond';
+  $('reviewPass').hidden = !rev; $('emailBtn').textContent = rev ? 'Se connecter' : 'Recevoir mon lien de connexion';
+});
 $('emailForm').addEventListener('submit', async (e) => {
   e.preventDefault();
   const email = $('email').value.trim().toLowerCase();
@@ -1011,12 +1016,13 @@ $('emailForm').addEventListener('submit', async (e) => {
   // Compte de démonstration pour l'examen d'Apple : connexion avec mot de passe (pas d'e-mail).
   if (email === 'review@sahbi.bond') {
     const pw = $('reviewPass');
-    if (pw.hidden || !pw.value) { pw.hidden = false; pw.focus(); $('emailBtn').textContent = 'Se connecter'; return; }
-    $('emailBtn').disabled = true;
+    if (pw.hidden) { pw.hidden = false; pw.focus(); $('emailBtn').textContent = 'Se connecter'; return; }
+    if (!pw.value) { $('emailErr').textContent = 'Écris le mot de passe.'; pw.focus(); return; }
+    $('emailBtn').disabled = true; $('emailBtn').textContent = 'Connexion…';
     const r = await fetch('/api/config?review=1', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email, password: pw.value }) }).catch(() => null);
     const d = await r?.json().catch(() => ({})) || {};
-    if (d.tokenHash) { await ready.catch(() => {}); const { error } = await supabase.auth.verifyOtp({ token_hash: d.tokenHash, type: 'email' }); if (!error) { $('emailBtn').disabled = false; return; } }
-    $('emailBtn').disabled = false; $('emailErr').textContent = d.message || 'Connexion impossible.'; return;
+    if (d.tokenHash) { await ready.catch(() => {}); const { error } = await supabase.auth.verifyOtp({ token_hash: d.tokenHash, type: 'email' }); if (!error) { $('emailBtn').disabled = false; $('emailBtn').textContent = 'Recevoir mon lien de connexion'; return; } }
+    $('emailBtn').disabled = false; $('emailBtn').textContent = 'Se connecter'; $('emailErr').textContent = d.message || 'Connexion impossible.'; return;
   }
   $('emailBtn').disabled = true; $('emailBtn').textContent = 'Envoi…';
   const err = await sendLink(email);
