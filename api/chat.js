@@ -26,7 +26,7 @@ function detectLang(text) {
 // Richieste chiarissime di immagine: lo strumento si chiama SUBITO, senza testo né domande.
 const STYLE_ASK = /(trasform|transform|stile|style|disney|pixar|dreamworks|ghibli|cartoon|cartone|anime|manga|3d|aquarell|acquerell|watercolor|bande dessin|fumetto|comic|sfondo|fond\b|arrière-plan|background|détour|detour|scontorn|ritaglia|togli|rimuovi|enlève|enleve|retire|remove|aggiungi|ajoute|add |cambia|change|modifi|metti|mets|put |colora|colorie|ringiovan|invecchia|sorrid|حوّل|حول|ستايل|كرتون|خلفية|احذف|شيل|زيد|بدّل|بدل|غيّر|غير)/i;
 const NOT_IMAGE = /(vid[ée]o|فيديو|\banime[rz]?\s+(ma|la|cette|mon)|\banima|\bprompt\b)/i;
-const IMAGE_REQ = /^(dessine|disegna|draw|ارسم|rsem|rsemli)\b|^(?!.*\bprompt\b).*(fammi|fai|crea|creami|disegna|disegnami|genera|dessine|fais[- ]moi|fait[- ]moi|crée|cree|génère|genere|draw|make me|create|generate|ارسم|اصنع|اعمل لي|سوي لي|dir ?li|dirli|sawer|rsem|3mel li).{0,40}(immagine|image|foto|photo|dessin|disegno|picture|drawing|صورة|رسم|tswira|tsawer|poster|affiche|logo|sticker|carte|biglietto)/i;
+const IMAGE_REQ = /^(dessine|disegna|draw|ارسم|rsem|rsemli|zeichne|dibuja|desenha|çiz|нарисуй)\b|^(?!.*\bprompt\b).*(fammi|fai|crea|creami|disegna|disegnami|genera|voglio|vorrei|dessine|fais[- ]moi|fait[- ]moi|crée|cree|génère|genere|je veux|je voudrais|draw|make me|create|generate|i want|i'?d like|haz|hazme|crea|dibuja|genera|faz|cria|erstelle|mach|zeichne|oluştur|çiz|yap|создай|нарисуй|сделай|ارسم|اصنع|اعمل لي|اعملي|سوي لي|بدي|بغيت|عايز|ابغى|dir ?li|dirli|sawer|rsem|3mel li|bghit).{0,40}(immagine|image|imagen|imagem|bild|resim|görsel|изображени|картин|foto|photo|dessin|disegno|dibujo|desenho|picture|drawing|صورة|صوره|رسم|tswira|tsawer|poster|affiche|logo|sticker|carte|biglietto)/i;
 // "Rifalla", "encore", "again", "3awed"... e le conferme "sì / oui / ok".
 const RETRY = /(rifa|rifai|rifarla|rifalla|rifallo|rifammela|riprova|di nuovo|un'altra volta|ancora|again|redo|retry|one more|another one|try again|refai|refais|refaire|recommence|réessaie|reessaie|encore|une autre|rehaz|otra vez|de nuevo|nochmal|noch ?einmal|wiederhol|de novo|refaz|outra vez|tekrar|3awed|3awd|3awdi|3awdha|3awedha|3awdhali|mara (khra|okhra|ukhra)|\btani\b|\btany\b|e3melha|عاود|عاودها|(?:^|\s)(?:أعد|اعد)(?:ها)?(?=\s|$|[؟?!.])|عيدها|مرة أخرى|مرة اخرى|مرة ثانية|مره ثانيه|تاني|كمان مرة|سويها)/i;
 const CONFIRM = /^(s[iìí]|oui|ok|okay|yes|yep|yeah|ouais|vas-?y|vai|go|d'?accord|ja|sim|evet|wakha|wah|iyeh|ih|ewa|eyh|aywa|ayh|tamam|نعم|إيه|ايه|واخا|ايوا|أيوة|ايوه|يلا|تمام|اوكي)(\s|[!.?,]|$)/i;
@@ -167,6 +167,8 @@ Capire bene (prima di rispondere):
 - Numeri, date, nomi e testi da copiare: riportali esattamente come li ha scritti l'utente.
 
 Stile:
+- RISPOSTE CORTE: di default 2-6 frasi o una lista breve. Vai dritto al punto: niente introduzioni ("Bonne question !", "Voici…"), niente ripetizioni, niente riassunti finali, al massimo UNA domanda alla fine e solo se serve davvero. Più lungo SOLO quando il compito lo richiede (CV, lettera, esercizio, libro, sito, guida di viaggio, piano business) o se l'utente chiede dettagli.
+- Se chiede un'immagine (o un disegno, un logo, un poster…), creala SUBITO con create_image: niente domande sul tipo, lo stile o i dettagli; scegli tu quello che manca. Potrà sempre chiedere di modificarla dopo.
 - Frasi brevi e chiare, tono amichevole e rispettoso. Niente prediche.
 - Usa elenchi solo quando aiutano (passaggi, ricette, liste).
 - Se non sai una cosa o non sei sicuro, dillo.
@@ -463,7 +465,7 @@ export async function POST(request) {
   const payload = {
     model, stream: true, tools,
     // Foto + "trasformala in stile…", oppure "fammi un'immagine di…": si disegna subito, senza domande.
-    tool_choice: again || (!NOT_IMAGE.test(nowText) && ((photo && !body?.photoEarlier && STYLE_ASK.test(nowText)) || (!photo && IMAGE_REQ.test(nowText))))
+    tool_choice: again || (!NOT_IMAGE.test(nowText) && ((photo && !body?.photoEarlier && STYLE_ASK.test(nowText)) || ((!photo || body?.photoEarlier) && IMAGE_REQ.test(nowText))))
       ? { type: 'function', function: { name: 'create_image' } } : 'auto',
     messages: [{ role: 'system', content: SYSTEM.replace('{{VIDEO}}', videoEnabled() ? VIDEO_ON : VIDEO_OFF) + memoryPrompt(memory) + uiLangPrompt(body?.lang) + todayPrompt() + clientNowPrompt(body?.now) + langPrompt(detectLang(nowText) ? nowText : (again ? prevUserText : nowText)) + (body?.voice === true ? VOICE_STYLE : '') + (body?.mode === 'book' ? BOOK_MODE : body?.mode === 'travel' ? TRAVEL_MODE + countryHint(request) : body?.mode === 'website' ? WEBSITE_MODE : '') }, ...messages],
   };

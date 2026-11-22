@@ -20,4 +20,8 @@ b = await go('What is the capital of Morocco and how can I get there?'); assert.
 // Modello più potente e regole per capire bene (contesto, errori del microfono, più richieste).
 assert.equal(b.model, 'gpt-5-mini'); assert.match(b.messages[0].content, /Capire bene/); assert.match(b.messages[0].content, /rispondi a TUTTE/);
 b = await go('كيفك؟ شو بدك تعمل اليوم؟'); assert.equal(b.tool_choice, 'auto'); assert.match(b.messages[0].content, /levantino/); assert.match(b.messages[0].content, /iracheno/); assert.doesNotMatch(b.messages[0].content, /LINGUA DI QUESTA RISPOSTA/);
+// Dopo una foto (rimandata come "photoEarlier") una NUOVA immagine si crea subito, senza domande.
+{ first = null; const r = await POST(new Request('https://w/api/chat', { method: 'POST', headers: { authorization: 'Bearer t' }, body: JSON.stringify({ messages: [{ role: 'user', content: "Creami un'immagine di una persona" }], photo: png, photoEarlier: true }) })); await r.text(); assert.equal(first.tool_choice?.function?.name, 'create_image'); }
+b = await go('Crea una imagen de un gato en la playa'); assert.equal(b.tool_choice?.function?.name, 'create_image');
+assert.match(b.messages[0].content, /RISPOSTE CORTE/);
 console.log('force OK');
