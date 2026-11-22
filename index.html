@@ -123,6 +123,12 @@ footer.composer .col{padding-block:10px 12px;display:flex;flex-direction:column;
 .drawer h2{margin:0;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:500}
 .new{min-height:48px;border-radius:14px;border:0;background:var(--mint);color:var(--mint-ink);font-weight:500;display:flex;align-items:center;gap:10px;padding:0 16px}
 .hist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px;overflow-y:auto;flex:1}
+.bookcard{border:1px solid var(--line);background:var(--panel);border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:8px;max-width:360px}
+.bookcard b{font-size:17px}
+.bookcard small{color:var(--muted)}
+.bookcard .rb{display:flex;gap:8px;flex-wrap:wrap}
+.bookcard .rb button{min-height:40px;padding:0 14px;border-radius:999px;border:1px solid var(--line);background:var(--bg);color:var(--fg);font:inherit;font-size:14px;cursor:pointer}
+.bookcard .rb button.main{background:var(--mint);border-color:var(--mint);color:var(--mint-ink)}
 .temp-note{font-size:14px;color:var(--muted);background:var(--panel-2);border-radius:12px;padding:8px 12px;margin:8px 0;text-align:center}
 .remind{border:1px solid var(--line);background:var(--panel);border-radius:16px;padding:12px 14px;display:flex;flex-direction:column;gap:8px;max-width:340px}
 .remind b{font-size:16px}
@@ -387,6 +393,16 @@ a.s-row[hidden]{display:none}
   #printArea p{margin:0 0 6pt}
   #printArea ul{margin:0 0 6pt;padding-left:16pt}
   #printArea .foot{margin-top:18pt;font:9pt Arial,sans-serif;color:#777}
+  #printArea .bk-cover{height:250mm;display:flex;align-items:center;justify-content:center}
+  #printArea .bk-cover img{max-width:100%;max-height:250mm;object-fit:contain}
+  #printArea .bk-title{min-height:230mm;display:flex;flex-direction:column;justify-content:center;text-align:center}
+  #printArea .bk-title h1{font:700 30pt/1.2 Georgia,serif;margin:0 0 12pt}
+  #printArea .bk-title .sub{font:italic 15pt Georgia,serif;color:#333}
+  #printArea .bk-title .by{margin-top:40pt;font:10pt Arial,sans-serif;color:#666}
+  #printArea .pb{break-before:page;page-break-before:always}
+  #printArea h2.bk-ch{font:700 18pt/1.3 Georgia,serif;text-transform:none;letter-spacing:0;border:0;text-align:center;margin:30pt 0 18pt}
+  #printArea p.bk-p{text-align:justify;text-indent:1.2em;margin:0 0 4pt}
+  #printArea ol.bk-toc li{margin:0 0 4pt}
   @page{margin:16mm}
 }
 @media (prefers-reduced-motion:reduce){.typing i,.mic.on,.ph,.orb{animation:none}}
@@ -1130,6 +1146,85 @@ function shareChat(c) {
     .map((m) => `${m.role === 'user' ? tr('Moi') : 'Sahbi'} : ${m.kind === 'image' ? '🖼️ ' : m.kind === 'video' ? '🎬 ' : ''}${m.content}`);
   shareText(`${c.title || 'Sahbi'}\n\n${lines.join('\n\n').slice(0, 20000)}`);
 }
+// 📖 Chat "Écrire un livre": Sahbi accompagna l'autore; con "FIN" tutto diventa un libro PDF (con la copertina creata nella chat).
+const BOOK_END = /^\s*(fin|la fin|c['’]est fini|fine|finito|end|the end|finished|done|النهاية|نهاية|انتهى|خلاص|safi|sali|kemmelt|خلصت)\s*[.!]*\s*$/i;
+function startBookChat() {
+  closeAll(); newChat();
+  current.mode = 'book'; current.title = tr('📖 Mon livre');
+  current.messages.push({ role: 'assistant', content: tr('Salam ! Je suis Sahbi et je t’aide à créer ton livre 📖\n\nÉcris ici (ou parle au micro 🎤) ce que tu veux raconter : je te pose des questions, je range tout en chapitres et je te propose une couverture.\n\nQuand ton livre est terminé, écris le mot « FIN » : je le transforme automatiquement en livre PDF.\n\nPour commencer : de quoi parle ton livre ?') });
+  saveCurrent(); render(); renderHistory(); ta.focus();
+}
+async function finishBook(word) {
+  current.messages.push({ role: 'user', content: word }); bubble('user', word);
+  const out = bubble('bot', tr('📖 Je transforme tout en livre… (1 à 3 minutes)'));
+  const r = await api('/api/chat', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ book: { action: 'compile', messages: current.messages.filter((m) => !m.kind).map((m) => ({ role: m.role, content: m.content })) } }) });
+  if (!r.ok || !r.body) { const d = await r.json().catch(() => ({})); out.textContent = d.message || tr('Sahbi n’a pas pu écrire pour le moment. Réessaie.'); return; }
+  const rd = r.body.getReader(), dec = new TextDecoder(); let text = '';
+  for (;;) {
+    const { value, done } = await rd.read(); if (done) break;
+    text += dec.decode(value, { stream: true });
+    out.textContent = tr('📖 Je transforme tout en livre… {n} mots écrits', { n: text.split(/\s+/).length });
+  }
+  const bk = parseBook(text);
+  if (!bk.chapters.length) { out.textContent = tr('Sahbi n’a pas pu écrire pour le moment. Réessaie.'); return; }
+  out.closest('.msg')?.remove();
+  const m = { role: 'assistant', kind: 'book', content: `📖 ${bk.title}`, book: bk };
+  current.messages.push(m); current.title = `📖 ${bk.title}`.slice(0, 60); saveCurrent(); renderHistory();
+  bookCard(m); printBook(bk);
+}
+function parseBook(text) {
+  const bk = { title: '', subtitle: '', chapters: [] }; let cur = null;
+  for (const raw of text.replace(/\*\*/g, '').split('\n')) {
+    const line = raw.trim();
+    let mm;
+    if ((mm = line.match(/^(TITRE|TITLE|TITOLO|العنوان)\s*:\s*(.+)$/i)) && !bk.title) { bk.title = mm[2].trim(); continue; }
+    if ((mm = line.match(/^(SOUS-TITRE|SUBTITLE|SOTTOTITOLO|العنوان الفرعي)\s*:\s*(.*)$/i))) { bk.subtitle = mm[2].trim(); continue; }
+    if ((mm = line.match(/^#{1,3}\s*(.+)$/))) { cur = { title: mm[1].trim(), paras: [] }; bk.chapters.push(cur); continue; }
+    if (!line) continue;
+    if (!cur) { cur = { title: '', paras: [] }; bk.chapters.push(cur); }
+    cur.paras.push(line);
+  }
+  bk.chapters = bk.chapters.filter((c) => c.paras.length);
+  bk.title = bk.title || tr('Mon livre');
+  return bk;
+}
+// Copertina = l'ultima immagine creata in questa chat.
+async function bookCover() {
+  const im = [...current.messages].reverse().find((m) => m.kind === 'image' && m.id);
+  if (!im) return null;
+  try { return (await loadLibrary()).find((x) => x.id === im.id)?.url || null; } catch { return null; }
+}
+async function printBook(bk) {
+  const area = $('printArea'); area.replaceChildren(); area.dataset.noi18n = '';
+  area.dir = /[\u0600-\u06FF]/.test(bk.title + (bk.chapters[0]?.paras[0] || '')) ? 'rtl' : 'ltr';
+  const cover = await bookCover();
+  if (cover) { const c = el('div', 'bk-cover'); const img = el('img'); img.src = cover; img.alt = ''; c.appendChild(img); area.appendChild(c); await new Promise((ok) => { img.onload = img.onerror = ok; setTimeout(ok, 4000); }); }
+  const tp = el('div', `bk-title${cover ? ' pb' : ''}`); tp.appendChild(el('h1', '', bk.title));
+  if (bk.subtitle) tp.appendChild(el('div', 'sub', bk.subtitle));
+  tp.appendChild(el('div', 'by', 'Écrit avec Sahbi · sahbi.bond'));
+  area.appendChild(tp);
+  const toc = el('div', 'pb'); toc.appendChild(el('h2', '', area.dir === 'rtl' ? 'الفهرس' : 'Table des matières'));
+  const ol = el('ol', 'bk-toc'); bk.chapters.forEach((c) => ol.appendChild(el('li', '', c.title || '…'))); toc.appendChild(ol); area.appendChild(toc);
+  bk.chapters.forEach((c, i) => {
+    const ch = el('div', 'pb'); ch.appendChild(el('h2', 'bk-ch', c.title || `${i + 1}`));
+    for (const p of c.paras) ch.appendChild(el('p', 'bk-p', p));
+    area.appendChild(ch);
+  });
+  toast(tr('Choisis « Enregistrer en PDF » dans la fenêtre d’impression.'));
+  setTimeout(() => window.print(), 300);
+}
+function bookCard(m) {
+  const bk = m.book || { title: '', chapters: [] };
+  const mm = el('div', 'msg bot'); const st = el('div', 'stack'); const box = el('div', 'bookcard');
+  const t = el('b', '', `📖 ${bk.title}`); t.dataset.noi18n = ''; t.dir = 'auto';
+  const words = bk.chapters.reduce((n, c) => n + c.paras.join(' ').split(/\s+/).length, 0);
+  const rb = el('div', 'rb');
+  const pdf = el('button', 'main', tr('Télécharger le PDF')); pdf.type = 'button'; pdf.addEventListener('click', () => printBook(bk));
+  const go = el('button', '', tr('Continuer le livre')); go.type = 'button'; go.addEventListener('click', () => { ta.focus(); toast(tr('Ajoute ce que tu veux, puis écris FIN pour refaire le PDF.')); });
+  rb.append(pdf, go);
+  box.append(t, el('small', '', tr('{c} chapitres · environ {w} mots', { c: bk.chapters.length, w: words })), rb);
+  st.appendChild(box); mm.append(avatar(), st); msgsEl.appendChild(mm); scroll();
+}
 // 🔄 Rifare l'ultima risposta.
 async function redoLast() {
   if (busy) return;
@@ -1367,7 +1462,7 @@ const TIPS = [
   ['Invite tes amis', 'Paramètres → partage ton lien : 7 jours de Pro pour vous deux.'],
 ];
 const SHORTCUTS = [
-  { t: 'Écrire un livre', d: 'Roman, conte, guide : chapitre par chapitre', p: 'Aide-moi à écrire un livre. Le sujet : ' },
+  { t: 'Écrire un livre', d: 'Raconte, Sahbi structure, « FIN » = ton livre PDF', book: true },
   { t: 'Gérer mon business', d: 'Plan, prix, clients, publicités, posts', p: 'Aide-moi à gérer et développer mon business. Mon activité : ' },
   { t: 'Aide au Bac', d: 'Quiz, fiches, exercices', bac: true },
   { t: 'Mon CV', d: 'Un CV clair et pro', p: 'Aide-moi à écrire mon CV. Voici mon parcours : ' },
@@ -1395,6 +1490,7 @@ function render() {
         if (s.doc) { pickDoc(); return; }
         if (s.voice) { openVoice(); return; }
         if (s.bac) { openBac(); return; }
+        if (s.book) { startBookChat(); return; }
         prefill(s.p);
       });
       chips.appendChild(c);
@@ -1411,6 +1507,7 @@ function render() {
   if (current.temp) msgsEl.prepend(el('div', 'temp-note', tr('🕶️ Discussion temporaire : elle ne sera pas enregistrée et Sahbi ne retiendra rien.')));
   current.messages.forEach((m, i, all) => {
     if (m.kind === 'reminder') reminderCard(m);
+    else if (m.kind === 'book') bookCard(m);
     else if (m.kind === 'image') storedImageBubble(m);
     else if (m.kind === 'video') videoBubble(m.id, m.content);
     else if (m.role === 'user' && m.photo) userPhotoBubble(m.thumb || null, m.thumb ? m.content : `📷 ${m.content}`);
@@ -1512,6 +1609,7 @@ const SEP = '\u001e';
 const toApi = (m, isLast) => {
   if (m.kind === 'image') return { role: 'assistant', content: `[Image créée : ${m.content}]` };
   if (m.kind === 'reminder') return { role: 'assistant', content: `[Rappel créé : ${m.title} le ${m.start}]` };
+  if (m.kind === 'book') return { role: 'assistant', content: `[Livre terminé et mis en PDF : ${m.book?.title || ''}]` };
   if (m.kind === 'video') return { role: 'assistant', content: `[Vidéo créée : ${m.content}]` };
   if (m.photo && !isLast) return { role: m.role, content: `${m.content}\n[Photo envoyée]` };
   if (m.doc && !isLast) return { role: m.role, content: `${m.content}\n[Document envoyé : ${m.doc}]` };
@@ -1614,7 +1712,7 @@ async function sendChat(text, pic = null, docAtt = null, opts = {}) {
   let res;
   try {
     sentAt = Date.now();
-    res = await api('/api/chat', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ messages: history, lang: LANG, ...(pic ? { photo: pic } : (recentPhoto && recentTurns > 0 && !opts.voice ? { photo: recentPhoto, photoEarlier: true } : {})), ...(docAtt ? { doc: { name: docAtt.name, text: docAtt.text } } : {}), ...(opts.voice ? { voice: true } : {}), now: localNow(), ...(current.temp ? { temp: true } : {}) }) });
+    res = await api('/api/chat', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ messages: history, lang: LANG, ...(pic ? { photo: pic } : (recentPhoto && recentTurns > 0 && !opts.voice ? { photo: recentPhoto, photoEarlier: true } : {})), ...(docAtt ? { doc: { name: docAtt.name, text: docAtt.text } } : {}), ...(opts.voice ? { voice: true } : {}), now: localNow(), ...(current.temp ? { temp: true } : {}), ...(current.mode === 'book' ? { mode: 'book' } : {}) }) });
   } catch { wait.remove(); bubble('bot', 'Pas de connexion. Vérifie internet et réessaie.', 'err'); return ''; }
   if (!res.ok) {
     wait.remove();
@@ -2216,6 +2314,11 @@ $('form').addEventListener('submit', async (e) => {
   if (!v || busy) return;
   if (editIdx != null) { current.messages.length = editIdx; editIdx = null; $('editBar')?.remove(); render(); }
   ta.value = ''; busy = true; setPhoto(null); setDoc(null);
+  // Chat del libro: la parola "FIN" trasforma tutta la conversazione nel libro PDF.
+  if (current.mode === 'book' && !pic && !att && BOOK_END.test(v)) {
+    try { await finishBook(v); } catch { bubble('bot', 'Une erreur est survenue. Recharge la page et réessaie.', 'err'); }
+    busy = false; grow(); return;
+  }
   try { await sendChat(v, pic, att); }
   catch { bubble('bot', 'Une erreur est survenue. Recharge la page et réessaie.', 'err'); }
   busy = false; grow();

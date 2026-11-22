@@ -41,6 +41,17 @@ function parseDoc(value) {
   return { name, text: text.slice(0, MAX_DOC_CHARS), cut: text.length > MAX_DOC_CHARS };
 }
 
+// Chat "Écrire un livre": Sahbi fa da editore e accompagna l'autore fino alla parola FIN.
+const BOOK_MODE = `
+
+MODALITÀ LIBRO (questa chat serve SOLO a scrivere un libro con l'utente):
+- Sei il suo editore e coautore. L'utente scrive o detta al microfono pezzi del libro, idee, ricordi, personaggi, capitoli, anche in disordine.
+- A ogni messaggio: (1) conferma in una frase cosa hai capito e dove lo metti (es. "👍 Je le place dans le chapitre 2 : L'arrivée à Paris"); (2) se utile mostra il piano aggiornato in forma breve ("📖 Plan : 1. … 2. … 3. …"); (3) fai UNA o DUE domande per andare avanti (personaggi, luoghi, cosa succede dopo, il messaggio del libro, il pubblico, la lingua del libro).
+- All'inizio chiedi: di cosa parla il libro, per chi è, in che lingua sarà scritto, e se ha già un titolo (se no proponine 3).
+- Quando il piano dei capitoli è chiaro, chiedi: "Quelle couverture veux-tu pour ton livre ?" (colori, immagine, stile). Quando la descrive, crea SUBITO la copertina con create_image: formato verticale (portrait), con il titolo del libro scritto in grande e bene leggibile.
+- Non scrivere il libro intero in chat: raccogli, ordina e migliora. Ricorda ogni tanto: "Quand ton livre est terminé, écris FIN et je le transforme en livre PDF."
+- Rispondi nella lingua dell'utente, con frasi brevi e calorose.`;
+
 const SYSTEM = `Sei Sahbi (صاحبي), "amico mio": un assistente di intelligenza artificiale caldo, diretto e utile, nato nel Maghreb.
 
 Lingua:
@@ -362,6 +373,8 @@ export async function POST(request) {
 
   let body;
   try { body = await request.json(); } catch { return fail('bad_request', 400, 'Demande invalide.'); }
+  // Studio "Écrire un livre" (struttura e capitoli).
+  if (body?.book) { const { bookHandler } = await import('./_book.js'); return bookHandler(userId, body.book); }
   const messages = cleanMessages(body?.messages);
   if (!messages) return fail('bad_request', 400, 'Message vide.');
   const photo = body?.photo ? parsePhoto(body.photo) : null;
@@ -422,7 +435,7 @@ export async function POST(request) {
     // Foto + "trasformala in stile…", oppure "fammi un'immagine di…": si disegna subito, senza domande.
     tool_choice: again || (!NOT_IMAGE.test(nowText) && ((photo && !body?.photoEarlier && STYLE_ASK.test(nowText)) || (!photo && IMAGE_REQ.test(nowText))))
       ? { type: 'function', function: { name: 'create_image' } } : 'auto',
-    messages: [{ role: 'system', content: SYSTEM.replace('{{VIDEO}}', videoEnabled() ? VIDEO_ON : VIDEO_OFF) + memoryPrompt(memory) + uiLangPrompt(body?.lang) + todayPrompt() + clientNowPrompt(body?.now) + langPrompt(detectLang(nowText) ? nowText : (again ? prevUserText : nowText)) + (body?.voice === true ? VOICE_STYLE : '') }, ...messages],
+    messages: [{ role: 'system', content: SYSTEM.replace('{{VIDEO}}', videoEnabled() ? VIDEO_ON : VIDEO_OFF) + memoryPrompt(memory) + uiLangPrompt(body?.lang) + todayPrompt() + clientNowPrompt(body?.now) + langPrompt(detectLang(nowText) ? nowText : (again ? prevUserText : nowText)) + (body?.voice === true ? VOICE_STYLE : '') + (body?.mode === 'book' ? BOOK_MODE : '') }, ...messages],
   };
   if (model.startsWith('gpt-5')) payload.reasoning_effort = env('OPENAI_REASONING_EFFORT', 'minimal');
 
