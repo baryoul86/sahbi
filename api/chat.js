@@ -79,6 +79,13 @@ MODALITÀ SITO INTERNET (questa chat serve SOLO a creare e pubblicare un sito we
 - Rifiuta siti che imitano una vera banca, marca o istituzione, pagine per rubare password o pagamenti, o contenuti illegali; proponi una versione onesta.
 - Rispondi SEMPRE nella lingua in cui scrive l'utente (il sito invece nella lingua scelta per il sito).`;
 
+// Sito internet: gli utenti gratuiti ricevono una versione dimostrativa corta, i Pro il sito completo e la pubblicazione.
+const WEBSITE_PRO = `
+- L'utente è Sahbi Pro: sito COMPLETO, tutte le modifiche che vuole, e guida di pubblicazione completa.`;
+const WEBSITE_FREE = `
+- ATTENZIONE: l'utente usa la versione GRATUITA. Fai le domande normalmente, poi crea solo una VERSIONE DIMOSTRATIVA corta (sempre un solo file index.html completo e funzionante): intestazione con nome e slogan, UNA sezione con al massimo 3 servizi o prodotti, un pulsante contatto, e in fondo una fascia "Version gratuite – créée avec Sahbi". Niente altre sezioni.
+- Niente guida di pubblicazione e niente versioni complete: spiega in UNA frase che con Sahbi Pro ottiene il sito completo (tutte le sezioni e le pagine, modifiche illimitate, file da scaricare) e la guida passo passo per metterlo online, e che può passare a Pro dal pulsante "Pro" in alto.`;
+
 // Paese approssimativo dell'utente (dal server Vercel, solo il codice paese): aiuta la guida a capire "dove sei".
 const countryHint = (request) => { const c = request.headers.get('x-vercel-ip-country'); return /^[A-Z]{2}$/.test(c || '') ? `\nL'utente si connette probabilmente da questo paese (codice ISO): ${c}. Usalo solo come indizio, chiedi conferma se serve.` : ''; };
 
@@ -467,7 +474,7 @@ export async function POST(request) {
     // Foto + "trasformala in stile…", oppure "fammi un'immagine di…": si disegna subito, senza domande.
     tool_choice: again || (!NOT_IMAGE.test(nowText) && ((photo && !body?.photoEarlier && STYLE_ASK.test(nowText)) || ((!photo || body?.photoEarlier) && IMAGE_REQ.test(nowText))))
       ? { type: 'function', function: { name: 'create_image' } } : 'auto',
-    messages: [{ role: 'system', content: SYSTEM.replace('{{VIDEO}}', videoEnabled() ? VIDEO_ON : VIDEO_OFF) + memoryPrompt(memory) + uiLangPrompt(body?.lang) + todayPrompt() + clientNowPrompt(body?.now) + langPrompt(detectLang(nowText) ? nowText : (again ? prevUserText : nowText)) + (body?.voice === true ? VOICE_STYLE : '') + (body?.mode === 'book' ? BOOK_MODE : body?.mode === 'travel' ? TRAVEL_MODE + countryHint(request) : body?.mode === 'website' ? WEBSITE_MODE : '') }, ...messages],
+    messages: [{ role: 'system', content: SYSTEM.replace('{{VIDEO}}', videoEnabled() ? VIDEO_ON : VIDEO_OFF) + memoryPrompt(memory) + uiLangPrompt(body?.lang) + todayPrompt() + clientNowPrompt(body?.now) + langPrompt(detectLang(nowText) ? nowText : (again ? prevUserText : nowText)) + (body?.voice === true ? VOICE_STYLE : '') + (body?.mode === 'book' ? BOOK_MODE : body?.mode === 'travel' ? TRAVEL_MODE + countryHint(request) : body?.mode === 'website' ? WEBSITE_MODE + (pro ? WEBSITE_PRO : WEBSITE_FREE) : '') }, ...messages],
   };
   if (model.startsWith('gpt-5')) payload.reasoning_effort = env('OPENAI_REASONING_EFFORT', 'minimal');
 

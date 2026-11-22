@@ -26,5 +26,5 @@ for (const [mode, re] of [['travel', /GUIDA TURISTICA/], ['website', /SITO INTER
   r = await POST(req({ messages: [{ role: 'user', content: 'Bonjour' }], mode }));
   await r.text(); assert.match(chatSystem, re, mode);
 }
-assert.match(chatSystem, /index\.html/); assert.match(chatSystem, /github/i);
+assert.match(chatSystem, /index\.html/); assert.match(chatSystem, /github/i); assert.match(chatSystem, /VERSIONE DIMOSTRATIVA/, 'gratuit = démo');
 console.log('book OK');

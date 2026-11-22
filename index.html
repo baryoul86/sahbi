@@ -1288,6 +1288,8 @@ function extractHtml(text) {
   return m && /<(html|body|!doctype)/i.test(m[1]) ? m[1].trim() : null;
 }
 function downloadSite(html) {
+  // Scaricare il sito è riservato a Sahbi Pro (l'anteprima resta gratuita).
+  if (me && !me.pro) { toast(tr('Télécharger ton site est réservé à Sahbi Pro.')); document.querySelector('.site-prev')?.remove(); openSheet(); return; }
   const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([html], { type: 'text/html' })); a.download = 'index.html'; a.click();
   toast(tr('Fichier index.html téléchargé.'));
 }
@@ -1838,7 +1840,7 @@ async function sendChat(text, pic = null, docAtt = null, opts = {}) {
       extra.push({ role: 'assistant', kind: 'image', content: f.prompt || 'image', id: f.id || null });
       library = null;
     } else if (f.type === 'image_error') {
-      if (f.error === 'limit') limitBubble(me?.pro ? 'Tu as utilisé tes images d’aujourd’hui. Elles reviennent à minuit.' : 'Tu as utilisé tes images gratuites d’aujourd’hui. Avec Sahbi Pro tu en as 8 par jour.');
+      if (f.error === 'limit') limitBubble(me?.pro ? 'Tu as utilisé tes images d’aujourd’hui. Elles reviennent à minuit.' : 'Tu as utilisé tes images gratuites d’aujourd’hui. Avec Sahbi Pro tu en as 5 par jour.');
       else bubble('bot', f.message || 'Impossible de créer l’image maintenant.', 'err');
     }
   };
