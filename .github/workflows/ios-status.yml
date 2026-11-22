@@ -1,0 +1,16 @@
+name: iPhone – état
+on: workflow_dispatch
+permissions:
+  contents: read
+jobs:
+  status:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: pip install -q pyjwt cryptography requests
+      - working-directory: ios-ci
+        run: python status.py
+        env:
+          ASC_KEY_ID: MB5LDSL2XR
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
