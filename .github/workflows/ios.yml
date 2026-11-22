@@ -30,7 +30,7 @@ jobs:
         working-directory: ios-app
         run: |
           pip3 install --break-system-packages -q pyjwt cryptography requests
-          TEAM=$(cd ../ios-ci && python3 team.py); echo "TEAM=$TEAM" >> $GITHUB_ENV
+          TEAM=$(cd ../ios-ci && python3 team.py | tail -n1 | tr -d "[:space:]"); echo "TEAM=$TEAM" >> $GITHUB_ENV
           sudo gem install xcodeproj --no-document -q
           TEAM=$TEAM MV=1.0 BN=$GITHUB_RUN_NUMBER ruby ../ios-ci/patch.rb
           mkdir -p ~/private_keys; (cd ../ios-ci && python3 -c 'from asc import P8_PEM; print(P8_PEM)') > ~/private_keys/AuthKey_$ASC_KEY_ID.p8
