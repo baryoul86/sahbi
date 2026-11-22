@@ -129,6 +129,10 @@ footer.composer .col{padding-block:10px 12px;display:flex;flex-direction:column;
 .bookcard .rb{display:flex;gap:8px;flex-wrap:wrap}
 .bookcard .rb button{min-height:40px;padding:0 14px;border-radius:999px;border:1px solid var(--line);background:var(--bg);color:var(--fg);font:inherit;font-size:14px;cursor:pointer}
 .bookcard .rb button.main{background:var(--mint);border-color:var(--mint);color:var(--mint-ink)}
+.site-prev{position:fixed;inset:0;z-index:60;background:var(--bg);display:flex;flex-direction:column}
+.site-prev .site-bar{display:flex;gap:8px;justify-content:space-between;padding:10px max(12px,env(safe-area-inset-left));border-bottom:1px solid var(--line);background:var(--panel)}
+.site-prev .site-bar button{min-height:40px;padding:0 14px;border-radius:999px;border:1px solid var(--line);background:var(--bg);color:var(--fg);font:inherit;cursor:pointer}
+.site-prev iframe{flex:1;border:0;width:100%;background:#fff}
 .temp-note{font-size:14px;color:var(--muted);background:var(--panel-2);border-radius:12px;padding:8px 12px;margin:8px 0;text-align:center}
 .remind{border:1px solid var(--line);background:var(--panel);border-radius:16px;padding:12px 14px;display:flex;flex-direction:column;gap:8px;max-width:340px}
 .remind b{font-size:16px}
@@ -1161,6 +1165,39 @@ const BOOK_HELLO = {
   ur: 'السلام! میں صاحبی ہوں اور آپ کی کتاب بنانے میں مدد کرتا ہوں 📖\n\nیہاں لکھیں (یا مائیک میں بولیں 🎤) جو آپ بتانا چاہتے ہیں: میں سوال پوچھوں گا، سب کچھ ابواب میں ترتیب دوں گا اور سرورق تجویز کروں گا۔\n\nجب کتاب مکمل ہو جائے تو « ختم » لکھیں: میں اسے خودبخود PDF کتاب بنا دوں گا۔\n\nشروع کرنے کے لیے: آپ کی کتاب کس بارے میں ہے؟',
   id: 'Salam! Aku Sahbi dan aku membantumu membuat bukumu 📖\n\nTulis di sini (atau bicara ke mikrofon 🎤) apa yang ingin kamu ceritakan: aku akan bertanya, menyusun semuanya menjadi bab, dan mengusulkan sampul.\n\nKalau bukumu sudah selesai, tulis kata « SELESAI »: aku ubah otomatis menjadi buku PDF.\n\nUntuk mulai: bukumu tentang apa?',
 };
+// 🧭 Chat "Guide touristique": prima domanda sul pellegrinaggio, poi dove sei e dove vuoi andare.
+const TRAVEL_HELLO = {
+  it: 'Salam! Sono la tua guida turistica 🧭\n\nVorresti fare il pellegrinaggio alla Mecca (Omra o Hajj)? 🕋\n\nAltrimenti dimmi dove sei e dove vorresti andare: ti trovo i migliori hotel con i link, come muoverti (taxi e app), cosa visitare e tutti i consigli pratici.',
+  es: '¡Salam! Soy tu guía turística 🧭\n\n¿Te gustaría hacer la peregrinación a La Meca (Umrah o Hajj)? 🕋\n\nSi no, dime dónde estás y adónde te gustaría ir: te encuentro los mejores hoteles con enlaces, cómo moverte (taxis y apps), qué visitar y todos los consejos prácticos.',
+  pt: 'Salam! Sou o teu guia turístico 🧭\n\nGostarias de fazer a peregrinação a Meca (Umrah ou Hajj)? 🕋\n\nSenão, diz-me onde estás e para onde queres ir: encontro-te os melhores hotéis com links, como te deslocares (táxis e apps), o que visitar e todos os conselhos práticos.',
+  de: 'Salam! Ich bin dein Reiseführer 🧭\n\nMöchtest du die Pilgerreise nach Mekka machen (Umrah oder Hadsch)? 🕋\n\nSonst sag mir, wo du bist und wohin du willst: Ich finde dir die besten Hotels mit Links, wie du dich fortbewegst (Taxis und Apps), Sehenswürdigkeiten und alle praktischen Tipps.',
+  tr: 'Selam! Ben senin turist rehberinim 🧭\n\nMekke’ye hac veya umre yapmak ister misin? 🕋\n\nYoksa bana nerede olduğunu ve nereye gitmek istediğini söyle: sana linkleriyle en iyi otelleri, nasıl ulaşım sağlayacağını (taksi ve uygulamalar), gezilecek yerleri ve tüm pratik bilgileri bulayım.',
+  nl: 'Salam! Ik ben je reisgids 🧭\n\nWil je de bedevaart naar Mekka maken (Umrah of Hadj)? 🕋\n\nZo niet, vertel me waar je bent en waar je heen wilt: ik zoek de beste hotels met links, hoe je je verplaatst (taxi’s en apps), wat je kunt bezoeken en alle praktische tips.',
+  ru: 'Салам! Я твой туристический гид 🧭\n\nХочешь совершить паломничество в Мекку (умра или хадж)? 🕋\n\nЕсли нет, скажи, где ты и куда хочешь поехать: я найду лучшие отели со ссылками, как передвигаться (такси и приложения), что посмотреть и все практические советы.',
+  ur: 'السلام! میں آپ کا سیاحتی گائیڈ ہوں 🧭\n\nکیا آپ مکہ کا سفر (عمرہ یا حج) کرنا چاہیں گے؟ 🕋\n\nورنہ بتائیں آپ کہاں ہیں اور کہاں جانا چاہتے ہیں: میں لنکس کے ساتھ بہترین ہوٹل، سفر کا طریقہ (ٹیکسی اور ایپس)، دیکھنے کی جگہیں اور تمام عملی مشورے ڈھونڈ دوں گا۔',
+  id: 'Salam! Aku pemandu wisatamu 🧭\n\nApakah kamu ingin melakukan perjalanan ke Mekah (Umrah atau Haji)? 🕋\n\nKalau tidak, beri tahu aku di mana kamu sekarang dan ke mana kamu ingin pergi: aku carikan hotel terbaik dengan tautan, cara bepergian (taksi dan aplikasi), tempat wisata, dan semua tips praktis.',
+};
+// Avvio generico di una chat dedicata (libro, guida, sito) con il suo messaggio di benvenuto.
+function startModeChat(mode, title, own, fallback) {
+  closeAll(); newChat();
+  current.mode = mode; current.title = title;
+  current.messages.push({ role: 'assistant', content: (LANG_AUTO && own) || fallback });
+  saveCurrent(); render(); renderHistory(); ta.focus();
+}
+const WEB_HELLO = {
+  it: 'Salam! Sono Sahbi e ti aiuto a creare il tuo sito internet 🌐, dal codice fino alla pubblicazione.\n\nRispondi alle mie domande: costruisco il sito, lo vedi con « Aperçu », scarichi il file e poi ti guido passo passo per pubblicarlo su internet.\n\nPer cominciare: a cosa serve il tuo sito (negozio, ristorante, servizi, portfolio, associazione…) e come si chiama?',
+  es: '¡Salam! Soy Sahbi y te ayudo a crear tu sitio web 🌐, desde el código hasta la publicación.\n\nResponde a mis preguntas: construyo tu sitio, lo ves con « Aperçu », descargas el archivo y luego te guío paso a paso para publicarlo en internet.\n\nPara empezar: ¿para qué es tu sitio (tienda, restaurante, servicios, portafolio, asociación…) y cómo se llama?',
+  de: 'Salam! Ich bin Sahbi und helfe dir, deine Website zu erstellen 🌐 – vom Code bis zur Veröffentlichung.\n\nBeantworte meine Fragen: Ich baue deine Website, du siehst sie mit « Aperçu », lädst die Datei herunter, und dann führe ich dich Schritt für Schritt zur Veröffentlichung.\n\nZum Start: Wofür ist deine Website (Shop, Restaurant, Dienstleistungen, Portfolio, Verein…) und wie heißt sie?',
+  tr: 'Selam! Ben Sahbi, web siteni kodundan yayınlanmasına kadar oluşturmana yardım ediyorum 🌐\n\nSorularımı yanıtla: siteni hazırlarım, « Aperçu » ile görürsün, dosyayı indirirsin, sonra seni yayınlamak için adım adım yönlendiririm.\n\nBaşlamak için: siten ne için (mağaza, restoran, hizmetler, portfolyo, dernek…) ve adı ne?',
+  pt: 'Salam! Sou o Sahbi e ajudo-te a criar o teu site 🌐, do código até à publicação.\n\nResponde às minhas perguntas: construo o teu site, vês com « Aperçu », descarregas o ficheiro e depois guio-te passo a passo para o publicar na internet.\n\nPara começar: para que é o teu site (loja, restaurante, serviços, portfólio, associação…) e como se chama?',
+};
+function startTravelChat() {
+  closeAll(); newChat();
+  current.mode = 'travel'; current.title = tr('🧭 Guide touristique');
+  const phone = (navigator.languages?.[0] || navigator.language || '').slice(0, 2).toLowerCase();
+  current.messages.push({ role: 'assistant', content: (LANG_AUTO && TRAVEL_HELLO[phone]) || tr('Salam ! Je suis ton guide touristique 🧭\n\nVeux-tu faire le pèlerinage à La Mecque (Omra ou Hajj) ? 🕋\n\nSinon, dis-moi où tu es et où tu voudrais aller : je te trouve les meilleurs hôtels avec les liens, comment te déplacer (taxis et applis), quoi visiter et tous les conseils pratiques.') });
+  saveCurrent(); render(); renderHistory(); ta.focus();
+}
 function startBookChat() {
   closeAll(); newChat();
   current.mode = 'book'; current.title = tr('📖 Mon livre');
@@ -1241,6 +1278,23 @@ function bookCard(m) {
   rb.append(pdf, go);
   box.append(t, el('small', '', tr('{c} chapitres · environ {w} mots', { c: bk.chapters.length, w: words })), rb);
   st.appendChild(box); mm.append(avatar(), st); msgsEl.appendChild(mm); scroll();
+}
+function extractHtml(text) {
+  const m = String(text || '').match(/```html\s*\n([\s\S]*?)```/i) || String(text || '').match(/```\s*\n(<!doctype html[\s\S]*?)```/i);
+  return m && /<(html|body|!doctype)/i.test(m[1]) ? m[1].trim() : null;
+}
+function downloadSite(html) {
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([html], { type: 'text/html' })); a.download = 'index.html'; a.click();
+  toast(tr('Fichier index.html téléchargé.'));
+}
+// Anteprima in un riquadro isolato (sandbox): il codice del sito non può toccare Sahbi.
+function previewSite(html) {
+  const wrap = el('div', 'site-prev'); const bar = el('div', 'site-bar');
+  const x = el('button', '', tr('✕ Fermer l’aperçu')); x.type = 'button'; x.addEventListener('click', () => wrap.remove());
+  const dl = el('button', '', '📥 index.html'); dl.type = 'button'; dl.addEventListener('click', () => downloadSite(html));
+  bar.append(x, dl);
+  const f = document.createElement('iframe'); f.setAttribute('sandbox', 'allow-scripts allow-popups'); f.srcdoc = html; f.title = tr('Aperçu du site');
+  wrap.append(bar, f); document.body.appendChild(wrap);
 }
 // 🔄 Rifare l'ultima risposta.
 async function redoLast() {
@@ -1428,6 +1482,9 @@ function addTextActions(textEl, text, last = true) {
     actBtn('share', 'Partager', () => shareText(text)),
     actBtn('flag', 'Signaler', () => reportContent('text', text, st.closest('.msg'))),
   );
+  // 🌐 Codice di un sito (```html … ```): anteprima e download del file index.html.
+  const site = extractHtml(text);
+  if (site) row.prepend(actBtn('share', '👁️ Aperçu', () => previewSite(site), true), actBtn('pdf', '📥 index.html', () => downloadSite(site), true));
   // PDF per le risposte lunghe o strutturate (CV, lettere, fiches).
   if (text.length > 400 || text.split('\n').length >= 6) row.appendChild(actBtn('pdf', 'PDF', () => printText(text), true));
   st.appendChild(row);
@@ -1481,6 +1538,8 @@ const TIPS = [
 const SHORTCUTS = [
   { t: 'Écrire un livre', d: 'Raconte, Sahbi structure, « FIN » = ton livre PDF', book: true },
   { t: 'Gérer mon business', d: 'Plan, prix, clients, publicités, posts', p: 'Aide-moi à gérer et développer mon business. Mon activité : ' },
+  { t: 'Guide touristique', d: 'Hôtels, taxis, visites, Omra et Hajj', travel: true },
+  { t: 'Créer un site internet', d: 'Le code, l’aperçu, et la mise en ligne pas à pas', website: true },
   { t: 'Aide au Bac', d: 'Quiz, fiches, exercices', bac: true },
   { t: 'Mon CV', d: 'Un CV clair et pro', p: 'Aide-moi à écrire mon CV. Voici mon parcours : ' },
   { t: 'Lettre administrative', d: 'Mairie, banque, employeur', p: 'Écris une lettre administrative pour ' },
@@ -1508,6 +1567,8 @@ function render() {
         if (s.voice) { openVoice(); return; }
         if (s.bac) { openBac(); return; }
         if (s.book) { startBookChat(); return; }
+        if (s.travel) { startTravelChat(); return; }
+        if (s.website) { startModeChat('website', tr('🌐 Mon site internet'), WEB_HELLO[(navigator.languages?.[0] || navigator.language || '').slice(0, 2).toLowerCase()], tr('Salam ! Je suis Sahbi et je t’aide à créer ton site internet 🌐, du code jusqu’à la mise en ligne.\n\nRéponds à mes questions : je fabrique ton site, tu le vois avec « Aperçu », tu télécharges le fichier, puis je te guide pas à pas pour le publier sur internet.\n\nPour commencer : ton site, c’est pour quoi ? (boutique, restaurant, services, portfolio, association…) et comment s’appelle-t-il ?')); return; }
         prefill(s.p);
       });
       chips.appendChild(c);
@@ -1729,7 +1790,7 @@ async function sendChat(text, pic = null, docAtt = null, opts = {}) {
   let res;
   try {
     sentAt = Date.now();
-    res = await api('/api/chat', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ messages: history, lang: LANG, ...(pic ? { photo: pic } : (recentPhoto && recentTurns > 0 && !opts.voice ? { photo: recentPhoto, photoEarlier: true } : {})), ...(docAtt ? { doc: { name: docAtt.name, text: docAtt.text } } : {}), ...(opts.voice ? { voice: true } : {}), now: localNow(), ...(current.temp ? { temp: true } : {}), ...(current.mode === 'book' ? { mode: 'book' } : {}) }) });
+    res = await api('/api/chat', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ messages: history, lang: LANG, ...(pic ? { photo: pic } : (recentPhoto && recentTurns > 0 && !opts.voice ? { photo: recentPhoto, photoEarlier: true } : {})), ...(docAtt ? { doc: { name: docAtt.name, text: docAtt.text } } : {}), ...(opts.voice ? { voice: true } : {}), now: localNow(), ...(current.temp ? { temp: true } : {}), ...(current.mode ? { mode: current.mode } : {}) }) });
   } catch { wait.remove(); bubble('bot', 'Pas de connexion. Vérifie internet et réessaie.', 'err'); return ''; }
   if (!res.ok) {
     wait.remove();
