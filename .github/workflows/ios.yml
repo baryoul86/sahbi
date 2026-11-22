@@ -33,7 +33,7 @@ jobs:
           TEAM=$(cd ../ios-ci && python3 team.py | tail -n1 | tr -d "[:space:]"); echo "TEAM=$TEAM" >> $GITHUB_ENV
           sudo gem install xcodeproj --no-document -q
           TEAM=$TEAM MV=1.0 BN=$GITHUB_RUN_NUMBER ruby ../ios-ci/patch.rb
-          mkdir -p ~/private_keys; (cd ../ios-ci && python3 -c 'from asc import P8_PEM; print(P8_PEM)') > ~/private_keys/AuthKey_$ASC_KEY_ID.p8
+          mkdir -p ~/private_keys; (cd ../ios-ci && python3 -c 'import os,sys; from asc import P8_PEM; open(os.path.expanduser(sys.argv[1]),"w").write(P8_PEM+"\n")' "~/private_keys/AuthKey_$ASC_KEY_ID.p8")
       - name: Compiler (archive)
         working-directory: ios-app
         run: |
