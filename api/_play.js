@@ -98,3 +98,30 @@ export async function verifyPlay(userId, token, sku = playSku()) {
   await rpc('extend_pro_until', { p_user: userId, p_until: until });
   return { ok: true, until };
 }
+
+// Impronte SHA-256 della chiave con cui Google Play firma l'app (Play App Signing), per assetlinks.json.
+// Lette dall'API (generatedApks dell'ultima versione), tenute in memoria 12 ore. Errori = lista vuota.
+let printsCache = { at: 0, list: [] };
+const asPrint = (h) => {
+  let hex = String(h || '').replace(/[^0-9a-f]/gi, '');
+  if (hex.length !== 64) { try { hex = Buffer.from(String(h), 'base64').toString('hex'); } catch { hex = ''; } }
+  return hex.length === 64 ? hex.toUpperCase().match(/../g).join(':') : null;
+};
+export async function playSigningPrints() {
+  if (!playReady()) return [];
+  if (Date.now() - printsCache.at < 12 * 3600e3) return printsCache.list;
+  let list = [];
+  try {
+    const edit = await google('edits', 'POST');
+    let codes = [];
+    try { codes = ((await google(`edits/${edit.id}/bundles`)).bundles || []).map((b) => Number(b.versionCode)).filter(Boolean); }
+    finally { await google(`edits/${edit.id}`, 'DELETE').catch(() => {}); }
+    const vc = Math.max(0, ...codes);
+    if (vc) {
+      const g = await google(`generatedApks/${vc}`);
+      for (const k of g.generatedApks || []) { const pr = asPrint(k.certificateSha256Hash); if (pr && !list.includes(pr)) list.push(pr); }
+    }
+  } catch { list = printsCache.list; }
+  printsCache = { at: Date.now(), list };
+  return list;
+}

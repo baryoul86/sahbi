@@ -1,5 +1,5 @@
 import { json, env, limits } from './_lib.js';
-import { playReady, playSku } from './_play.js';
+import { playReady, playSku, playSigningPrints } from './_play.js';
 import { appleSku } from './_apple.js';
 import { lemonPriceLabel } from './_pay.js';
 
@@ -14,6 +14,9 @@ export async function GET(request) {
   if (new URL(request.url).searchParams.get('file') === 'assetlinks') {
     const pkg = env('ANDROID_PACKAGE', 'bond.sahbi.app');
     const prints = env('ANDROID_SHA256', '').split(',').map((s) => s.trim().toUpperCase()).filter((s) => /^([0-9A-F]{2}:){31}[0-9A-F]{2}$/.test(s));
+    // + la chiave di firma di Google Play (l'app scaricata dal Play Store è firmata da Google, non dalla nostra chiave).
+    const play = await Promise.race([playSigningPrints().catch(() => []), new Promise((ok) => setTimeout(() => ok([]), 2500))]);
+    for (const x of play) if (!prints.includes(x)) prints.push(x);
     const body = prints.length
       ? [{ relation: ['delegate_permission/common.handle_all_urls'], target: { namespace: 'android_app', package_name: pkg, sha256_cert_fingerprints: prints } }]
       : [];
