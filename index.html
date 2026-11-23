@@ -129,6 +129,19 @@ footer.composer .col{padding-block:10px 12px;display:flex;flex-direction:column;
 .bookcard .rb{display:flex;gap:8px;flex-wrap:wrap}
 .bookcard .rb button{min-height:40px;padding:0 14px;border-radius:999px;border:1px solid var(--line);background:var(--bg);color:var(--fg);font:inherit;font-size:14px;cursor:pointer}
 .bookcard .rb button.main{background:var(--mint);border-color:var(--mint);color:var(--mint-ink)}
+.site-card{margin:10px 0 4px;border:1px solid var(--line);border-radius:16px;overflow:hidden;background:var(--panel);max-width:520px}
+.site-card .sc-view{position:relative;height:260px;overflow:hidden;background:#fff;cursor:pointer}
+.site-card .sc-view iframe{position:absolute;top:0;left:0;width:200%;height:200%;border:0;transform:scale(.5);transform-origin:0 0;pointer-events:none}
+.site-card .sc-bar{display:flex;gap:8px;flex-wrap:wrap;padding:10px}
+.site-card .sc-bar button{min-height:38px;padding:0 14px;border-radius:999px;border:1px solid var(--line);background:var(--bg);color:var(--fg);font:inherit;cursor:pointer}
+.site-card .sc-bar button.main{background:var(--mint,#2FAE74);border-color:transparent;color:#062016;font-weight:600}
+.site-card pre{margin:0;max-height:320px;overflow:auto;padding:12px;font-size:12px;border-top:1px solid var(--line);white-space:pre-wrap;word-break:break-word}
+.lightbox{position:fixed;inset:0;z-index:70;background:rgba(0,0,0,.92);display:flex;flex-direction:column}
+.lightbox .lb-bar{display:flex;justify-content:space-between;gap:8px;padding:max(10px,env(safe-area-inset-top)) 12px 10px}
+.lightbox .lb-bar button{min-height:42px;padding:0 16px;border-radius:999px;border:0;background:rgba(255,255,255,.15);color:#fff;font:inherit;cursor:pointer}
+.lightbox .lb-img{flex:1;overflow:auto;display:flex;align-items:center;justify-content:center;touch-action:pinch-zoom pan-x pan-y}
+.lightbox img{max-width:100%;max-height:100%;object-fit:contain}
+.lightbox img.zoom{max-width:none;max-height:none;width:200%}
 .site-prev{position:fixed;inset:0;z-index:60;background:var(--bg);display:flex;flex-direction:column}
 .site-prev .site-bar{display:flex;gap:8px;justify-content:space-between;padding:10px max(12px,env(safe-area-inset-left));border-bottom:1px solid var(--line);background:var(--panel)}
 .site-prev .site-bar button{min-height:40px;padding:0 14px;border-radius:999px;border:1px solid var(--line);background:var(--bg);color:var(--fg);font:inherit;cursor:pointer}
@@ -1391,6 +1404,41 @@ function downloadSite(html) {
   toast(tr('Fichier index.html téléchargé.'));
 }
 // Anteprima in un riquadro isolato (sandbox): il codice del sito non può toccare Sahbi.
+// Anteprima del sito direttamente nella chat (come una scheda): il codice lungo resta nascosto dietro "</> Code".
+function siteCard(textEl, text, html) {
+  const rest = String(text).replace(/```html[\s\S]*?```/i, '').replace(/```\s*\n<!doctype html[\s\S]*?```/i, '').replace(/\n{3,}/g, '\n\n').trim();
+  textEl.textContent = rest; if (typeof linkify === 'function') { try { linkify(textEl); } catch { /* testo semplice */ } }
+  const card = el('div', 'site-card');
+  const view = el('div', 'sc-view'); view.title = tr('Aperçu du site');
+  const f = document.createElement('iframe'); f.setAttribute('sandbox', 'allow-scripts'); f.setAttribute('tabindex', '-1'); f.srcdoc = html; f.loading = 'lazy';
+  view.appendChild(f); view.addEventListener('click', () => previewSite(html));
+  const bar = el('div', 'sc-bar');
+  const open = el('button', 'main', tr('👁️ Ouvrir l’aperçu')); open.type = 'button'; open.addEventListener('click', () => previewSite(html));
+  const code = el('button', '', tr('</> Code')); code.type = 'button';
+  let pre = null; code.addEventListener('click', () => { if (pre) { pre.remove(); pre = null; return; } pre = el('pre', '', html); card.appendChild(pre); });
+  bar.append(open, code); card.append(view, bar);
+  textEl.after(card);
+}
+// 🔍 Immagini a schermo intero: tocca per ingrandire, doppio tocco per lo zoom, pizzica per zoomare.
+function openLightbox(src, alt = '') {
+  const w = el('div', 'lightbox'); const bar = el('div', 'lb-bar');
+  const x = el('button', '', tr('✕ Fermer')); x.type = 'button'; x.addEventListener('click', () => w.remove());
+  const dl = el('button', '', tr('📥 Enregistrer')); dl.type = 'button';
+  dl.addEventListener('click', async () => {
+    try { const b = await (await fetch(src)).blob(); const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = 'sahbi-image.' + ((b.type.split('/')[1] || 'png').replace('jpeg', 'jpg')); document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000); }
+    catch { window.open(src, '_blank', 'noopener'); }
+  });
+  bar.append(x, dl);
+  const box = el('div', 'lb-img'); const img = el('img'); img.src = src; img.alt = alt;
+  img.addEventListener('dblclick', () => img.classList.toggle('zoom'));
+  box.addEventListener('click', (e) => { if (e.target === box) w.remove(); });
+  box.appendChild(img); w.append(bar, box); document.body.appendChild(w);
+}
+msgsEl.addEventListener('click', (e) => {
+  const img = e.target.closest?.('img');
+  if (!img || !msgsEl.contains(img) || img.closest('.avatar, .site-card, button, a') || !img.src) return;
+  openLightbox(img.currentSrc || img.src, img.alt || '');
+});
 function previewSite(html) {
   const wrap = el('div', 'site-prev'); const bar = el('div', 'site-bar');
   const x = el('button', '', tr('✕ Fermer l’aperçu')); x.type = 'button'; x.addEventListener('click', () => wrap.remove());
@@ -1587,9 +1635,10 @@ function addTextActions(textEl, text, last = true) {
   );
   // 🌐 Codice di un sito (```html … ```): anteprima e download del file index.html.
   const site = extractHtml(text);
-  if (site) row.prepend(actBtn('share', '👁️ Aperçu', () => previewSite(site), true), actBtn('pdf', '📥 index.html', () => downloadSite(site), true));
+  if (site) siteCard(textEl, text, site);
+  if (site) row.prepend(actBtn('pdf', '📥 index.html', () => downloadSite(site), true));
   // PDF per le risposte lunghe o strutturate (CV, lettere, fiches).
-  if (text.length > 400 || text.split('\n').length >= 6) row.appendChild(actBtn('pdf', 'PDF', () => printText(text), true));
+  if (!site && (text.length > 400 || text.split('\n').length >= 6)) row.appendChild(actBtn('pdf', 'PDF', () => printText(text), true));
   st.appendChild(row);
 }
 function typing() {
