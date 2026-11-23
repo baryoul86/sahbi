@@ -947,9 +947,9 @@ const ready = (async () => {
   onSession(data.session);
   // "Continuer avec Google" appare solo se Google è attivato in Supabase.
   fetch(`${cfg.supabaseUrl}/auth/v1/settings`, { headers: { apikey: cfg.supabaseAnonKey } })
-    .then((r) => r.json()).then((s) => {
+    .then((r) => r.json()).then(async (s) => {
       // App iPhone: "Continuer avec Apple" (natif). Google solo se c'è anche Apple (regola Apple 4.8).
-      const apple = IOS_APP && !!s?.external?.apple && !!appleAuth();
+      const apple = IOS_APP && !!s?.external?.apple && await appleReady();
       const google = !!s?.external?.google && (!IOS_APP || apple);
       $('appleBtn').hidden = !apple; $('googleBtn').hidden = !google; $('googleBox').hidden = !apple && !google;
     }).catch(() => {});
@@ -977,11 +977,11 @@ if (IOS_APP) {
 }
 
 // Accesso con Apple (solo app iPhone, plugin nativo "SahbiStore")
-function appleAuth() {
-  // Solo se la versione dell'app installata ha davvero il metodo nativo (le build vecchie non ce l'hanno).
-  const h = (window.Capacitor?.PluginHeaders || []).find((x) => x.name === 'SahbiStore');
-  if (!h?.methods?.some((m) => m.name === 'appleSignIn')) return null;
-  return window.Capacitor?.Plugins?.SahbiStore || window.Capacitor?.registerPlugin?.('SahbiStore') || null;
+function appleAuth() { return window.Capacitor?.Plugins?.SahbiStore || window.Capacitor?.registerPlugin?.('SahbiStore') || null; }
+// La connessione con Apple esiste dalla build 5 dell'app iPhone (le build vecchie non hanno il metodo nativo).
+async function appleReady() {
+  if (!IOS_APP || !appleAuth()) return false;
+  try { const i = await window.Capacitor?.Plugins?.App?.getInfo?.(); return Number(i?.build || 0) >= 5; } catch { return false; }
 }
 $('appleBtn').addEventListener('click', async () => {
   const p = appleAuth(); if (!p) return;
