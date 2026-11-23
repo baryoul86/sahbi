@@ -117,6 +117,8 @@ const WEBSITE_FREE = `
 - ATTENZIONE: l'utente usa la versione GRATUITA. Fai le domande normalmente, poi crea solo una VERSIONE DIMOSTRATIVA corta (sempre un solo file index.html completo e funzionante): intestazione con nome e slogan, UNA sezione con al massimo 3 servizi o prodotti, un pulsante contatto, e in fondo una fascia "Version gratuite – créée avec Sahbi". Niente altre sezioni.
 - Niente guida di pubblicazione e niente versioni complete: spiega in UNA frase che con Sahbi Pro ottiene il sito completo (tutte le sezioni e le pagine, modifiche illimitate, file da scaricare) e la guida passo passo per metterlo online, e che può passare a Pro dal pulsante "Pro" in alto.`;
 
+// Frasi con cui il modello promette un risultato "dopo" (che non arriverebbe mai): it, fr, en, es, ar/darija.
+const DELIVER_PROMISE = /(sto (generando|creando|preparando|scrivendo)|lo riceverai|te l[oa] (preparo|creo|mando) (ora|adesso|subito)|un attimo|je (te )?(prépare|génère|crée|m'en occupe)|je reviens|i(?:'m| am) (generating|creating|preparing|working)|one moment|give me a (moment|minute)|estoy (generando|creando|preparando)|un momento|لحظة|دقيقة|راني كنوجد|جاري)/i;
 const WEBSITE_FREE_CHAT = `
 - Utente della versione GRATUITA: se chiede una pagina web o un sito, fai solo una VERSIONE DIMOSTRATIVA corta (intestazione con nome e slogan, una sezione con al massimo 3 servizi, un pulsante contatto, fascia in fondo "Version gratuite – créée avec Sahbi") e di' in una frase che con Sahbi Pro ottiene il sito completo.`;
 // Paese approssimativo dell'utente (dal server Vercel, solo il codice paese): aiuta la guida a capire "dove sei".
@@ -586,6 +588,8 @@ export async function POST(request) {
     // L'utente ha mandato una foto e chiede di trasformarla: si crea l'immagine anche se il modello ha rifiutato o chiesto conferma.
     if (!tool.name && photo && !body?.photoEarlier && STYLE_ASK.test(lastText)) return 'create_image';
     if (tool.name || !PROMISE.test(reply) || REFUSAL.test(reply)) return null;
+    // Un sito o una pagina web non è un'immagine: in quel caso si fa scrivere il codice (deliverNow).
+    if (/(sito|site|pagina|page web|landing|html|codice|موقع)/i.test(reply + ' ' + lastText) && !/(image|immagine|photo|foto|صورة)/i.test(lastText)) return null;
     if (videoEnabled() && VIDEO_WORDS.test(reply) && asked(VIDEO_WORDS)) return 'create_video';
     if (IMAGE_WORDS.test(reply) && asked(IMAGE_WORDS)) return 'create_image';
     return null;
@@ -630,7 +634,7 @@ export async function POST(request) {
       // Mentre si crea l'immagine (fino a 1-2 minuti) si manda un piccolo segnale ogni 8 secondi:
       // così il telefono e la rete non chiudono la connessione credendola ferma.
       const hb = setInterval(() => { try { controller.enqueue(encoder.encode(frame({ type: 'ping' }))); } catch { /* chiuso */ } }, 8000);
-      try { await finishTools(controller); }
+      try { await finishTools(controller); if (!tool.name && !promised() && (DELIVER_PROMISE.test(reply) || PROMISE.test(reply)) && !reply.includes('```')) await deliverNow(controller); }
       catch (e) {
         console.error('Strumento', e?.message);
         const video = tool.name === 'create_video';
@@ -672,6 +676,25 @@ export async function POST(request) {
         const d = line.startsWith('data:') ? line.slice(5).trim() : '';
         if (!d || d === '[DONE]') continue;
         try { const c = JSON.parse(d).choices?.[0]?.delta?.content; if (c) controller.enqueue(encoder.encode(c.replaceAll(SEP, ''))); } catch { /* riga incompleta */ }
+      }
+    }
+  }
+
+  // Il modello ha solo annunciato ("sto generando…", "un attimo") senza consegnare: lo si fa continuare subito.
+  async function deliverNow(controller) {
+    const nudge = "Consegna ADESSO, in questa risposta, il risultato completo che hai appena annunciato (per un sito o una pagina: tutto il file index.html in un unico blocco ```html). Nessuna frase di attesa, nessuna domanda prima del risultato.";
+    const r = await call({ ...payload, tool_choice: 'none', messages: [...payload.messages, { role: 'assistant', content: reply }, { role: 'user', content: nudge }] }).catch(() => null);
+    if (!r?.ok || !r.body) return;
+    controller.enqueue(encoder.encode('\n\n'));
+    const rd = r.body.getReader(); let buf = '';
+    for (;;) {
+      const { value, done } = await rd.read(); if (done) break;
+      buf += decoder.decode(value, { stream: true });
+      const lines = buf.split('\n'); buf = lines.pop();
+      for (const line of lines) {
+        const d = line.startsWith('data:') ? line.slice(5).trim() : '';
+        if (!d || d === '[DONE]') continue;
+        try { const c = JSON.parse(d).choices?.[0]?.delta?.content; if (c) { reply += c; controller.enqueue(encoder.encode(c.replaceAll(SEP, ''))); } } catch { /* riga incompleta */ }
       }
     }
   }
