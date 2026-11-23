@@ -983,7 +983,17 @@ if (IOS_APP) {
 }
 
 // Accesso con Apple (solo app iPhone, plugin nativo "SahbiStore")
-function appleAuth() { return window.Capacitor?.Plugins?.SahbiStore || window.Capacitor?.registerPlugin?.('SahbiStore') || null; }
+// Il plugin nativo "SahbiStore" è registrato a mano nell'app: non appare in Capacitor.Plugins,
+// quindi lo si chiama direttamente con Capacitor.nativePromise (stesso ponte nativo).
+function sahbiNative() {
+  const C = window.Capacitor;
+  if (C?.Plugins?.SahbiStore) return C.Plugins.SahbiStore;
+  if (!IOS_APP || typeof C?.nativePromise !== 'function') return null;
+  return new Proxy({}, { get: (_, m) => m === 'then' ? undefined
+    : m === 'addListener' ? (ev, cb) => (C.addListener ? C.addListener('SahbiStore', ev, cb) : null)
+    : (opts = {}) => C.nativePromise('SahbiStore', m, opts) });
+}
+function appleAuth() { return sahbiNative(); }
 // La connessione con Apple esiste dalla build 5 dell'app iPhone (le build vecchie non hanno il metodo nativo).
 async function appleReady() {
   if (!IOS_APP || !appleAuth()) return false;
@@ -2209,7 +2219,7 @@ let appleOk = false, applePrice = '', appleStore = null, appleListen = false;
 async function initApple() {
   if (!IOS_APP || !cfg.payments?.appleSku) return;
   try {
-    appleStore = window.Capacitor?.Plugins?.SahbiStore || window.Capacitor?.registerPlugin?.('SahbiStore');
+    appleStore = sahbiNative();
     if (!appleStore) return;
     const p = await appleStore.product({ id: cfg.payments.appleSku });
     if (!p?.id) return;
