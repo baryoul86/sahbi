@@ -1294,7 +1294,7 @@ const WEB_HELLO = {
 };
 function startTravelChat() {
   closeAll(); newChat();
-  current.mode = 'travel'; current.title = tr('🧭 Guide touristique');
+  current.mode = 'travel'; current.title = tr('🧭 Agent voyage & Omra');
   const phone = (navigator.languages?.[0] || navigator.language || '').slice(0, 2).toLowerCase();
   current.messages.push({ role: 'assistant', content: (LANG_AUTO && TRAVEL_HELLO[phone]) || tr('Salam ! Je suis ton guide touristique 🧭\n\nVeux-tu faire le pèlerinage à La Mecque (Omra ou Hajj) ? 🕋\n\nSinon, dis-moi où tu es et où tu voudrais aller : je te trouve les meilleurs hôtels avec les liens, comment te déplacer (taxis et applis), quoi visiter et tous les conseils pratiques.') });
   saveCurrent(); render(); renderHistory(); ta.focus();
@@ -1640,8 +1640,9 @@ const TIPS = [
 ];
 const SHORTCUTS = [
   { i: '📖', t: 'Écrire un livre', d: 'Raconte, Sahbi structure, « FIN » = ton livre PDF', book: true },
-  { i: '💼', t: 'Gérer mon business', d: 'Plan, prix, clients, publicités, posts', p: 'Aide-moi à gérer et développer mon business. Mon activité : ' },
-  { i: '🧭', t: 'Guide touristique', d: 'Hôtels, taxis, visites, Omra et Hajj', travel: true },
+  { i: '💼', t: 'Agent business', d: 'Posts, devis, factures, prix, clients', mode: 'business', h: 'Salam ! Je suis ton agent business 💼\n\nJe travaille pour ton activité : posts Facebook et Instagram de la semaine, devis et factures, calcul des prix et des bénéfices, réponses aux avis clients, annonces.\n\nPour commencer : quelle est ton activité, et dans quelle ville ?' },
+  { i: '🧭', t: 'Agent voyage & Omra', d: 'Vols, hôtels, programme, budget, Omra et Hajj', travel: true },
+  { i: '💬', t: 'Messages WhatsApp', d: 'Absence, accueil, réponses rapides automatiques', mode: 'whatsapp', h: 'Salam ! Je prépare tes messages automatiques WhatsApp 💬\n\nPar exemple : « Je ne suis pas disponible, je te rappelle après 18h, laisse-moi un message », un message d’accueil pour tes clients, et des réponses rapides (horaires, adresse, prix).\n\nWhatsApp Business les envoie tout seul, même quand ton téléphone est éteint.\n\nPour commencer : c’est pour toi ou pour ton commerce ? Et à quelles heures es-tu disponible ?' },
   { i: '🌐', t: 'Créer un site internet', d: 'Le code, l’aperçu, et la mise en ligne pas à pas', website: true },
   { i: '🎓', t: 'Aide au Bac', d: 'Quiz, fiches, exercices', bac: true },
   { i: '📄', t: 'Mon CV', d: 'Un CV clair et pro', p: 'Aide-moi à écrire mon CV. Voici mon parcours : ' },
@@ -1673,6 +1674,7 @@ function render() {
         if (s.bac) { openBac(); return; }
         if (s.book) { startBookChat(); return; }
         if (s.travel) { startTravelChat(); return; }
+        if (s.mode) { startModeChat(s.mode, `${s.i} ${tr(s.t)}`, null, tr(s.h)); return; }
         if (s.website && resumeSite()) return;
         if (s.website) { startModeChat('website', tr('🌐 Mon site internet'), WEB_HELLO[(navigator.languages?.[0] || navigator.language || '').slice(0, 2).toLowerCase()], tr(WEB_FALLBACK)); return; }
         prefill(s.p);

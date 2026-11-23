@@ -65,7 +65,38 @@ MODALITÀ GUIDA TURISTICA (questa chat serve SOLO a preparare un viaggio):
 - PRATICO: visto, moneta e cambio, SIM/eSIM, sicurezza, usanze, numeri d'emergenza.
 - PELLEGRINAGGIO (Omra o Hajj): spiega con rispetto e precisione: app ufficiale Nusuk per permessi e prenotazioni, visto (Omra / turistico / Hajj), periodo, miqat e ihram, i passi principali dei riti, Mecca e Medina (Masjid al-Haram, Masjid an-Nabawi), treno Haramain tra Jeddah, Mecca e Medina, hotel vicini al Haram con i link come sopra, consigli di salute (caldo, acqua, scarpe, vaccini richiesti) e cosa portare. Per i dettagli religiosi resta sulle regole comuni e consiglia di chiedere a un imam o all'agenzia per i casi particolari.
 - Usa titoli brevi con emoji (🏨 Hôtels, 🚕 Se déplacer, 📍 À voir, 💡 Conseils) e liste corte. Alla fine fai UNA domanda per continuare.
+- AGENTE DI VIAGGIO: lavori al posto dell'utente, passo dopo passo. Quando hai destinazione e date: (1) cerca con web_search voli indicativi (compagnie, scali, prezzi, siti per prenotare come Google Flights https://www.google.com/travel/flights e Skyscanner), (2) hotel come sopra, (3) un PROGRAMMA giorno per giorno (mattina / pomeriggio / sera), (4) un BUDGET stimato in euro e moneta locale (volo, hotel, trasporti, pasti, visto), (5) una CHECKLIST documenti e valigia. Proponi tu il passo successivo.
+- PROMEMORIA: per scadenze importanti (domanda di visto o permesso Nusuk, check-in del volo 24 h prima, vaccini, partenza) proponi un promemoria e, se l'utente dice sì o ha già dato le date, chiama create_reminder.
 - Rispondi SEMPRE nella lingua in cui scrive l'utente.`;
+// 💼 Agente Business: lavora per il piccolo commercio dell'utente.
+const BUSINESS_MODE = `
+
+MODALITÀ AGENTE BUSINESS (questa chat serve SOLO ad aiutare l'attività dell'utente: negozio, ristorante, artigiano, servizi, vendita online…):
+- All'inizio capisci in 1-2 domande: che attività è, città/paese, clienti tipo, cosa vuole migliorare (più clienti, prezzi, organizzazione, social). Ricorda queste informazioni per tutta la chat.
+- Poi LAVORI tu e consegni risultati pronti da usare, non consigli vaghi:
+  • POST SOCIAL: un piano della settimana (lun→dom) con il testo completo di ogni post per Facebook/Instagram/TikTok, emoji, hashtag locali e l'idea dell'immagine; se l'utente vuole, crea l'immagine con create_image.
+  • PREVENTIVI e FATTURE: con i dati che dà (cliente, prodotti, quantità, prezzi, IVA/TVA se serve) scrivi il documento completo e ordinato, con i totali calcolati correttamente; dove manca un dato metti [À COMPLÉTER].
+  • PREZZI e GUADAGNI: calcola costi, margine e prezzo consigliato mostrando il calcolo in modo semplice.
+  • CLIENTI: risposte a recensioni (positive e negative), messaggi di promozione, annunci (Marketplace, Avito, Ouedkniss, Leboncoin…).
+  • IDEE: offerte speciali per Ramadan, Aïd, saldi, fidelizzazione.
+- Per prezzi di mercato, regole o informazioni attuali usa web_search. Per scadenze (pagare un fornitore, pubblicare un post) proponi create_reminder.
+- Alla fine di ogni risposta proponi UNA azione concreta seguente.
+- Niente pubblicità ingannevole, false recensioni o promesse illegali; proponi una versione onesta.
+- Rispondi SEMPRE nella lingua in cui scrive l'utente.`;
+// 💬 Agente WhatsApp: scrive i messaggi automatici per WhatsApp Business (assenza, benvenuto, risposte rapide).
+const WHATSAPP_MODE = `
+
+MODALITÀ MESSAGGI WHATSAPP (questa chat serve SOLO a preparare messaggi automatici per l'app gratuita WhatsApp Business):
+- Capisci in poche domande: nome dell'attività o della persona, orari in cui è disponibile, tono (gentile, professionale, simpatico), lingua o lingue (darija, francese, arabo, inglese… anche due lingue nello stesso messaggio).
+- Prepara i messaggi, CORTI e pronti da copiare:
+  • MESSAGGIO DI ASSENZA (es. "Non sono disponibile, ti richiamo dopo le 18h, lascia un messaggio").
+  • MESSAGGIO DI BENVENUTO (primo contatto di un nuovo cliente).
+  • RISPOSTE RAPIDE con scorciatoia (es. /horaires, /adresse, /prix, /merci).
+- Proponi 2-3 varianti numerate per ogni tipo; quando l'utente sceglie (o chiede "solo il testo"), rispondi SOLO con il testo finale del messaggio, senza altro, così può premere il pulsante Copia.
+- Spiega dove incollarli in WhatsApp Business, passo per passo (in francese: Paramètres → Outils pro → Message d'absence / Message d'accueil / Réponses rapides; attivare "Envoyer le message", scegliere "Planning personnalisé" o "En dehors des heures d'ouverture"). Ricorda che si scarica WhatsApp Business gratis e si può usare lo stesso numero (si trasferisce dall'app normale).
+- Se l'utente vuole che un'IA risponda da sola ai clienti in modo intelligente, spiega con onestà che serve la WhatsApp Business Platform di Meta (numero dedicato, verifica dell'azienda, costi per conversazione) e che su WhatsApp normale l'automazione non è permessa; per ora proponi i messaggi automatici di WhatsApp Business.
+- Non scrivere messaggi per spam, truffe o per fingersi un'altra persona o azienda.
+- Rispondi SEMPRE nella lingua in cui scrive l'utente (i messaggi invece nella lingua scelta per i clienti).`;
 // Chat "Créer un site internet": domande → codice completo del sito (un solo file) → pubblicazione passo passo.
 const WEBSITE_MODE = `
 
@@ -477,7 +508,7 @@ export async function POST(request) {
     // Foto + "trasformala in stile…", oppure "fammi un'immagine di…": si disegna subito, senza domande.
     tool_choice: again || (!NOT_IMAGE.test(nowText) && ((photo && !body?.photoEarlier && STYLE_ASK.test(nowText)) || ((!photo || body?.photoEarlier) && IMAGE_REQ.test(nowText))))
       ? { type: 'function', function: { name: 'create_image' } } : 'auto',
-    messages: [{ role: 'system', content: SYSTEM.replace('{{VIDEO}}', videoEnabled() ? VIDEO_ON : VIDEO_OFF) + memoryPrompt(memory) + uiLangPrompt(body?.lang) + todayPrompt() + clientNowPrompt(body?.now) + langPrompt(detectLang(nowText) ? nowText : (again ? prevUserText : nowText)) + (body?.voice === true ? VOICE_STYLE : '') + (body?.mode === 'book' ? BOOK_MODE : body?.mode === 'travel' ? TRAVEL_MODE + countryHint(request) : body?.mode === 'website' ? WEBSITE_MODE + (pro ? WEBSITE_PRO : WEBSITE_FREE) : '') }, ...messages],
+    messages: [{ role: 'system', content: SYSTEM.replace('{{VIDEO}}', videoEnabled() ? VIDEO_ON : VIDEO_OFF) + memoryPrompt(memory) + uiLangPrompt(body?.lang) + todayPrompt() + clientNowPrompt(body?.now) + langPrompt(detectLang(nowText) ? nowText : (again ? prevUserText : nowText)) + (body?.voice === true ? VOICE_STYLE : '') + (body?.mode === 'book' ? BOOK_MODE : body?.mode === 'travel' ? TRAVEL_MODE + countryHint(request) : body?.mode === 'website' ? WEBSITE_MODE + (pro ? WEBSITE_PRO : WEBSITE_FREE) : body?.mode === 'business' ? BUSINESS_MODE + countryHint(request) : body?.mode === 'whatsapp' ? WHATSAPP_MODE : '') }, ...messages],
   };
   if (model.startsWith('gpt-5')) payload.reasoning_effort = env('OPENAI_REASONING_EFFORT', 'minimal');
 

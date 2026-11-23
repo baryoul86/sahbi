@@ -27,4 +27,8 @@ for (const [mode, re] of [['travel', /GUIDA TURISTICA/], ['website', /SITO INTER
   await r.text(); assert.match(chatSystem, re, mode);
 }
 assert.match(chatSystem, /index\.html/); assert.match(chatSystem, /github/i); assert.match(chatSystem, /VERSIONE DIMOSTRATIVA/, 'gratuit = démo');
+for (const [mode, re] of [['business', /AGENTE BUSINESS/], ['whatsapp', /MESSAGGI WHATSAPP/], ['travel', /AGENTE DI VIAGGIO/]]) {
+  r = await POST(req({ messages: [{ role: 'user', content: 'Bonjour' }], mode }));
+  await r.text(); assert.match(chatSystem, re, mode);
+}
 console.log('book OK');
