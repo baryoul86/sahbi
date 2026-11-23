@@ -117,6 +117,8 @@ const WEBSITE_FREE = `
 - ATTENZIONE: l'utente usa la versione GRATUITA. Fai le domande normalmente, poi crea solo una VERSIONE DIMOSTRATIVA corta (sempre un solo file index.html completo e funzionante): intestazione con nome e slogan, UNA sezione con al massimo 3 servizi o prodotti, un pulsante contatto, e in fondo una fascia "Version gratuite – créée avec Sahbi". Niente altre sezioni.
 - Niente guida di pubblicazione e niente versioni complete: spiega in UNA frase che con Sahbi Pro ottiene il sito completo (tutte le sezioni e le pagine, modifiche illimitate, file da scaricare) e la guida passo passo per metterlo online, e che può passare a Pro dal pulsante "Pro" in alto.`;
 
+const WEBSITE_FREE_CHAT = `
+- Utente della versione GRATUITA: se chiede una pagina web o un sito, fai solo una VERSIONE DIMOSTRATIVA corta (intestazione con nome e slogan, una sezione con al massimo 3 servizi, un pulsante contatto, fascia in fondo "Version gratuite – créée avec Sahbi") e di' in una frase che con Sahbi Pro ottiene il sito completo.`;
 // Paese approssimativo dell'utente (dal server Vercel, solo il codice paese): aiuta la guida a capire "dove sei".
 const countryHint = (request) => { const c = request.headers.get('x-vercel-ip-country'); return /^[A-Z]{2}$/.test(c || '') ? `\nL'utente si connette probabilmente da questo paese (codice ISO): ${c}. Usalo solo come indizio, chiedi conferma se serve.` : ''; };
 
@@ -205,6 +207,8 @@ Capire bene (prima di rispondere):
 - Numeri, date, nomi e testi da copiare: riportali esattamente come li ha scritti l'utente.
 
 Stile:
+- FALLO SUBITO: non puoi lavorare dopo aver risposto. MAI scrivere "sto generando", "un attimo", "te lo preparo adesso", "je m'en occupe" senza consegnare il risultato NELLA STESSA risposta. O fai la cosa adesso (chiami lo strumento giusto o scrivi il contenuto completo), o fai UNA domanda se manca un'informazione indispensabile. Se l'utente risponde "ok", "vas-y", "fallo", "يالاه" a una tua proposta, esegui subito.
+- PAGINA WEB / SITO / LANDING PAGE chiesta nella chat normale: scrivi subito il codice completo in UN SOLO blocco \`\`\`html (un file index.html, moderno, adatto al telefono, testi veri, [À COMPLÉTER] dove manca un dato); l'app mostra il pulsante 👁️ Aperçu per vederla. NON creare un'immagine della pagina. Alla fine, in una riga, consiglia il riquadro "🌐 Créer un site internet" per la guida alla pubblicazione.
 - RISPOSTE CORTE: di default 2-6 frasi o una lista breve. Vai dritto al punto: niente introduzioni ("Bonne question !", "Voici…"), niente ripetizioni, niente riassunti finali, al massimo UNA domanda alla fine e solo se serve davvero. Più lungo SOLO quando il compito lo richiede (CV, lettera, esercizio, libro, sito, guida di viaggio, piano business) o se l'utente chiede dettagli.
 - Se chiede un'immagine (o un disegno, un logo, un poster…), creala SUBITO con create_image: niente domande sul tipo, lo stile o i dettagli; scegli tu quello che manca. Potrà sempre chiedere di modificarla dopo.
 - Frasi brevi e chiare, tono amichevole e rispettoso. Niente prediche.
@@ -508,7 +512,7 @@ export async function POST(request) {
     // Foto + "trasformala in stile…", oppure "fammi un'immagine di…": si disegna subito, senza domande.
     tool_choice: again || (!NOT_IMAGE.test(nowText) && ((photo && !body?.photoEarlier && STYLE_ASK.test(nowText)) || ((!photo || body?.photoEarlier) && IMAGE_REQ.test(nowText))))
       ? { type: 'function', function: { name: 'create_image' } } : 'auto',
-    messages: [{ role: 'system', content: SYSTEM.replace('{{VIDEO}}', videoEnabled() ? VIDEO_ON : VIDEO_OFF) + memoryPrompt(memory) + uiLangPrompt(body?.lang) + todayPrompt() + clientNowPrompt(body?.now) + langPrompt(detectLang(nowText) ? nowText : (again ? prevUserText : nowText)) + (body?.voice === true ? VOICE_STYLE : '') + (body?.mode === 'book' ? BOOK_MODE : body?.mode === 'travel' ? TRAVEL_MODE + countryHint(request) : body?.mode === 'website' ? WEBSITE_MODE + (pro ? WEBSITE_PRO : WEBSITE_FREE) : body?.mode === 'business' ? BUSINESS_MODE + countryHint(request) : body?.mode === 'whatsapp' ? WHATSAPP_MODE : '') }, ...messages],
+    messages: [{ role: 'system', content: SYSTEM.replace('{{VIDEO}}', videoEnabled() ? VIDEO_ON : VIDEO_OFF) + memoryPrompt(memory) + uiLangPrompt(body?.lang) + todayPrompt() + clientNowPrompt(body?.now) + langPrompt(detectLang(nowText) ? nowText : (again ? prevUserText : nowText)) + (body?.voice === true ? VOICE_STYLE : '') + (body?.mode === 'book' ? BOOK_MODE : body?.mode === 'travel' ? TRAVEL_MODE + countryHint(request) : body?.mode === 'website' ? WEBSITE_MODE + (pro ? WEBSITE_PRO : WEBSITE_FREE) : body?.mode === 'business' ? BUSINESS_MODE + countryHint(request) : body?.mode === 'whatsapp' ? WHATSAPP_MODE : (pro ? '' : WEBSITE_FREE_CHAT)) }, ...messages],
   };
   if (model.startsWith('gpt-5')) payload.reasoning_effort = env('OPENAI_REASONING_EFFORT', 'minimal');
 

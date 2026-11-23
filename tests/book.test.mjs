@@ -21,7 +21,7 @@ let r = await POST(req({ book: { action: 'compile', messages: [{ role: 'user', c
 assert.equal(r.status, 200); assert.match(await r.text(), /TITRE: Test/);
 assert.match(sent.messages[1].content, /AUTEUR : Un jeune part d’Oran/); assert.equal(sent.stream, true);
 r = await POST(req({ messages: [{ role: 'user', content: 'Mon livre parle de ma vie' }], mode: 'book' }));
-await r.text(); assert.match(chatSystem, /MODALITÀ LIBRO/); assert.match(chatSystem, /FIN/);
+await r.text(); assert.match(chatSystem, /MODALITÀ LIBRO/); assert.match(chatSystem, /FIN/); assert.match(chatSystem, /FALLO SUBITO/); assert.match(chatSystem, /\`\`\`html|```html/);
 for (const [mode, re] of [['travel', /GUIDA TURISTICA/], ['website', /SITO INTERNET/]]) {
   r = await POST(req({ messages: [{ role: 'user', content: 'Bonjour' }], mode }));
   await r.text(); assert.match(chatSystem, re, mode);
