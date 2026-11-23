@@ -10,3 +10,13 @@ for v in call('GET', f"/apps/{app['id']}/appStoreVersions")['data']:
 for g in call('GET', f"/apps/{app['id']}/subscriptionGroups")['data']:
     for s in call('GET', f"/subscriptionGroups/{g['id']}/subscriptions")['data']:
         print('ABONNEMENT', s['attributes']['productId'], s['attributes']['state'])
+for v in call('GET', f"/apps/{app['id']}/appStoreVersions")['data']:
+    try:
+        d = call('GET', f"/appStoreVersions/{v['id']}/appStoreReviewDetail")['data']['attributes']
+        print('REVIEW user:', d.get('demoAccountName'), '| mdp:', 'oui' if d.get('demoAccountPassword') else 'NON', '| tel:', 'oui' if d.get('contactPhone') else 'NON', '| notes:', len(d.get('notes') or ''), 'car.,', (d.get('notes') or '')[:40].replace('\n', ' '))
+    except Exception as e: print('REVIEW', e)
+    try:
+        att = call('GET', f"/appStoreVersions/{v['id']}/appStoreReviewDetail")['data']['id']
+        a = call('GET', f'/appStoreReviewDetails/{att}/appStoreReviewAttachments')['data']
+        print('PIECES JOINTES:', [(x['attributes'].get('fileName'), x['attributes'].get('assetDeliveryState', {}).get('state')) for x in a])
+    except Exception as e: print('PJ', e)
