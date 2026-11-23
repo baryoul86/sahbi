@@ -1971,6 +1971,35 @@ async function sendChat(text, pic = null, docAtt = null, opts = {}) {
     if (!work) { work = el('div', 'work-card'); work.append(el('span', 'wk-spin'), el('span', 'wk-txt')); outMsg.hidden = false; out.after(work); }
     work.querySelector('.wk-txt').textContent = lines ? `${label} · ${lines} ${tr('lignes')}` : label;
   };
+  // ✍️ Il testo appare a velocità regolare (come ChatGPT), anche se dal server arriva a pezzi grossi.
+  const paint = (t) => {
+    const ci = t.indexOf('```');
+    if (ci >= 0) {
+      out.textContent = t.slice(0, ci).trim();
+      const code = reply.slice(reply.indexOf('```'));
+      showWork(/```html/i.test(code) || /<!doctype|<html/i.test(code) ? tr('⏳ Je crée ton site…') : tr('⏳ J’écris le code…'), code.split('\n').length);
+    } else out.textContent = t;
+  };
+  const flow = (() => {
+    let target = '', shown = 0, raf = 0, fast = false, done = null;
+    const tick = () => {
+      raf = 0;
+      const back = target.length - shown;
+      if (back > 0) {
+        // ~90 caratteri al secondo, un po' più veloce se resta molto testo da mostrare; il codice dei siti non si anima.
+        const codeAt = target.indexOf('```');
+        if (codeAt >= 0 && shown >= codeAt) shown = target.length;
+        else shown = Math.min(target.length, shown + (fast ? Math.max(12, Math.ceil(back / 6)) : Math.max(1, Math.round(1.5 + back / 45))));
+        paint(target.slice(0, shown)); scroll();
+      }
+      if (shown < target.length) raf = requestAnimationFrame(tick);
+      else if (done) { const d = done; done = null; d(); }
+    };
+    return {
+      to(t) { target = t; if (!raf) raf = requestAnimationFrame(tick); },
+      end() { fast = true; return new Promise((ok) => { if (shown >= target.length) ok(); else { done = ok; if (!raf) raf = requestAnimationFrame(tick); } setTimeout(ok, 4000); }); },
+    };
+  })();
   const onFrame = (f) => {
     if (f.type === 'working') { showWork(tr('⏳ Sahbi prépare le résultat…')); return; }
     if (f.type === 'memory') { toast('🧠 Sahbi s’en souviendra.'); if (me) me.memoryStale = true; return; }
@@ -2014,12 +2043,7 @@ async function sendChat(text, pic = null, docAtt = null, opts = {}) {
     raw += dec.decode(value, { stream: true });
     const parts = raw.split(SEP);
     reply = parts.filter((_, i) => i % 2 === 0).join('');
-    const ci = reply.indexOf('```');
-    if (ci >= 0) {
-      out.textContent = reply.slice(0, ci).trim();
-      const code = reply.slice(ci);
-      showWork(/```html/i.test(code) || /<!doctype|<html/i.test(code) ? tr('⏳ Je crée ton site…') : tr('⏳ J’écris le code…'), code.split('\n').length);
-    } else { out.textContent = reply; if (work && reply.trim()) { /* testo dopo il frame "working" */ } }
+    flow.to(reply);
     if (reply.trim()) outMsg.hidden = false;
     opts.onText?.(reply);
     for (let i = 1; i < parts.length - 1; i += 2) {
@@ -2038,6 +2062,7 @@ async function sendChat(text, pic = null, docAtt = null, opts = {}) {
       library = null;
     } else bubble('bot', 'La création a pris trop de temps. Réessaie : ça marche souvent au deuxième essai.', 'err');
   }
+  await flow.end();
   work?.remove(); work = null; out.textContent = reply;
   if (!reply.trim()) {
     out.closest(".msg").remove();
