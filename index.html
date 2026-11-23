@@ -129,6 +129,9 @@ footer.composer .col{padding-block:10px 12px;display:flex;flex-direction:column;
 .bookcard .rb{display:flex;gap:8px;flex-wrap:wrap}
 .bookcard .rb button{min-height:40px;padding:0 14px;border-radius:999px;border:1px solid var(--line);background:var(--bg);color:var(--fg);font:inherit;font-size:14px;cursor:pointer}
 .bookcard .rb button.main{background:var(--mint);border-color:var(--mint);color:var(--mint-ink)}
+.work-card{display:flex;align-items:center;gap:10px;margin:10px 0 4px;padding:14px 16px;border:1px dashed var(--line);border-radius:16px;background:var(--panel);font-size:15px;max-width:520px}
+.work-card .wk-spin{width:18px;height:18px;border-radius:50%;border:3px solid var(--line);border-top-color:var(--mint,#2FAE74);animation:wkspin .8s linear infinite;flex:none}
+@keyframes wkspin{to{transform:rotate(360deg)}}
 .site-card{margin:10px 0 4px;border:1px solid var(--line);border-radius:16px;overflow:hidden;background:var(--panel);max-width:520px}
 .site-card .sc-view{position:relative;height:260px;overflow:hidden;background:#fff;cursor:pointer}
 .site-card .sc-view iframe{position:absolute;top:0;left:0;width:200%;height:200%;border:0;transform:scale(.5);transform-origin:0 0;pointer-events:none}
@@ -1962,7 +1965,14 @@ async function sendChat(text, pic = null, docAtt = null, opts = {}) {
   const out = bubble('assistant', '');
   const outMsg = out.closest('.msg'); outMsg.hidden = true;
   const extra = []; let pending = null, handled = 0, raw = '', reply = '';
+  // ⏳ Carta "sto lavorando" mentre Sahbi scrive il codice di un sito (il codice lungo non si vede mentre arriva).
+  let work = null;
+  const showWork = (label, lines) => {
+    if (!work) { work = el('div', 'work-card'); work.append(el('span', 'wk-spin'), el('span', 'wk-txt')); outMsg.hidden = false; out.after(work); }
+    work.querySelector('.wk-txt').textContent = lines ? `${label} · ${lines} ${tr('lignes')}` : label;
+  };
   const onFrame = (f) => {
+    if (f.type === 'working') { showWork(tr('⏳ Sahbi prépare le résultat…')); return; }
     if (f.type === 'memory') { toast('🧠 Sahbi s’en souviendra.'); if (me) me.memoryStale = true; return; }
     if (f.type === 'reminder') { const r = { role: 'assistant', kind: 'reminder', content: `📅 ${f.title}`, title: f.title, start: f.start, notes: f.notes || '' }; reminderCard(r); extra.push(r); return; }
     if (f.type === 'ping') return; // segnale "sono ancora qui" del server: il segnaposto resta
@@ -2004,7 +2014,13 @@ async function sendChat(text, pic = null, docAtt = null, opts = {}) {
     raw += dec.decode(value, { stream: true });
     const parts = raw.split(SEP);
     reply = parts.filter((_, i) => i % 2 === 0).join('');
-    out.textContent = reply; if (reply.trim()) outMsg.hidden = false;
+    const ci = reply.indexOf('```');
+    if (ci >= 0) {
+      out.textContent = reply.slice(0, ci).trim();
+      const code = reply.slice(ci);
+      showWork(/```html/i.test(code) || /<!doctype|<html/i.test(code) ? tr('⏳ Je crée ton site…') : tr('⏳ J’écris le code…'), code.split('\n').length);
+    } else { out.textContent = reply; if (work && reply.trim()) { /* testo dopo il frame "working" */ } }
+    if (reply.trim()) outMsg.hidden = false;
     opts.onText?.(reply);
     for (let i = 1; i < parts.length - 1; i += 2) {
       if ((i - 1) / 2 < handled) continue;
@@ -2022,6 +2038,7 @@ async function sendChat(text, pic = null, docAtt = null, opts = {}) {
       library = null;
     } else bubble('bot', 'La création a pris trop de temps. Réessaie : ça marche souvent au deuxième essai.', 'err');
   }
+  work?.remove(); work = null; out.textContent = reply;
   if (!reply.trim()) {
     out.closest(".msg").remove();
     if (!extra.length && !handled) bubble('bot', 'Je n’ai pas pu répondre. Réessaie.', 'err');

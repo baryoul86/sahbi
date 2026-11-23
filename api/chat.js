@@ -682,6 +682,7 @@ export async function POST(request) {
 
   // Il modello ha solo annunciato ("sto generando…", "un attimo") senza consegnare: lo si fa continuare subito.
   async function deliverNow(controller) {
+    controller.enqueue(encoder.encode(frame({ type: 'working' })));
     const nudge = "Consegna ADESSO, in questa risposta, il risultato completo che hai appena annunciato (per un sito o una pagina: tutto il file index.html in un unico blocco ```html). Nessuna frase di attesa, nessuna domanda prima del risultato.";
     const r = await call({ ...payload, tool_choice: 'none', messages: [...payload.messages, { role: 'assistant', content: reply }, { role: 'user', content: nudge }] }).catch(() => null);
     if (!r?.ok || !r.body) return;
