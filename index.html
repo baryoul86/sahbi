@@ -326,12 +326,14 @@ button.s-row.danger{color:var(--danger)}
 a.s-row{text-decoration:none;color:inherit}
 a.s-row[hidden]{display:none}
 .app-only{display:none}
-.ios-app .android-only,.ios-app #googleBox,.ios-app #adSlot,.ios-app #house,.ios-app #adTag{display:none !important}
+.ios-app .android-only,.ios-app #adSlot,.ios-app #house,.ios-app #adTag{display:none !important}
 .in-app .app-only{display:block}
 .in-app #payCard,.in-app #payDz,.in-app #planSeg{display:none !important}
 .in-app .pay .cta.app-only{display:flex}
 .ios-app #payPlay{display:none !important}
 .ios-app .no-ios{display:none !important}
+.abtn{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;min-height:52px;border-radius:14px;border:0;background:#000;color:#fff;font:inherit;font-size:17px;font-weight:500;cursor:pointer;margin-bottom:10px}
+@media (prefers-color-scheme:dark){.abtn{background:#fff;color:#000}}
 .linkish{background:none;border:0;padding:0;color:inherit;text-decoration:underline;font:inherit;cursor:pointer}
 .send[hidden],.talk[hidden]{display:none}
 .drawer{overflow-y:auto}
@@ -673,6 +675,10 @@ html[lang=ar] body{line-height:1.7}
     <div class="lp-card" id="inscription">
       <h2>Commencer gratuitement</h2>
       <div id="googleBox" hidden>
+        <button class="abtn" type="button" id="appleBtn" hidden>
+          <svg width="18" height="20" viewBox="0 0 17 20" aria-hidden="true"><path fill="currentColor" d="M14.2 10.6c0-2.6 2.1-3.8 2.2-3.9-1.2-1.8-3.1-2-3.7-2-1.6-.2-3.1.9-3.9.9-.8 0-2-.9-3.4-.9C3.6 4.8 2 5.8 1 7.3c-1.9 3.3-.5 8.1 1.4 10.8.9 1.3 2 2.8 3.4 2.7 1.4-.1 1.9-.9 3.5-.9s2.1.9 3.5.9c1.5 0 2.4-1.3 3.3-2.6 1-1.5 1.4-2.9 1.5-3-.1 0-2.9-1.1-2.9-4.6zM11.6 3c.7-.9 1.2-2.1 1.1-3.3-1 0-2.3.7-3 1.6-.7.8-1.3 2-1.1 3.2 1.1.1 2.3-.6 3-1.5z"/></svg>
+          Continuer avec Apple
+        </button>
         <button class="gbtn" type="button" id="googleBtn">
           <svg width="20" height="20" viewBox="0 0 48 48" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-7.9l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>
           Continuer avec Google
@@ -941,12 +947,18 @@ const ready = (async () => {
   onSession(data.session);
   // "Continuer avec Google" appare solo se Google è attivato in Supabase.
   fetch(`${cfg.supabaseUrl}/auth/v1/settings`, { headers: { apikey: cfg.supabaseAnonKey } })
-    .then((r) => r.json()).then((s) => { $('googleBox').hidden = IOS_APP || !s?.external?.google; }).catch(() => {});
+    .then((r) => r.json()).then((s) => {
+      // App iPhone: "Continuer avec Apple" (natif). Google solo se c'è anche Apple (regola Apple 4.8).
+      const apple = IOS_APP && !!s?.external?.apple && !!appleAuth();
+      const google = !!s?.external?.google && (!IOS_APP || apple);
+      $('appleBtn').hidden = !apple; $('googleBtn').hidden = !google; $('googleBox').hidden = !apple && !google;
+    }).catch(() => {});
 })();
 
 // App iPhone: il link dell'e-mail passa da /app-login.html e torna nell'app con bond.sahbi.app://auth#…
 async function iosAuthFromUrl(u) {
   if (!u || !String(u).startsWith('bond.sahbi.app://')) return;
+  window.Capacitor?.Plugins?.Browser?.close?.().catch?.(() => {});
   const [, rest = ''] = String(u).split('://');
   const q = new URLSearchParams(rest.replace(/^[^?#]*[?#]?/, '').replace('#', '&'));
   await ready.catch(() => {});
@@ -964,10 +976,38 @@ if (IOS_APP) {
   }
 }
 
+// Accesso con Apple (solo app iPhone, plugin nativo "SahbiStore")
+function appleAuth() {
+  // Solo se la versione dell'app installata ha davvero il metodo nativo (le build vecchie non ce l'hanno).
+  const h = (window.Capacitor?.PluginHeaders || []).find((x) => x.name === 'SahbiStore');
+  if (!h?.methods?.some((m) => m.name === 'appleSignIn')) return null;
+  return window.Capacitor?.Plugins?.SahbiStore || window.Capacitor?.registerPlugin?.('SahbiStore') || null;
+}
+$('appleBtn').addEventListener('click', async () => {
+  const p = appleAuth(); if (!p) return;
+  $('appleBtn').disabled = true; $('emailErr').textContent = '';
+  try {
+    const r = await p.appleSignIn();
+    await ready.catch(() => {});
+    const { error } = await supabase.auth.signInWithIdToken({ provider: 'apple', token: r.token, nonce: r.nonce });
+    if (error) throw error;
+    if (r.name) supabase.auth.updateUser({ data: { full_name: r.name } }).catch(() => {});
+  } catch (e) { if (e?.code !== 'cancel' && e?.message !== 'cancel') $('emailErr').textContent = tr('Connexion Apple impossible pour le moment. Utilise ton e-mail.'); }
+  $('appleBtn').disabled = false;
+});
+
 // Accesso con Google
 $('googleBtn').addEventListener('click', async () => {
   $('googleBtn').disabled = true;
   await ready.catch(() => {});
+  // App iPhone: Google si apre in una finestra Safari e torna nell'app con bond.sahbi.app://auth (via /app-login.html).
+  if (IOS_APP) {
+    const { data, error } = await supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: `${location.origin}/app-login.html`, skipBrowserRedirect: true, queryParams: { prompt: 'select_account' } } });
+    const br = window.Capacitor?.Plugins?.Browser;
+    if (!error && data?.url) { if (br) await br.open({ url: data.url }).catch(() => { location.href = data.url; }); else location.href = data.url; }
+    else $('emailErr').textContent = 'Connexion Google impossible pour le moment. Utilise ton e-mail.';
+    $('googleBtn').disabled = false; return;
+  }
   const { error } = await supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: location.origin, queryParams: { prompt: 'select_account' } } });
   if (error) { $('googleBtn').disabled = false; $('emailErr').textContent = 'Connexion Google impossible pour le moment. Utilise ton e-mail.'; }
 });

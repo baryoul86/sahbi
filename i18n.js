@@ -420,6 +420,8 @@ const D = [
 ['Ton abonnement Sahbi Pro est restauré ✅', 'تمت استعادة اشتراكك في صاحبي برو ✅', 'Your Sahbi Pro subscription is restored ✅'],
 ['Aucun abonnement actif trouvé sur ce compte Apple.', 'لم يتم العثور على اشتراك نشط في حساب Apple هذا.', 'No active subscription found on this Apple account.'],
 ['Impossible de restaurer les achats.', 'تعذّرت استعادة المشتريات.', 'Could not restore purchases.'],
+['Continuer avec Apple', 'المتابعة باستخدام Apple', 'Continue with Apple'],
+['Connexion Apple impossible pour le moment. Utilise ton e-mail.', 'تعذّر تسجيل الدخول عبر Apple حاليًا. استعمل بريدك الإلكتروني.', 'Apple sign-in is not available right now. Use your email.'],
 ['➕ Nouveau site', '➕ موقع جديد', '➕ New site'],
 ['Télécharger ton site est réservé à Sahbi Pro.', 'تحميل موقعك متاح فقط مع صاحبي برو.', 'Downloading your site is for Sahbi Pro.'],
 ['Créer un site internet', 'أنشئ موقعًا إلكترونيًا', 'Create a website'],

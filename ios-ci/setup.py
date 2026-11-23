@@ -11,6 +11,11 @@ have = {c['attributes']['capabilityType'] for c in call('GET', f'/bundleIds/{bid
 if 'IN_APP_PURCHASE' not in have:
     call('POST', '/bundleIdCapabilities', json={'data': {'type': 'bundleIdCapabilities', 'attributes': {'capabilityType': 'IN_APP_PURCHASE'}, 'relationships': {'bundleId': {'data': {'type': 'bundleIds', 'id': bid}}}}})
     print('Achats intégrés activés')
+if 'APPLE_ID_AUTH' not in have:
+    call('POST', '/bundleIdCapabilities', json={'data': {'type': 'bundleIdCapabilities', 'attributes': {'capabilityType': 'APPLE_ID_AUTH',
+        'settings': [{'key': 'APPLE_ID_AUTH_APP_CONSENT', 'options': [{'key': 'PRIMARY_APP_CONSENT'}]}]},
+        'relationships': {'bundleId': {'data': {'type': 'bundleIds', 'id': bid}}}}})
+    print('Connexion avec Apple activée')
 mine = [a for a in apps if a['attributes']['bundleId'] == BID]
 if mine: print('::notice title=App Store Connect::Fiche Sahbi OK (id', mine[0]['id'], ') : on peut construire l’app.')
 else: print('::warning title=À faire::Crée la fiche de l’app dans App Store Connect (Mes apps → + → Nouvelle app, identifiant bond.sahbi.app).')

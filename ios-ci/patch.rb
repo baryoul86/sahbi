@@ -31,3 +31,11 @@ s2 = s.sub(/customClass="CAPBridgeViewController" customModule="Capacitor"/, 'cu
 abort('Main.storyboard : CAPBridgeViewController introuvable') if s2 == s
 File.write(sb, s2)
 puts 'Achats Apple (StoreKit) ajoutés'
+
+# Connexion avec Apple : droit (entitlement) dans l'app.
+FileUtils.cp(File.join(__dir__, 'native', 'App.entitlements'), 'ios/App/App/App.entitlements')
+p = Xcodeproj::Project.open('ios/App/App.xcodeproj')
+t = p.targets.find { |x| x.name == 'App' }
+t.build_configurations.each { |c| c.build_settings['CODE_SIGN_ENTITLEMENTS'] = 'App/App.entitlements' }
+p.save
+puts 'Connexion avec Apple ajoutée'
