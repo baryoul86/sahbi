@@ -7,6 +7,7 @@ import { isAdmin, alert, sendMail, adminEmails } from './_alert.js';
 import { stripe } from './_pay.js';
 import { videoEnabled } from './_video.js';
 import { playCheck, playRegions } from './_play.js';
+import { adminSupportList, adminSupportUpdate, agentFeed } from './_support.js';
 
 const timed = (p, ms = 8000) => Promise.race([p, new Promise((_, no) => setTimeout(() => no(new Error('timeout')), ms))]);
 
@@ -111,8 +112,12 @@ export async function GET(request) {
     return json({ ok: allOk(h), report: due, chat, links, playArab, visitDays, img, recent, db: h.db.ok ? 'ok' : 'ko', openai: h.openai.ok ? 'ok' : (h.openai.detail === 'crédit épuisé' ? 'credit' : 'ko'), detail: h.openai.ok ? undefined : String(h.openai.detail || '').slice(0, 80), deep });
   }
 
+  // Controllo automatico dell'assistenza (chiave segreta, niente dati personali).
+  if (q.get('support') === 'agent') return agentFeed(request);
+
   const user = await getUser(request);
   if (!user) return fail('auth', 401, 'Connecte-toi d’abord sur Sahbi.');
+  if (isAdmin(user.email) && q.get('support')) return adminSupportList(q.get('support'));
   if (!isAdmin(user.email)) return fail('forbidden', 403, adminEmails().length ? `Cette page est réservée à l’administrateur. Tu es connecté avec : ${user.email}` : 'ADMIN_EMAIL n’est pas encore configuré sur Vercel (ou le Redeploy n’a pas été fait).');
   const [stats, h, st, visits] = await Promise.all([rpc('admin_stats', {}).catch((e) => ({ error: e.message })), health(q.get('deep') === '1'), checkStripe(), rpc('visit_stats', {}).catch(() => null)]);
   return json({
@@ -125,4 +130,12 @@ export async function GET(request) {
       adsense: !!env('ADSENSE_CLIENT', 'ca-pub-4750815574904840'),
     },
   });
+}
+
+// Risposta dell'amministratore a una richiesta di assistenza: POST /api/admin?support=reply { id, reply, status }
+export async function POST(request) {
+  const user = await getUser(request);
+  if (!user) return fail('auth', 401, 'Connecte-toi d’abord sur Sahbi.');
+  if (!isAdmin(user.email)) return fail('forbidden', 403, 'Réservé à l’administrateur.');
+  return adminSupportUpdate(request);
 }

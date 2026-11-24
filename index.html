@@ -377,6 +377,15 @@ a.s-row[hidden]{display:none}
 .field label{font-size:13px;color:var(--muted)}
 .field select,.field input{min-height:48px;border-radius:12px;border:1px solid var(--line);background:var(--night);color:var(--fg);padding:0 12px;font:inherit;font-size:16px;min-width:0;width:100%}
 .field select:focus,.field input:focus{outline:none;border-color:var(--mint)}
+.field textarea{min-height:120px;border-radius:12px;border:1px solid var(--line);background:var(--night);color:var(--fg);padding:10px 12px;font:inherit;font-size:16px;width:100%;box-sizing:border-box;resize:vertical}
+.field textarea:focus{outline:none;border-color:var(--mint)}
+.sup-dot{width:10px;height:10px;border-radius:50%;background:#E5484D;margin-inline-start:auto}
+.sup-shot{display:flex;align-items:center;gap:10px}
+.sup-shot img{width:56px;height:56px;object-fit:cover;border-radius:10px;border:1px solid var(--line)}
+.sup-t{border:1px solid var(--line);border-radius:14px;padding:10px 12px;font-size:14px;background:var(--night)}
+.sup-t p{margin:4px 0;white-space:pre-wrap}
+.sup-t .rep{color:var(--mint-text,var(--mint))}
+.sup-t small{color:var(--muted)}
 .choice{display:flex;flex-wrap:wrap;gap:8px}
 .choice button{min-height:44px;padding:0 14px;border-radius:999px;border:1px solid var(--line);background:var(--night);font-size:14px}
 .choice button[aria-pressed="true"]{background:var(--mint);border-color:var(--mint);color:var(--mint-ink);font-weight:500}
@@ -591,6 +600,11 @@ html[lang=ar] body{line-height:1.7}
     <b>Sahbi Pro</b>
     <span id="drawerProText">8 images par jour, photos, voix</span>
   </button>
+  <button class="lib-btn" id="openSupport" type="button">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/><path d="M5.6 5.6l3.6 3.6M14.8 14.8l3.6 3.6M18.4 5.6l-3.6 3.6M9.2 14.8l-3.6 3.6"/></svg>
+    Assistance
+    <span class="sup-dot" id="supDot" hidden aria-label="Nouvelle réponse"></span>
+  </button>
   <button class="settings-btn" id="openSettings" type="button">
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
     <span class="who"><b>Paramètres</b><span id="who" dir="auto"></span></span>
@@ -672,6 +686,24 @@ html[lang=ar] body{line-height:1.7}
       <button type="button" data-p="Écris un joli message de vœux pour le Ramadan à envoyer à ">Message de vœux</button>
     </div>
     <button class="ghost" id="prClose" type="button">Fermer</button>
+  </div>
+</section>
+
+<section class="sheet" id="supSheet" hidden role="dialog" aria-modal="true" aria-labelledby="supTitle">
+  <div class="col">
+    <h2 id="supTitle">Assistance</h2>
+    <p class="s-note">Un problème, une erreur, une question ? Écris-nous : l’équipe Sahbi te répond ici, dans l’app.</p>
+    <div class="field"><label for="supText">Ton message</label><textarea id="supText" dir="auto" maxlength="4000" placeholder="Explique ce qui ne marche pas : ce que tu as fait, ce que tu attendais, ce qui s’est passé."></textarea></div>
+    <div class="sup-shot">
+      <button class="ghost" id="supShotBtn" type="button">📷 Ajouter une capture d’écran</button>
+      <img id="supShotImg" alt="Capture d’écran jointe" hidden>
+      <button class="ghost" id="supShotX" type="button" hidden aria-label="Retirer la capture">✕</button>
+      <input id="supShotFile" type="file" accept="image/*" hidden>
+    </div>
+    <p class="s-note">Pour t’aider plus vite, on joint automatiquement des infos techniques (type de téléphone, version de l’app, dernière erreur). Jamais tes discussions.</p>
+    <button class="cta" id="supSend" type="button">Envoyer</button>
+    <div id="supList" aria-live="polite"></div>
+    <button class="ghost" id="supClose" type="button">Fermer</button>
   </div>
 </section>
 
@@ -2311,6 +2343,7 @@ async function refreshMe() {
     $('openPlus').textContent = me.pro ? 'Pro ✓' : 'Pro';
     $('drawerProText').textContent = me.pro ? tr('Actif jusqu’au {d}', { d: fmtDate(me.proUntil) }) : 'Images, vidéos, voix, sans pub';
     updateAds();
+    supCheck().catch(() => {});
   } catch { /* offline */ }
 }
 const fmtDate = (d) => (d ? new Date(d).toLocaleDateString(LOCALE, { day: 'numeric', month: 'long', year: 'numeric' }) : '');
@@ -2790,8 +2823,8 @@ $('form').addEventListener('submit', async (e) => {
   busy = false; grow();
 });
 
-function toast(t) { const x = $('toast'); x.textContent = t; x.hidden = false; clearTimeout(toast.t); toast.t = setTimeout(() => { x.hidden = true; }, 3000); }
-function closeAll() { $('scrim').hidden = true; $('drawer').hidden = true; $('sheet').hidden = true; $('bacSheet').hidden = true; $('prayerSheet').hidden = true; }
+function toast(t) { if (/(erreur|error|impossible|échou|خطأ)/i.test(String(t))) noteErr(`toast: ${t}`); const x = $('toast'); x.textContent = t; x.hidden = false; clearTimeout(toast.t); toast.t = setTimeout(() => { x.hidden = true; }, 3000); }
+function closeAll() { $('scrim').hidden = true; $('drawer').hidden = true; $('sheet').hidden = true; $('bacSheet').hidden = true; $('prayerSheet').hidden = true; $('supSheet').hidden = true; }
 const store = { get(k, d = null) { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch { return d; } }, set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* ignorato */ } } };
 
 // ---------- Mode Bac ----------
@@ -2874,6 +2907,77 @@ $('prCity').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.prev
 for (const b of $('prIdeas').querySelectorAll('button')) b.addEventListener('click', () => { closeAll(); prefill(b.dataset.p); });
 $('prClose').addEventListener('click', closeAll);
 $('openPrayer').addEventListener('click', openPrayer);
+
+// ---------- Assistance ----------
+// Ultimo errore visto (messaggi rossi, errori della pagina): va con la richiesta d'assistenza.
+let lastErr = '';
+const noteErr = (t) => { lastErr = `${new Date().toLocaleTimeString('fr-FR')} ${String(t || '').slice(0, 300)}`; };
+window.addEventListener('error', (e) => noteErr(`${e.message || 'erreur'} @${String(e.filename || '').split('/').pop()}:${e.lineno || ''}`));
+window.addEventListener('unhandledrejection', (e) => noteErr(`promise: ${e.reason?.message || e.reason || ''}`));
+let supShot = null;
+async function supMeta() {
+  let build = '';
+  try { build = (await window.Capacitor?.Plugins?.App?.getInfo?.())?.build || ''; } catch { /* web */ }
+  return {
+    platform: IOS_APP ? 'app iPhone' : IN_APP ? 'app Android' : `site web (${/Android/i.test(navigator.userAgent) ? 'Android' : /iPhone|iPad/i.test(navigator.userAgent) ? 'iPhone/iPad' : 'ordinateur'})`,
+    build: String(build || ''), ua: navigator.userAgent, lang: LANG, mode: current?.mode || '',
+    screen: `${innerWidth}x${innerHeight}`, lastError: lastErr, time: localNow(),
+  };
+}
+function supRender(list) {
+  const box = $('supList'); box.replaceChildren();
+  if (!list?.length) return;
+  const h = document.createElement('h3'); h.textContent = tr('Mes demandes'); h.style.cssText = 'font-size:15px;margin:6px 0'; box.append(h);
+  for (const t of list) {
+    const d = document.createElement('div'); d.className = 'sup-t';
+    const m = document.createElement('p'); m.dir = 'auto'; m.textContent = t.message;
+    const st = document.createElement('small'); st.textContent = `${fmtDate(t.created_at)} · ${t.status === 'open' ? tr('En attente de réponse') : t.status === 'answered' ? tr('Répondu') : tr('Terminé')}`;
+    d.append(st, m);
+    if (t.reply) { const r = document.createElement('p'); r.className = 'rep'; r.dir = 'auto'; r.textContent = `💬 ${tr('Équipe Sahbi')} : ${t.reply}`; d.append(r); }
+    box.append(d);
+  }
+}
+async function supCheck(open = false) {
+  const r = await api(`/api/me?support=1${open ? '&seen=1' : ''}`).catch(() => null);
+  if (!r?.ok) return null;
+  const d = await r.json().catch(() => null);
+  if (!d) return null;
+  $('supDot').hidden = open || !d.unseen;
+  if (!open && d.unseen && !supCheck.told) { supCheck.told = true; toast(tr('L’équipe Sahbi a répondu à ta demande : ouvre Assistance dans le menu.')); }
+  return d;
+}
+async function openSupport() {
+  closeAll();
+  $('scrim').hidden = false; $('supSheet').hidden = false; $('supText').focus();
+  const d = await supCheck(true);
+  supRender(d?.tickets);
+}
+function supSetShot(dataUrl) {
+  supShot = dataUrl;
+  $('supShotImg').hidden = !dataUrl; $('supShotX').hidden = !dataUrl;
+  if (dataUrl) $('supShotImg').src = dataUrl; else $('supShotImg').removeAttribute('src');
+}
+$('openSupport').addEventListener('click', openSupport);
+$('supClose').addEventListener('click', closeAll);
+$('supShotBtn').addEventListener('click', () => $('supShotFile').click());
+$('supShotX').addEventListener('click', () => supSetShot(null));
+$('supShotFile').addEventListener('change', async (e) => {
+  const f = e.target.files?.[0]; e.target.value = '';
+  if (!f) return;
+  try { supSetShot(await shrink(f, 1280)); } catch { toast(tr('Impossible de lire cette image.')); }
+});
+$('supSend').addEventListener('click', async () => {
+  const message = $('supText').value.trim();
+  if (message.length < 3) { $('supText').focus(); toast(tr('Décris ton problème en quelques mots.')); return; }
+  const btn = $('supSend'); btn.disabled = true; btn.textContent = tr('Envoi…');
+  const r = await api('/api/me?support=1', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ message, shot: supShot, meta: await supMeta() }) }).catch(() => null);
+  const d = await r?.json().catch(() => ({})) || {};
+  btn.disabled = false; btn.textContent = tr('Envoyer');
+  if (!r?.ok) { toast(d.message || tr('Envoi impossible. Vérifie ta connexion et réessaie.')); return; }
+  $('supText').value = ''; supSetShot(null);
+  toast(tr('Message envoyé ✅ On te répond ici très vite.'));
+  supRender((await supCheck(true))?.tickets);
+});
 
 // ---------- Conversazione a voce (Pro): ascolta → capisce → risponde a voce → riascolta ----------
 const V = { on: false, paused: false, stream: null, ctx: null, analyser: null, rec: null, audio: null, raf: 0, phase: '' };

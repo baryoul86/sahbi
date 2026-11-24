@@ -3,6 +3,27 @@
 // {x} = parte variabile (numero, data, nome...).
 (() => {
 const D = [
+// ---------- Assistance ----------
+['Assistance', 'المساعدة', 'Support'],
+['Nouvelle réponse', 'رد جديد', 'New reply'],
+['Un problème, une erreur, une question ? Écris-nous : l’équipe Sahbi te répond ici, dans l’app.', 'مشكلة، خطأ، سؤال؟ اكتب لنا: فريق صاحبي يرد عليك هنا داخل التطبيق.', 'A problem, an error, a question? Write to us: the Sahbi team replies here, in the app.'],
+['Ton message', 'رسالتك', 'Your message'],
+['Explique ce qui ne marche pas : ce que tu as fait, ce que tu attendais, ce qui s’est passé.', 'اشرح ما لا يعمل: ماذا فعلت، ماذا كنت تنتظر، وماذا حدث.', 'Explain what is not working: what you did, what you expected, what happened.'],
+['📷 Ajouter une capture d’écran', '📷 إضافة لقطة شاشة', '📷 Add a screenshot'],
+['Capture d’écran jointe', 'لقطة الشاشة المرفقة', 'Attached screenshot'],
+['Retirer la capture', 'إزالة اللقطة', 'Remove screenshot'],
+['Pour t’aider plus vite, on joint automatiquement des infos techniques (type de téléphone, version de l’app, dernière erreur). Jamais tes discussions.', 'لمساعدتك أسرع، نرفق تلقائيًا معلومات تقنية (نوع الهاتف، نسخة التطبيق، آخر خطأ). لا نرسل محادثاتك أبدًا.', 'To help you faster, we automatically attach technical info (phone type, app version, last error). Never your chats.'],
+['Envoi…', 'جارٍ الإرسال…', 'Sending…'],
+['Mes demandes', 'طلباتي', 'My requests'],
+['En attente de réponse', 'في انتظار الرد', 'Waiting for a reply'],
+['Répondu', 'تم الرد', 'Answered'],
+['Terminé', 'منتهٍ', 'Closed'],
+['Équipe Sahbi', 'فريق صاحبي', 'Sahbi team'],
+['L’équipe Sahbi a répondu à ta demande : ouvre Assistance dans le menu.', 'فريق صاحبي رد على طلبك: افتح المساعدة من القائمة.', 'The Sahbi team replied to your request: open Support in the menu.'],
+['Impossible de lire cette image.', 'تعذّر قراءة هذه الصورة.', 'Could not read this image.'],
+['Décris ton problème en quelques mots.', 'صف مشكلتك ببضع كلمات.', 'Describe your problem in a few words.'],
+['Envoi impossible. Vérifie ta connexion et réessaie.', 'تعذّر الإرسال. تحقق من الاتصال وأعد المحاولة.', 'Could not send. Check your connection and try again.'],
+['Message envoyé ✅ On te répond ici très vite.', 'تم إرسال الرسالة ✅ سنرد عليك هنا قريبًا جدًا.', 'Message sent ✅ We will reply here very soon.'],
 // ---------- Barra, chat, composer ----------
 ['Ouvrir le menu', 'فتح القائمة', 'Open menu'],
 ['Publicité', 'إعلان', 'Advertising'],

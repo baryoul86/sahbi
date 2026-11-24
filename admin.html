@@ -101,10 +101,11 @@ function statusRow(label, s, okText = 'OK') {
 }
 function kpi(label, value) { const d = el('div', 'kpi'); d.append(el('span', '', label), el('b', '', String(value ?? '–'))); return d; }
 
+let tok = '', supFilter = 'open';
 async function load() {
   app.replaceChildren(el('p', 'msg', deep ? 'Contrôle complet en cours…' : 'Chargement…'));
   const { data } = await supabase.auth.getSession();
-  const token = data.session?.access_token;
+  const token = data.session?.access_token; tok = token;
   if (!token) { const p = el('p', 'msg', 'Connecte-toi d’abord sur Sahbi avec ton compte administrateur. '); const a = el('a', '', 'Aller sur Sahbi'); a.href = '/'; p.append(a); app.replaceChildren(p); return; }
   const r = await fetch(`/api/admin${deep ? '?deep=1' : ''}`, { headers: { authorization: `Bearer ${token}` } });
   const d = await r.json().catch(() => ({}));
@@ -119,6 +120,7 @@ function render(d) {
   frag.append(el('div', `banner ${ok ? 'ok' : 'ko'}`, ok ? '✅ Sahbi fonctionne.' : '⚠️ Un service a un problème : regarde « État des services ».'));
   if (s.error) frag.append(el('div', 'banner ko', `Statistiques indisponibles : exécute supabase/005_admin.sql (${s.error}).`));
   const grid = el('div', 'grid');
+  const sup = el('div', 'card full'); sup.id = 'support'; grid.append(sup); loadSupport(sup);
 
   // Soldi
   const money = el('div', 'card');
@@ -204,6 +206,48 @@ function render(d) {
   frag.append(grid);
   app.replaceChildren(frag);
 }
+
+// ---------- Assistance ----------
+async function loadSupport(box) {
+  box.replaceChildren(el('h2', '', 'Assistance'), el('p', 'muted', 'Chargement…'));
+  const r = await fetch(`/api/admin?support=${supFilter}`, { headers: { authorization: `Bearer ${tok}` } }).catch(() => null);
+  const d = await r?.json().catch(() => ({})) || {};
+  box.replaceChildren(el('h2', '', `Assistance${d.open ? ` · ${d.open} à traiter` : ''}`));
+  if (d.off) { box.append(el('p', '', d.message || 'Pas encore activé.')); return; }
+  if (!r?.ok) { box.append(el('p', '', d.message || 'Indisponible.')); return; }
+  const seg = el('div', 'links');
+  for (const [k, label] of [['open', 'À traiter'], ['answered', 'Répondus'], ['closed', 'Fermés'], ['all', 'Tout']]) {
+    const b = el('button', `btn${k === supFilter ? ' main' : ''}`, label); b.type = 'button';
+    b.addEventListener('click', () => { supFilter = k; loadSupport(box); }); seg.append(b);
+  }
+  box.append(seg);
+  if (!d.tickets?.length) { box.append(el('p', '', supFilter === 'open' ? 'Aucune demande en attente. 👍' : 'Rien ici.')); return; }
+  for (const t of d.tickets) {
+    const m = t.meta || {};
+    const x = el('div', 'alert'); x.style.borderLeftColor = t.status === 'open' ? 'var(--danger)' : 'var(--mint)';
+    x.append(el('b', '', `${t.email || '(sans e-mail)'}${m.pro ? ' · Pro' : ''} · ${when(t.created_at)}`));
+    const msg = el('div', '', t.message); msg.style.whiteSpace = 'pre-wrap'; msg.style.margin = '6px 0'; msg.dir = 'auto'; x.append(msg);
+    x.append(el('small', '', `${m.platform || '?'}${m.build ? ` · build ${m.build}` : ''} · langue ${m.lang || '?'}${m.mode ? ` · chat ${m.mode}` : ''}${m.screen ? ` · écran ${m.screen}` : ''}`));
+    if (m.lastError) { const e = el('small', '', `Dernière erreur : ${m.lastError}`); e.style.display = 'block'; x.append(e); }
+    if (t.shotUrl) { const a = el('a', '', '📷 Voir la capture d’écran'); a.href = t.shotUrl; a.target = '_blank'; a.rel = 'noopener'; a.style.display = 'block'; a.style.margin = '6px 0'; x.append(a); }
+    if (t.reply) { const rp = el('div', '', `↪ Ta réponse : ${t.reply}`); rp.style.whiteSpace = 'pre-wrap'; rp.style.marginTop = '6px'; rp.style.color = 'var(--mint-text)'; x.append(rp); }
+    const ta = document.createElement('textarea'); ta.rows = 3; ta.placeholder = 'Ta réponse (elle apparaîtra dans l’app de la personne)'; ta.dir = 'auto';
+    ta.style.cssText = 'width:100%;box-sizing:border-box;margin-top:8px;border-radius:12px;border:1px solid var(--line);background:var(--panel);color:var(--fg);padding:10px;font:inherit';
+    const row = el('div', 'links'); row.style.marginTop = '8px';
+    const send = el('button', 'btn main', 'Répondre'); send.type = 'button';
+    const close = el('button', 'btn', t.status === 'closed' ? 'Rouvrir' : 'Fermer'); close.type = 'button';
+    const act = async (body, btn) => {
+      btn.disabled = true;
+      const res = await fetch('/api/admin?support=reply', { method: 'POST', headers: { authorization: `Bearer ${tok}`, 'content-type': 'application/json' }, body: JSON.stringify({ id: t.id, ...body }) }).catch(() => null);
+      if (!res?.ok) { btn.disabled = false; alertBox(x, 'Erreur, réessaie.'); return; }
+      loadSupport(box);
+    };
+    send.addEventListener('click', () => { const v = ta.value.trim(); if (v) act({ reply: v, status: 'answered' }, send); else ta.focus(); });
+    close.addEventListener('click', () => act({ status: t.status === 'closed' ? 'open' : 'closed' }, close));
+    row.append(send, close); x.append(ta, row); box.append(x);
+  }
+}
+function alertBox(x, t) { const p = el('small', '', t); p.style.color = 'var(--danger)'; x.append(p); }
 
 $('refresh').addEventListener('click', () => { deep = false; load(); });
 const cfg = await (await fetch('/api/config')).json();
