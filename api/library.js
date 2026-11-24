@@ -1,4 +1,4 @@
-import { json, fail, getUserId, listImages, deleteImage, getPlan, supabaseUrl, serviceHeaders, signPath, BUCKET, env } from './_lib.js';
+import { json, fail, getUserId, listImages, deleteImage, getPlan, supabaseUrl, serviceHeaders, signPath, BUCKET, env, rpc } from './_lib.js';
 import { checkVideo } from './_video.js';
 
 // Galleria delle immagini e dei video creati dall'utente.
@@ -49,12 +49,15 @@ export async function POST(request) {
   if (!userId) return fail('auth', 401, 'Session expirée. Recharge la page.');
   const q = new URL(request.url).searchParams;
   if (q.get('upload') === 'video') {
-    const { pro } = await getPlan(userId);
+    const { pro, limits } = await getPlan(userId);
     if (!pro) return fail('pro', 402, 'Les vidéos dans le site sont réservées à Sahbi Pro.');
     let b = {}; try { b = await request.json(); } catch { /* vide */ }
     const ext = VIDEO_TYPES[String(b.type || '').toLowerCase()];
     if (!ext) return fail('bad_request', 400, 'Format vidéo non accepté (MP4, MOV ou WEBM).');
     if (!(Number(b.size) > 0) || Number(b.size) > SITE_VIDEO_MAX) return fail('too_big', 413, 'Vidéo trop lourde : 50 Mo maximum (environ 1 minute en HD).');
+    // Stesso contatore dei video creati con l'IA: limits.video video al mese in tutto.
+    const left = await rpc('use_video_credit', { p_user: userId, p_limit: limits.video }).catch(() => 0);
+    if (Number(left) < 0) return fail('video_limit', 429, `Tu as utilisé tes ${limits.video} vidéos de ce mois. Le compteur repart à zéro le 1er du mois.`);
     await ensureVideoTypes().catch(() => {});
     const path = `${userId}/site-videos/${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}.${ext}`;
     const r = await fetch(`${supabaseUrl()}/storage/v1/object/upload/sign/${BUCKET}/${path}`, { method: 'POST', headers: serviceHeaders({ 'content-type': 'application/json' }), body: '{}' });

@@ -67,7 +67,7 @@ let txt = await r.text();
 const frames = txt.split('\u001e').filter((_, i) => i % 2).map((s) => JSON.parse(s));
 assert.deepEqual(frames.map((f) => f.type), ['video_start', 'video']);
 const vid = frames[1];
-assert.equal(vid.remaining, 4); assert.equal(vid.limit, 5);
+assert.equal(vid.remaining, 2); assert.equal(vid.limit, 3);
 assert.equal(prunaBody.input.duration, 8); assert.equal(prunaBody.input.disable_safety_filter, false); assert.equal(prunaBody.input.aspect_ratio, '9:16');
 assert.equal(rows[0].status, 'pending'); assert.equal(rows[0].kind, 'video');
 
@@ -101,7 +101,7 @@ assert.ok(s.ok); assert.equal(files, 1); assert.equal(prunaBody.input.image, 'ht
 
 // 9) /api/me
 r = await me(req('/api/me')); d = await r.json();
-assert.equal(d.limits.video, 5); assert.equal(typeof d.remaining.video, 'number'); assert.equal(d.videoEnabled, true);
+assert.equal(d.limits.video, 3); assert.equal(typeof d.remaining.video, 'number'); assert.equal(d.videoEnabled, true);
 
 // 9b) Il modello promette il video senza chiamare lo strumento → lo creiamo lo stesso
 liar = true; used = 0;

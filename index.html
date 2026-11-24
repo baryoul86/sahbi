@@ -584,7 +584,7 @@ html[lang=ar] body{line-height:1.7}
   <ul class="hist" id="hist"></ul>
   <button class="plus-card" id="drawerPlus" type="button">
     <b>Sahbi Pro</b>
-    <span id="drawerProText">5 images par jour, photos, voix</span>
+    <span id="drawerProText">6 images par jour, photos, voix</span>
   </button>
   <button class="settings-btn" id="openSettings" type="button">
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
@@ -766,7 +766,7 @@ html[lang=ar] body{line-height:1.7}
     <h2>Gratuit ou Pro</h2>
     <div class="plans">
       <div class="plan"><h3>Gratuit</h3><div class="pr">0 €</div><ul><li>30 messages par jour</li><li>2 images par jour</li><li>Photos et micro</li><li>Avec publicité</li></ul></div>
-      <div class="plan pro"><h3>Sahbi Pro</h3><div class="pr">7 € / mois</div><ul><li>150 messages par jour</li><li>5 images par jour</li><li>5 vidéos de 8 secondes par mois</li><li>Conversation vocale et documents PDF</li><li>Sahbi lit ses réponses à voix haute</li><li>Sans publicité</li><li>Aussi en Edahabia / CIB : 1 000 DA pour 30 jours</li></ul></div>
+      <div class="plan pro"><h3>Sahbi Pro</h3><div class="pr">7 € / mois</div><ul><li>150 messages par jour</li><li>6 images par jour</li><li>3 vidéos par mois</li><li>Sites internet mis en ligne en un clic</li><li>Conversation vocale et documents PDF</li><li>Sahbi lit ses réponses à voix haute</li><li>Sans publicité</li><li>Aussi en Edahabia / CIB : 1 000 DA pour 30 jours</li></ul></div>
     </div>
   </div></div>
 
@@ -786,7 +786,7 @@ html[lang=ar] body{line-height:1.7}
 
   <div class="lp-sec faq"><div class="wrap">
     <h2>Questions fréquentes</h2>
-    <details><summary>Sahbi est-il gratuit ?</summary><p>Oui. L'offre gratuite permet 30 messages et 2 images par jour. Sahbi Pro ajoute plus de messages et d'images, 5 vidéos par mois, la voix et supprime la publicité.</p></details>
+    <details><summary>Sahbi est-il gratuit ?</summary><p>Oui. L'offre gratuite permet 30 messages et 2 images par jour. Sahbi Pro ajoute plus de messages et d'images, 3 vidéos par mois, la mise en ligne de sites, la voix et supprime la publicité.</p></details>
     <details><summary>Quelles langues comprend Sahbi ?</summary><p>La darija algérienne, marocaine et tunisienne, l'égyptien et les dialectes du Golfe (en lettres latines ou arabes), l'arabe standard, le français, l'anglais et la plupart des langues du monde. Il répond toujours dans la langue de ta question.</p></details>
     <details><summary>Mes conversations sont-elles privées ?</summary><p>L'historique de tes discussions reste sur ton téléphone. Tes images sont enregistrées dans ton compte et tu peux tout supprimer depuis les paramètres. Détails dans la <a href="/confidentialite.html">politique de confidentialité</a>.</p></details>
     <details><summary>Les réponses sont-elles toujours justes ?</summary><p>Sahbi peut se tromper, comme toute intelligence artificielle. Vérifie les informations importantes, surtout pour la santé, le droit ou l'argent.</p></details>
@@ -2009,7 +2009,9 @@ async function recoverImage(since, ph) {
 async function sendChat(text, pic = null, docAtt = null, opts = {}) {
   const msg = { role: 'user', content: text, at: Date.now() };
   if (pic) { msg.photo = true; msg.thumb = await makeThumb(pic) || undefined; }
-  if (pic && current.mode === 'website') {
+  // Foto per un sito: nella chat dei siti, o in una chat che contiene già un sito e chiede di usarla (logo, sfondo, galleria…).
+  const hasSite = current.messages.some((m) => m.role === 'assistant' && typeof m.content === 'string' && findHtml(m.content));
+  if (pic && (current.mode === 'website' || (hasSite && /(logo|لوغو|شعار|sito|site|web|p[aá]gina|موقع|header|en-?t[eê]te|banni[eè]re|banner|sfondo|fond|galerie|galleria|gallery|catalog|menu|خلفية)/i.test(text)))) {
     const big = await makeThumb(pic, 900);
     if (big) { current.sitePhotos = [...(current.sitePhotos || []), big].slice(0, 12); msg.content = `${text}\n\n[${tr('Photo pour le site')} : foto${current.sitePhotos.length}.jpg]`.trim(); }
   }
@@ -2031,13 +2033,13 @@ async function sendChat(text, pic = null, docAtt = null, opts = {}) {
   let res;
   try {
     sentAt = Date.now();
-    res = await api('/api/chat', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ messages: history, lang: LANG, ...(pic ? { photo: pic } : (recentPhoto && recentTurns > 0 && !opts.voice ? { photo: recentPhoto, photoEarlier: true } : {})), ...(docAtt ? { doc: { name: docAtt.name, text: docAtt.text } } : {}), ...(opts.voice ? { voice: true } : {}), now: localNow(), ...(current.temp ? { temp: true } : {}), ...(current.mode ? { mode: current.mode } : {}), ...(current.mode === 'website' && current.sitePhotos?.length ? { sitePhotos: current.sitePhotos.length } : {}), ...(current.mode === 'website' && current.siteVideos?.length ? { siteVideos: current.siteVideos.length } : {}) }) });
+    res = await api('/api/chat', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ messages: history, lang: LANG, ...(pic ? { photo: pic } : (recentPhoto && recentTurns > 0 && !opts.voice ? { photo: recentPhoto, photoEarlier: true } : {})), ...(docAtt ? { doc: { name: docAtt.name, text: docAtt.text } } : {}), ...(opts.voice ? { voice: true } : {}), now: localNow(), ...(current.temp ? { temp: true } : {}), ...(current.mode ? { mode: current.mode } : {}), ...(current.sitePhotos?.length ? { sitePhotos: current.sitePhotos.length } : {}), ...(current.mode === 'website' && current.siteVideos?.length ? { siteVideos: current.siteVideos.length } : {}) }) });
   } catch { wait.remove(); bubble('bot', 'Pas de connexion. Vérifie internet et réessaie.', 'err'); return ''; }
   if (!res.ok) {
     wait.remove();
     const err = await res.json().catch(() => ({}));
     if (err.error === 'pro') limitBubble(err.message || 'Cette fonction est incluse dans Sahbi Pro.');
-    else if (err.error === 'site_limit') limitBubble(tr('Tu as utilisé tes 20 messages gratuits du site pour aujourd’hui. 💾 Ton site est enregistré : reviens demain, on reprend là où on s’est arrêtés. Avec Sahbi Pro tu continues tout de suite et tu as le site complet.'));
+    else if (err.error === 'site_limit') limitBubble(`${err.message || ''} ${tr('💾 Ton site est enregistré : reviens demain, on reprend là où on s’est arrêtés.')}${me?.pro ? '' : ' ' + tr('Avec Sahbi Pro tu continues tout de suite et tu as le site complet.')}`.trim());
     else if (err.error === 'limit') limitBubble(me?.pro ? 'Tu as atteint la limite de messages pour aujourd’hui. Ça se recharge à minuit.' : 'Tu as utilisé tes messages gratuits d’aujourd’hui. Passe à Sahbi Pro pour continuer, ou reviens demain.');
     else bubble('bot', err.message || 'Sahbi ne peut pas répondre maintenant. Réessaie.', 'err');
     return '';
@@ -2106,8 +2108,8 @@ async function sendChat(text, pic = null, docAtt = null, opts = {}) {
       return;
     }
     if (f.type === 'video_error') {
-      if (f.error === 'pro') limitBubble('Les vidéos de 8 secondes sont réservées à Sahbi Pro : 5 vidéos par mois.');
-      else if (f.error === 'limit') limitBubble(me?.pro ? 'Tu as utilisé tes 5 vidéos de ce mois. Elles reviennent le 1er du mois.' : 'Les vidéos sont réservées à Sahbi Pro.');
+      if (f.error === 'pro') limitBubble('Les vidéos de 8 secondes sont réservées à Sahbi Pro : 3 vidéos par mois.');
+      else if (f.error === 'limit') limitBubble(me?.pro ? 'Tu as utilisé tes 3 vidéos de ce mois. Elles reviennent le 1er du mois.' : 'Les vidéos sont réservées à Sahbi Pro.');
       else bubble('bot', f.message || 'Impossible de créer la vidéo maintenant.', 'err');
       return;
     }
@@ -2117,7 +2119,7 @@ async function sendChat(text, pic = null, docAtt = null, opts = {}) {
       extra.push({ role: 'assistant', kind: 'image', content: f.prompt || 'image', id: f.id || null });
       library = null;
     } else if (f.type === 'image_error') {
-      if (f.error === 'limit') limitBubble(me?.pro ? 'Tu as utilisé tes images d’aujourd’hui. Elles reviennent à minuit.' : 'Tu as utilisé tes images gratuites d’aujourd’hui. Avec Sahbi Pro tu en as 5 par jour.');
+      if (f.error === 'limit') limitBubble(me?.pro ? 'Tu as utilisé tes images d’aujourd’hui. Elles reviennent à minuit.' : 'Tu as utilisé tes images gratuites d’aujourd’hui. Avec Sahbi Pro tu en as 6 par jour.');
       else bubble('bot', f.message || 'Impossible de créer l’image maintenant.', 'err');
     }
   };
@@ -2236,7 +2238,7 @@ $('vDelete').addEventListener('click', async () => {
 // Google AdSense: un annuncio per apertura dell'app (le regole di Google vietano di ricaricarlo da soli).
 // Promozioni di Sahbi: girano ogni minuto quando AdSense non è attivo o non ha annunci da mostrare.
 const HOUSE = [
-  { t: 'Sahbi Pro, sans publicité', d: '5 images par jour, voix, 150 messages', c: 'Voir', go: () => openSheet() },
+  { t: 'Sahbi Pro, sans publicité', d: '6 images par jour, voix, 150 messages', c: 'Voir', go: () => openSheet() },
   { t: 'Invite un ami', d: '7 jours de Pro offerts à tous les deux', c: 'Inviter', go: () => shareText(tr('Salam ! J’utilise Sahbi, l’IA qui parle darija, arabe et français. Inscris-toi avec mon lien et on reçoit 7 jours de Pro tous les deux : {l}', { l: inviteLink() })) },
   { t: 'Transforme tes photos', d: 'Cartoon, anime, 3D, aquarelle…', c: 'Essayer', go: () => $('file').click() },
   { t: 'Sahbi lit à voix haute', d: 'Appuie sur le haut-parleur sous une réponse', c: 'Pro', go: () => openSheet() },
@@ -2349,7 +2351,7 @@ function renderSheet() {
   $('payDzSub').textContent = pay.chargily ? (year ? tr('{p} DA pour 1 an', { p: (pay.priceYearDzd || 10000).toLocaleString(LOCALE) }) : tr('{p} DA pour 30 jours', { p: (pay.priceDzd || 1000).toLocaleString(LOCALE) })) : 'Bientôt disponible';
   $('payCardLabel').textContent = pay.lemonsqueezy ? 'Carte bancaire ou PayPal' : 'Payer par carte';
   $('payCard').disabled = !cardOk; $('payDz').disabled = !pay.chargily;
-  $('fChat').textContent = cfg.limits?.pro?.chat ?? 150; $('fImg').textContent = cfg.limits?.pro?.image ?? 5;
+  $('fChat').textContent = cfg.limits?.pro?.chat ?? 150; $('fImg').textContent = cfg.limits?.pro?.image ?? 6;
   $('fVid').textContent = cfg.limits?.pro?.video ?? 5;
   // App Android: Google Play Billing (il pulsante appare solo se l'app lo supporta).
   $('payPlay').hidden = !playOk; $('appNote').hidden = playOk;

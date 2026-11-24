@@ -25,3 +25,16 @@ b = await go('كيفك؟ شو بدك تعمل اليوم؟'); assert.equal(b.too
 b = await go('Crea una imagen de un gato en la playa'); assert.equal(b.tool_choice?.function?.name, 'create_image');
 assert.match(b.messages[0].content, /RISPOSTE CORTE/);
 console.log('force OK');
+// Foto per il sito ("questo come logo del sito"): niente immagine forzata, e il sistema dice dove metterla.
+{
+  const ask = async (content, extra) => { first = null; const r = await POST(new Request('https://w/api/chat', { method: 'POST', headers: { authorization: 'Bearer t' }, body: JSON.stringify({ messages: [{ role: 'user', content }], photo: png, ...extra }) })); await r.text(); return first; };
+  for (const [t, extra] of [['Scrivimi questo come logo del sito.', { sitePhotos: 1 }], ['Mets cette photo comme logo', { mode: 'website', sitePhotos: 2 }], ['حط هاد الصورة لوغو ف الموقع', { sitePhotos: 1 }]]) {
+    const f = await ask(t, extra);
+    assert.equal(f.tool_choice, 'auto', t);
+    assert.match(f.messages[0].content, /FOTO PER IL SITO/, t);
+  }
+  // Senza sito nella chat, "transforme en cartoon" resta una trasformazione.
+  const g = await ask('Transforme en cartoon', {});
+  assert.equal(g.tool_choice?.function?.name, 'create_image');
+}
+console.log('site photo OK');

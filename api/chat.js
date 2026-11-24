@@ -137,6 +137,13 @@ const WEBSITE_FREE = `
 
 // Frasi con cui il modello promette un risultato "dopo" (che non arriverebbe mai): it, fr, en, es, ar/darija.
 const DELIVER_PROMISE = /(sto (generando|creando|preparando|scrivendo)|lo riceverai|te l[oa] (preparo|creo|mando) (ora|adesso|subito)|un attimo|je (te )?(prépare|génère|crée|m'en occupe)|je reviens|i(?:'m| am) (generating|creating|preparing|working)|one moment|give me a (moment|minute)|estoy (generando|creando|preparando)|un momento|لحظة|دقيقة|راني كنوجد|جاري)/i;
+// La foto appena mandata serve al sito: va messa nel codice così com'è, non trasformata.
+const SITE_PHOTO_NOW = (n) => `
+
+FOTO PER IL SITO: la foto che l'utente ha appena mandato è foto${Math.max(1, n)}.jpg ed è PER IL SITO (logo, sfondo, prodotto, galleria… come dice lui, in qualsiasi lingua: "mets-la comme logo", "metti questa come logo", "حطها لوغو", "use it as the logo").
+- NON chiamare create_image, NON trasformarla, NON disegnare un'altra immagine.
+- Riscrivi SUBITO il sito completo (tutto l'index.html in un blocco \`\`\`html, partendo dall'ultima versione della chat) con <img src="foto${Math.max(1, n)}.jpg"> nel punto chiesto. Per un LOGO: nell'intestazione, altezza 44-64px, width:auto, object-fit:contain, accanto o al posto del nome.
+- Poi una sola frase per confermare dove l'hai messa.`;
 const WEBSITE_FREE_CHAT = `
 - Utente della versione GRATUITA: se chiede una pagina web o un sito, fai solo una VERSIONE DIMOSTRATIVA corta (intestazione con nome e slogan, una sezione con al massimo 3 servizi, un pulsante contatto, fascia in fondo "Version gratuite – créée avec Sahbi") e di' in una frase che con Sahbi Pro ottiene il sito completo.`;
 // Paese approssimativo dell'utente (dal server Vercel, solo il codice paese): aiuta la guida a capire "dove sei".
@@ -483,9 +490,11 @@ export async function POST(request) {
   if (doc && !pro) return fail('pro', 402, 'La lecture de documents est incluse dans Sahbi Pro.');
   const userText = messages[messages.length - 1].content;
   // Chat "sito internet" per i gratuiti: 20 messaggi al giorno a parte (il sito resta salvato per domani).
-  const siteFree = body?.mode === 'website' && !pro;
-  const left = siteFree ? await useSiteCredit(userId, limits.site) : await useCredit(userId, 'chat', limits.chat);
-  if (left < 0 && siteFree) return fail('site_limit', 429, `Tu as utilisé tes ${limits.site} messages gratuits du site pour aujourd’hui.`);
+  const siteFree = body?.mode === 'website';
+  const left = siteFree ? await useSiteCredit(userId, limits.site, pro, limits.chat) : await useCredit(userId, 'chat', limits.chat);
+  if (left < 0 && siteFree) return fail('site_limit', 429, pro
+    ? `Tu as atteint la limite de ${limits.site} messages du site pour aujourd’hui.`
+    : `Tu as utilisé tes ${limits.site} messages gratuits du site pour aujourd’hui.`);
   if (left < 0) return fail('limit', 429, pro ? 'Limite de messages atteinte pour aujourd’hui.' : 'Limite gratuite atteinte pour aujourd’hui.');
   // Le parole esatte dell'utente vanno anche al disegnatore, così non può "inventare" un'altra scena.
   const clean = (t) => String(t || '').replace(/\(photo envoyée juste avant, jointe à nouveau\)/g, '').trim();
@@ -526,13 +535,17 @@ export async function POST(request) {
 
   // Modello della chat: gpt-5-mini capisce molto meglio di gpt-5-nano (dialetti, contesto, richieste lunghe).
   // Si può cambiare su Vercel: OPENAI_CHAT_MODEL (gratis) e OPENAI_CHAT_MODEL_PRO (abbonati).
+  // 📷 Foto per un sito ("mets-la comme logo", "metti questa foto nel sito", "حط هاد الصورة ف الموقع"): NON è una richiesta
+  // di trasformare la foto o di disegnare un'immagine. Vale nella chat dei siti e in ogni chat che ha già un sito.
+  const SITE_USE = /(logo|لوغو|شعار|sito|site|web|p[aá]gina|موقع|header|en-?t[eê]te|banni[eè]re|banner|sfondo|arri[eè]re-plan|fond d|galerie|galleria|gallery|catalogu?e|catalogo|menu|كتالوج|خلفية)/i;
+  const sitePhoto = !!photo && (body?.mode === 'website' || Number(body?.sitePhotos) > 0) && (body?.mode === 'website' || SITE_USE.test(nowText)) && !/(dessine|disegna|draw|crée une image|crea un'immagine|create an image|transforme|trasforma|cartoon|anime|style|stile|ارسم|حوّل)/i.test(nowText);
   const model = pro ? env('OPENAI_CHAT_MODEL_PRO', env('OPENAI_CHAT_MODEL', 'gpt-5-mini')) : env('OPENAI_CHAT_MODEL', 'gpt-5-mini');
   const payload = {
     model, stream: true, tools,
     // Foto + "trasformala in stile…", oppure "fammi un'immagine di…": si disegna subito, senza domande.
-    tool_choice: again || (!NOT_IMAGE.test(nowText) && ((photo && !body?.photoEarlier && STYLE_ASK.test(nowText)) || ((!photo || body?.photoEarlier) && IMAGE_REQ.test(nowText))))
+    tool_choice: !sitePhoto && (again || (!NOT_IMAGE.test(nowText) && ((photo && !body?.photoEarlier && STYLE_ASK.test(nowText)) || ((!photo || body?.photoEarlier) && IMAGE_REQ.test(nowText)))))
       ? { type: 'function', function: { name: 'create_image' } } : 'auto',
-    messages: [{ role: 'system', content: SYSTEM.replace('{{VIDEO}}', videoEnabled() ? VIDEO_ON : VIDEO_OFF) + memoryPrompt(memory) + uiLangPrompt(body?.lang) + todayPrompt() + clientNowPrompt(body?.now) + langPrompt(detectLang(nowText) ? nowText : (again ? prevUserText : nowText)) + (body?.voice === true ? VOICE_STYLE : '') + (body?.mode === 'book' ? BOOK_MODE : body?.mode === 'travel' ? TRAVEL_MODE + countryHint(request) : body?.mode === 'website' ? WEBSITE_MODE + (pro ? WEBSITE_PRO : WEBSITE_FREE) + (Number(body?.sitePhotos) > 0 ? `\n- In questa chat l'utente ha già mandato ${Math.min(12, Number(body.sitePhotos) | 0)} foto: foto1.jpg … foto${Math.min(12, Number(body.sitePhotos) | 0)}.jpg. Usale tutte nel sito.` : '') + (Number(body?.siteVideos) > 0 ? `\n- L'utente ha mandato anche ${Math.min(5, Number(body.siteVideos) | 0)} video: video1.mp4 … video${Math.min(5, Number(body.siteVideos) | 0)}.mp4. Mettili nel sito.` : '') : body?.mode === 'business' ? BUSINESS_MODE + countryHint(request) : body?.mode === 'whatsapp' ? WHATSAPP_MODE : (pro ? '' : WEBSITE_FREE_CHAT)) }, ...messages],
+    messages: [{ role: 'system', content: SYSTEM.replace('{{VIDEO}}', videoEnabled() ? VIDEO_ON : VIDEO_OFF) + memoryPrompt(memory) + uiLangPrompt(body?.lang) + todayPrompt() + clientNowPrompt(body?.now) + langPrompt(detectLang(nowText) ? nowText : (again ? prevUserText : nowText)) + (body?.voice === true ? VOICE_STYLE : '') + (body?.mode === 'book' ? BOOK_MODE : body?.mode === 'travel' ? TRAVEL_MODE + countryHint(request) : body?.mode === 'website' ? WEBSITE_MODE + (pro ? WEBSITE_PRO : WEBSITE_FREE) + (Number(body?.sitePhotos) > 0 ? `\n- In questa chat l'utente ha già mandato ${Math.min(12, Number(body.sitePhotos) | 0)} foto: foto1.jpg … foto${Math.min(12, Number(body.sitePhotos) | 0)}.jpg. Usale tutte nel sito.` : '') + (Number(body?.siteVideos) > 0 ? `\n- L'utente ha mandato anche ${Math.min(5, Number(body.siteVideos) | 0)} video: video1.mp4 … video${Math.min(5, Number(body.siteVideos) | 0)}.mp4. Mettili nel sito.` : '') : body?.mode === 'business' ? BUSINESS_MODE + countryHint(request) : body?.mode === 'whatsapp' ? WHATSAPP_MODE : (pro ? '' : WEBSITE_FREE_CHAT)) + (sitePhoto ? SITE_PHOTO_NOW(Number(body?.sitePhotos) | 0) : '') }, ...messages],
   };
   if (model.startsWith('gpt-5')) payload.reasoning_effort = env('OPENAI_REASONING_EFFORT', 'minimal');
 
@@ -604,12 +617,12 @@ export async function POST(request) {
   const IMAGE_WORDS = /(image|immagine|imag|foto|photo|dessin|disegn|رسم|صورة|tswira|cartoon|cartone|anime|simpson|stile|style|carte|biglietto|sticker|transform|trasform)/i;
   const promised = () => {
     // L'utente ha mandato una foto e chiede di trasformarla: si crea l'immagine anche se il modello ha rifiutato o chiesto conferma.
-    if (!tool.name && photo && !body?.photoEarlier && STYLE_ASK.test(lastText)) return 'create_image';
+    if (!tool.name && photo && !sitePhoto && !body?.photoEarlier && STYLE_ASK.test(lastText)) return 'create_image';
     if (tool.name || !PROMISE.test(reply) || REFUSAL.test(reply)) return null;
     // Un sito o una pagina web non è un'immagine: in quel caso si fa scrivere il codice (deliverNow).
     if (/(sito|site|pagina|page web|landing|html|codice|موقع)/i.test(reply + ' ' + lastText) && !/(image|immagine|photo|foto|صورة)/i.test(lastText)) return null;
     if (videoEnabled() && VIDEO_WORDS.test(reply) && asked(VIDEO_WORDS)) return 'create_video';
-    if (IMAGE_WORDS.test(reply) && asked(IMAGE_WORDS)) return 'create_image';
+    if (!sitePhoto && IMAGE_WORDS.test(reply) && asked(IMAGE_WORDS)) return 'create_image';
     return null;
   };
   async function forcedArgs(name) {

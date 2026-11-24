@@ -69,8 +69,9 @@ export const refundCredit = (userId, kind) =>
 
 // Messaggi della chat "sito internet" per gli utenti gratuiti: contatore a parte (tipo 'site').
 // Se il database non conosce ancora il tipo 'site' (manca 007_site.sql) si usa 'tts', che i gratuiti non usano mai (limite 0).
-export async function useSiteCredit(userId, limit) {
-  try { return await useCredit(userId, 'site', limit); } catch { return useCredit(userId, 'tts', limit); }
+export async function useSiteCredit(userId, limit, pro = false, chatLimit = 0) {
+  // Senza 007_site.sql: i gratuiti usano 'tts' (che non hanno), i Pro il normale credito chat.
+  try { return await useCredit(userId, 'site', limit); } catch { return pro ? useCredit(userId, 'chat', chatLimit) : useCredit(userId, 'tts', limit); }
 }
 export async function refundSiteCredit(userId) {
   try { await refundCredit(userId, 'site'); } catch { try { await refundCredit(userId, 'tts'); } catch { /* niente */ } }
@@ -83,11 +84,11 @@ export const remainingCredit = (userId, kind, limit) =>
 export const limits = (pro = false) => (pro
   ? {
       chat: Number(env('PRO_CHAT_DAILY_LIMIT', '150')),
-      image: Number(env('PRO_IMAGE_DAILY_LIMIT', '5')),
+      image: Number(env('PRO_IMAGE_DAILY_LIMIT', '6')),
       voice: Number(env('PRO_VOICE_DAILY_LIMIT', '100')),
       tts: Number(env('PRO_TTS_DAILY_LIMIT', '100')),
-      video: Number(env('PRO_VIDEO_MONTHLY_LIMIT', '5')), // video al MESE, non al giorno
-      site: Number(env('PRO_SITE_DAILY_LIMIT', '150')),
+      video: Number(env('PRO_VIDEO_MONTHLY_LIMIT', '3')), // video al MESE (creati con l'IA + caricati nei siti)
+      site: Number(env('PRO_SITE_DAILY_LIMIT', '40')), // messaggi al giorno nella chat dei siti (scrivono molto codice)
     }
   : {
       chat: Number(env('FREE_CHAT_DAILY_LIMIT', '30')),
@@ -95,7 +96,7 @@ export const limits = (pro = false) => (pro
       voice: Number(env('FREE_VOICE_DAILY_LIMIT', '20')),
       tts: Number(env('FREE_TTS_DAILY_LIMIT', '0')),
       video: Number(env('FREE_VIDEO_MONTHLY_LIMIT', '0')),
-      site: Number(env('FREE_SITE_DAILY_LIMIT', '20')), // messaggi al giorno nella chat "Créer un site internet"
+      site: Number(env('FREE_SITE_DAILY_LIMIT', '5')), // messaggi al giorno nella chat "Créer un site internet"
     });
 
 // Profilo dell'utente (creato se manca) con il campo "pro" già calcolato.
