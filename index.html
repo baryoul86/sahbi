@@ -2030,15 +2030,21 @@ async function sendChat(text, pic = null, docAtt = null, opts = {}) {
     } else out.textContent = t;
   };
   const flow = (() => {
-    let target = '', shown = 0, raf = 0, fast = false, done = null;
-    const tick = () => {
+    let target = '', shown = 0, raf = 0, fast = false, done = null, last = 0, acc = 0;
+    const tick = (now = performance.now()) => {
       raf = 0;
+      const dt = last ? Math.min(100, now - last) : 16; last = now;
       const back = target.length - shown;
       if (back > 0) {
         // ~90 caratteri al secondo, un po' più veloce se resta molto testo da mostrare; il codice dei siti non si anima.
         const codeAt = (() => { const f = target.indexOf('```'), d = target.search(/<!doctype html|<html[\s>]/i); return f >= 0 && (d < 0 || f < d) ? f : d; })();
         if (codeAt >= 0 && shown >= codeAt) shown = target.length;
-        else shown = Math.min(target.length, shown + (fast ? Math.max(12, Math.ceil(back / 6)) : Math.max(1, Math.round(1.5 + back / 45))));
+        else {
+          // ~40 caratteri al secondo (lettura comoda), fino a ~90 se resta molto testo; alla fine della risposta un po' più svelto.
+          const cps = fast ? Math.min(220, 90 + back / 4) : 40 + Math.min(50, back / 20);
+          acc += cps * dt / 1000; const step = Math.floor(acc); acc -= step;
+          shown = Math.min(target.length, shown + step);
+        }
         paint(target.slice(0, shown)); scroll();
       }
       if (shown < target.length) raf = requestAnimationFrame(tick);
@@ -2046,7 +2052,7 @@ async function sendChat(text, pic = null, docAtt = null, opts = {}) {
     };
     return {
       to(t) { target = t; if (!raf) raf = requestAnimationFrame(tick); },
-      end() { fast = true; return new Promise((ok) => { if (shown >= target.length) ok(); else { done = ok; if (!raf) raf = requestAnimationFrame(tick); } setTimeout(ok, 4000); }); },
+      end() { fast = true; return new Promise((ok) => { if (shown >= target.length) ok(); else { done = ok; if (!raf) raf = requestAnimationFrame(tick); } setTimeout(ok, 20000); }); },
     };
   })();
   const onFrame = (f) => {
