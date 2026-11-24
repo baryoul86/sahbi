@@ -110,6 +110,8 @@ MODALITÀ SITO INTERNET (questa chat serve SOLO a creare e pubblicare un sito we
   • Struttura tipica: intestazione fissa con logo/nome e menu (hamburger su telefono) → sezione principale con titolo forte, sottotitolo e pulsante → servizi/prodotti in schede → perché sceglierci/numeri → galleria → avis clients → FAQ → contatti con mappa Google (iframe con l'indirizzo) e pulsanti WhatsApp/telefono → piè di pagina. Adatta le sezioni al tipo di sito; non mettere sezioni vuote.
   • Qualità tecnica: mobile-first, si vede perfetto su telefono; lingua giusta (lang e dir="rtl" per l'arabo); meta title/description, Open Graph, favicon emoji; immagini con alt; contrasti leggibili; link WhatsApp nel formato https://wa.me/NUMERO?text=…; niente librerie pesanti; nessun errore JavaScript.
   • MODIFICHE: quando l'utente chiede un cambiamento (colore, testo, prezzo, foto, sezione), rimanda SEMPRE il file index.html COMPLETO aggiornato (non solo il pezzo), conservando tutto il resto. Poi in 1 riga di' cosa hai cambiato e proponi 1-2 miglioramenti utili (es. "Vuoi che aggiunga una sezione avis clients?").
+- PIÙ PAGINE: se l'attività ha più prodotti/marchi/servizi o l'utente vuole "un'altra pagina quando clicco", fai un sito a più pagine in UN solo file: ogni pagina è <section data-page="nome">, i link sono <a href="#nome">, uno script su 'hashchange' mostra solo la pagina giusta (pagina iniziale #home, scrollTo(0,0), pulsante "← Retour"). Le schede/anteprime sono cliccabili e aprono la pagina di dettaglio con contenuto vero.
+- IMMAGINI: un sito senza immagini sembra vuoto. Usa le foto dell'utente se ci sono; altrimenti immagini reali con parole chiave inglesi adatte: https://loremflickr.com/800/600/PAROLA1,PAROLA2?lock=N (N diverso per ogni immagine), con alt, loading="lazy", object-fit:cover e un colore di riserva. Non creare MAI un'immagine con lo strumento create_image per un sito.
 - FOTO DELL'UTENTE: l'utente può mandare foto (prodotti, negozio, piatti, lavori, logo). Ogni foto ricevuta in questa chat ha un nome: foto1.jpg, foto2.jpg… (lo vedi nel messaggio tra parentesi quadre). Mettile nel sito con esattamente quei nomi (es. <img src="foto1.jpg" alt="…">, o come sfondo url(foto1.jpg)) nel punto giusto secondo cosa mostrano e cosa chiede l'utente (galleria, prodotto con prezzo, logo, sfondo dell'intestazione…), con object-fit:cover e bordi arrotondati. Non inventare foto che non ha mandato. Se l'utente dice "metti le foto" o vuole una lista di prodotti con le foto, crea una griglia con una scheda per foto (foto, nome, prezzo, pulsante WhatsApp). Se pensi che delle foto aiuterebbero, invitalo a mandarle con il pulsante +.
 - VIDEO DELL'UTENTE (solo Pro): i video mandati in questa chat si chiamano video1.mp4, video2.mp4… Mettili con <video src="video1.mp4" controls playsinline preload="metadata" style="width:100%;border-radius:16px"></video> dove hanno senso (presentazione in alto, galleria, "chi siamo"); non usare autoplay con audio.
 - Subito dopo il codice spiega in 2 righe: "Appuie sur 👁️ Aperçu pour voir ton site, et sur 📥 index.html pour télécharger le fichier."
@@ -145,6 +147,17 @@ const WEBSITE_FREE = `
 // Frasi con cui il modello promette un risultato "dopo" (che non arriverebbe mai): it, fr, en, es, ar/darija.
 const DELIVER_PROMISE = /(sto (generando|creando|preparando|scrivendo)|lo riceverai|te l[oa] (preparo|creo|mando) (ora|adesso|subito)|un attimo|je (te )?(prépare|génère|crée|m'en occupe)|je reviens|i(?:'m| am) (generating|creating|preparing|working)|one moment|give me a (moment|minute)|estoy (generando|creando|preparando)|un momento|لحظة|دقيقة|راني كنوجد|جاري)/i;
 // La foto appena mandata serve al sito: va messa nel codice così com'è, non trasformata.
+// Chat con un sito: ogni richiesta (immagini, anteprime, pagine, link) si fa DENTRO il sito, riscrivendo il file intero.
+const SITE_EDIT_NOW = (siteChat) => `
+⚠️ QUESTA CHAT HA UN SITO${siteChat ? '' : ' (fatto prima in questa conversazione)'}. Se il messaggio parla del sito, delle sue pagine, immagini, anteprime, bottoni o link:
+- NON creare mai un'immagine o un poster: modifichi il SITO e rimandi SUBITO il file index.html COMPLETO in un solo blocco \`\`\`html (mai pezzi, mai "ecco cosa cambierò").
+- Prima del codice: 1 frase concreta su cosa hai cambiato (es. "Ho messo le foto nelle anteprime e ogni marchio apre la sua pagina."). Dopo il codice: max 2 righe con cosa può chiedere dopo.
+- "anteprime" = schede/carte cliccabili con immagine, titolo e breve testo.
+- "quando clicco X si apre un'altra pagina" = SITO A PIÙ PAGINE in un solo file: ogni pagina è una <section data-page="nome"> e solo una è visibile; i link sono <a href="#nome">; un piccolo script ascolta 'hashchange' e mostra la sezione giusta (con 'scrollTo(0,0)'), la pagina iniziale è #home; ogni pagina interna ha "← Retour" e il menu porta a tutte le pagine. Ogni pagina ha contenuto vero (descrizione, dettagli, prezzi o caratteristiche se adatti, bottone di contatto), non una riga vuota.
+- "metti tu delle immagini" / foto mancanti: usa le foto dell'utente (foto1.jpg…) se ci sono; altrimenti immagini reali da internet con parole chiave in inglese adatte a ogni scheda: https://loremflickr.com/800/600/PAROLA1,PAROLA2?lock=N (N diverso per ogni immagine, es. perfume,bottle ; tv,livingroom ; restaurant,food). Sempre con alt, loading="lazy", object-fit:cover e un colore di sfondo di riserva. Mai loghi di marchi copiati.
+- Mantieni tutto quello che c'era già (testi, colori, foto, sezioni) salvo ciò che l'utente vuole cambiare.
+`;
+
 const SITE_PHOTO_NOW = (n) => `
 
 FOTO PER IL SITO: la foto che l'utente ha appena mandato è foto${Math.max(1, n)}.jpg ed è PER IL SITO (logo, sfondo, prodotto, galleria… come dice lui, in qualsiasi lingua: "mets-la comme logo", "metti questa come logo", "حطها لوغو", "use it as the logo").
@@ -547,13 +560,19 @@ export async function POST(request) {
   // di trasformare la foto o di disegnare un'immagine. Vale nella chat dei siti e in ogni chat che ha già un sito.
   const SITE_USE = /(logo|لوغو|شعار|sito|site|web|p[aá]gina|موقع|header|en-?t[eê]te|banni[eè]re|banner|sfondo|arri[eè]re-plan|fond d|galerie|galleria|gallery|catalogu?e|catalogo|menu|كتالوج|خلفية)/i;
   const sitePhoto = !!photo && (body?.mode === 'website' || Number(body?.sitePhotos) > 0) && (body?.mode === 'website' || SITE_USE.test(nowText)) && !/(dessine|disegna|draw|crée une image|crea un'immagine|create an image|transforme|trasforma|cartoon|anime|style|stile|ارسم|حوّل)/i.test(nowText);
+  // 🌐 Chat con un sito (chat dei siti, o una chat dove Sahbi ha già fatto un sito): "metti delle immagini", "fai le anteprime",
+  // "quando clicco su LG si apre un'altra pagina" parlano del SITO. Non si disegna mai un'immagine: si riscrive il sito.
+  const siteCtx = body?.mode === 'website' || body?.hasSite === true;
+  const EXPLICIT_IMG = /(^(dessine|disegna|draw|ارسم|rsem)\b|crée[- ]?moi une image|crée une image|génère une image|fais[- ]moi une image|crea(mi)? un'?immagine|genera(mi)? un'?immagine|fammi un'?immagine|disegnami|create an image|generate an image|make me an image|un poster|une affiche|اعمل لي صورة|ارسم لي)/i;
+  const IN_SITE = /(nel sito|sul sito|per il sito|dans le site|sur le site|pour le site|du site|in the site|on the site|for the site|في الموقع|للموقع|f site|f l'?site)/i;
+  const siteEdit = siteCtx && !photo && (!EXPLICIT_IMG.test(nowText) || IN_SITE.test(nowText));
   const model = pro ? env('OPENAI_CHAT_MODEL_PRO', env('OPENAI_CHAT_MODEL', 'gpt-5-mini')) : env('OPENAI_CHAT_MODEL', 'gpt-5-mini');
   const payload = {
-    model, stream: true, tools,
+    model, stream: true, tools: siteEdit ? tools.filter((t) => t.function.name !== 'create_image') : tools,
     // Foto + "trasformala in stile…", oppure "fammi un'immagine di…": si disegna subito, senza domande.
-    tool_choice: !sitePhoto && (again || (!NOT_IMAGE.test(nowText) && ((photo && !body?.photoEarlier && STYLE_ASK.test(nowText)) || ((!photo || body?.photoEarlier) && IMAGE_REQ.test(nowText)))))
+    tool_choice: !sitePhoto && !siteEdit && (again || (!NOT_IMAGE.test(nowText) && ((photo && !body?.photoEarlier && STYLE_ASK.test(nowText)) || ((!photo || body?.photoEarlier) && IMAGE_REQ.test(nowText)))))
       ? { type: 'function', function: { name: 'create_image' } } : 'auto',
-    messages: [{ role: 'system', content: SYSTEM.replace('{{VIDEO}}', videoEnabled() ? VIDEO_ON : VIDEO_OFF) + memoryPrompt(memory) + uiLangPrompt(body?.lang) + todayPrompt() + clientNowPrompt(body?.now) + langPrompt(detectLang(nowText) ? nowText : (again ? prevUserText : nowText)) + (body?.voice === true ? VOICE_STYLE : '') + (body?.mode === 'book' ? BOOK_MODE : body?.mode === 'travel' ? TRAVEL_MODE + countryHint(request) : body?.mode === 'website' ? WEBSITE_MODE + (pro ? WEBSITE_PRO : WEBSITE_FREE) + (Number(body?.sitePhotos) > 0 ? `\n- In questa chat l'utente ha già mandato ${Math.min(12, Number(body.sitePhotos) | 0)} foto: foto1.jpg … foto${Math.min(12, Number(body.sitePhotos) | 0)}.jpg. Usale tutte nel sito.` : '') + (Number(body?.siteVideos) > 0 ? `\n- L'utente ha mandato anche ${Math.min(5, Number(body.siteVideos) | 0)} video: video1.mp4 … video${Math.min(5, Number(body.siteVideos) | 0)}.mp4. Mettili nel sito.` : '') : body?.mode === 'business' ? BUSINESS_MODE + countryHint(request) : body?.mode === 'whatsapp' ? WHATSAPP_MODE : (pro ? '' : WEBSITE_FREE_CHAT)) + (sitePhoto ? SITE_PHOTO_NOW(Number(body?.sitePhotos) | 0) : '') }, ...messages],
+    messages: [{ role: 'system', content: SYSTEM.replace('{{VIDEO}}', videoEnabled() ? VIDEO_ON : VIDEO_OFF) + memoryPrompt(memory) + uiLangPrompt(body?.lang) + todayPrompt() + clientNowPrompt(body?.now) + langPrompt(detectLang(nowText) ? nowText : (again ? prevUserText : nowText)) + (body?.voice === true ? VOICE_STYLE : '') + (body?.mode === 'book' ? BOOK_MODE : body?.mode === 'travel' ? TRAVEL_MODE + countryHint(request) : body?.mode === 'website' ? WEBSITE_MODE + (pro ? WEBSITE_PRO : WEBSITE_FREE) + (Number(body?.sitePhotos) > 0 ? `\n- In questa chat l'utente ha già mandato ${Math.min(12, Number(body.sitePhotos) | 0)} foto: foto1.jpg … foto${Math.min(12, Number(body.sitePhotos) | 0)}.jpg. Usale tutte nel sito.` : '') + (Number(body?.siteVideos) > 0 ? `\n- L'utente ha mandato anche ${Math.min(5, Number(body.siteVideos) | 0)} video: video1.mp4 … video${Math.min(5, Number(body.siteVideos) | 0)}.mp4. Mettili nel sito.` : '') : body?.mode === 'business' ? BUSINESS_MODE + countryHint(request) : body?.mode === 'whatsapp' ? WHATSAPP_MODE : (pro ? '' : WEBSITE_FREE_CHAT)) + (sitePhoto ? SITE_PHOTO_NOW(Number(body?.sitePhotos) | 0) : '') + (siteEdit ? SITE_EDIT_NOW(body?.mode === 'website') : '') }, ...messages],
   };
   if (model.startsWith('gpt-5')) payload.reasoning_effort = env('OPENAI_REASONING_EFFORT', 'minimal');
   // Siti: un po' più di riflessione = struttura e design molto migliori (costo un po' più alto, coperto dall'energia).
@@ -632,7 +651,7 @@ export async function POST(request) {
     // Un sito o una pagina web non è un'immagine: in quel caso si fa scrivere il codice (deliverNow).
     if (/(sito|site|pagina|page web|landing|html|codice|موقع)/i.test(reply + ' ' + lastText) && !/(image|immagine|photo|foto|صورة)/i.test(lastText)) return null;
     if (videoEnabled() && VIDEO_WORDS.test(reply) && asked(VIDEO_WORDS)) return 'create_video';
-    if (!sitePhoto && IMAGE_WORDS.test(reply) && asked(IMAGE_WORDS)) return 'create_image';
+    if (!sitePhoto && !siteEdit && IMAGE_WORDS.test(reply) && asked(IMAGE_WORDS)) return 'create_image';
     return null;
   };
   async function forcedArgs(name) {

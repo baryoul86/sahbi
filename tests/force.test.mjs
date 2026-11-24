@@ -38,3 +38,25 @@ console.log('force OK');
   assert.equal(g.tool_choice?.function?.name, 'create_image');
 }
 console.log('site photo OK');
+// Chat con un sito: "metti tu delle immagini… quando clicco su LG si apre un'altra pagina" = modificare il sito, mai un poster.
+{
+  const ask = async (content, extra) => { first = null; const r = await POST(new Request('https://w/api/chat', { method: 'POST', headers: { authorization: 'Bearer t' }, body: JSON.stringify({ messages: [{ role: 'user', content }], ...extra }) })); await r.text(); return first; };
+  const t = "Allora, deve essere le anteprime, fai delle foto tu, metti tu delle immagini là. Quando clicco su LG si apre un'altra pagina";
+  for (const extra of [{ hasSite: true }, { mode: 'website' }]) {
+    const f = await ask(t, extra);
+    assert.equal(f.tool_choice, 'auto');
+    assert.ok(!f.tools.some((x) => x.function.name === 'create_image'));
+    assert.match(f.messages[0].content, /QUESTA CHAT HA UN SITO/);
+    assert.match(f.messages[0].content, /hashchange/);
+  }
+  // Immagine esplicita in una chat con sito: resta un'immagine.
+  const g = await ask("Fammi un'immagine di un gatto", { hasSite: true });
+  assert.equal(g.tool_choice?.function?.name, 'create_image');
+  // Immagine "per il sito": va nel sito.
+  const h = await ask("Fammi un'immagine per il sito", { hasSite: true });
+  assert.equal(h.tool_choice, 'auto');
+  // Senza sito: "fai delle foto" resta un'immagine.
+  const k = await ask('Voglio delle foto di profumi', {});
+  assert.equal(k.tool_choice?.function?.name, 'create_image');
+}
+console.log('site edit OK');

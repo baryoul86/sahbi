@@ -992,13 +992,7 @@ const ready = (async () => {
       const apple = IOS_APP && !!s?.external?.apple && await appleReady();
       const google = !!s?.external?.google && (!IOS_APP || apple);
       $('appleBtn').hidden = !apple; $('googleBtn').hidden = !google; $('googleBox').hidden = !apple && !google;
-      if (IOS_APP) { // diagnostica temporanea (app iPhone)
-        let b = '?'; try { b = (await window.Capacitor?.Plugins?.App?.getInfo?.())?.build; } catch (e) { b = 'err'; }
-        const d = document.createElement('p'); d.style.cssText = 'font-size:11px;opacity:.5;margin-top:8px';
-        d.textContent = `diag: cap=${!!window.Capacitor} plug=${!!appleAuth()} app=${!!window.Capacitor?.Plugins?.App} build=${b} sbApple=${!!s?.external?.apple} sbGoogle=${!!s?.external?.google}`;
-        $('emailForm').after(d);
-      }
-    }).catch((e) => { if (IOS_APP) { const d = document.createElement('p'); d.style.cssText = 'font-size:11px;opacity:.5'; d.textContent = 'diag: settings ' + (e?.message || e); $('emailForm').after(d); } });
+    }).catch(() => {});
 })();
 
 // App iPhone: il link dell'e-mail passa da /app-login.html e torna nell'app con bond.sahbi.app://auth#…
@@ -2050,7 +2044,7 @@ async function sendChat(text, pic = null, docAtt = null, opts = {}) {
   let res;
   try {
     sentAt = Date.now();
-    res = await api('/api/chat', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ messages: history, lang: LANG, ...(pic ? { photo: pic } : (recentPhoto && recentTurns > 0 && !opts.voice ? { photo: recentPhoto, photoEarlier: true } : {})), ...(docAtt ? { doc: { name: docAtt.name, text: docAtt.text } } : {}), ...(opts.voice ? { voice: true } : {}), now: localNow(), ...(current.temp ? { temp: true } : {}), ...(current.mode ? { mode: current.mode } : {}), ...(current.sitePhotos?.length ? { sitePhotos: current.sitePhotos.length } : {}), ...(current.mode === 'website' && current.siteVideos?.length ? { siteVideos: current.siteVideos.length } : {}) }) });
+    res = await api('/api/chat', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ messages: history, lang: LANG, ...(pic ? { photo: pic } : (recentPhoto && recentTurns > 0 && !opts.voice ? { photo: recentPhoto, photoEarlier: true } : {})), ...(docAtt ? { doc: { name: docAtt.name, text: docAtt.text } } : {}), ...(opts.voice ? { voice: true } : {}), now: localNow(), ...(current.temp ? { temp: true } : {}), ...(current.mode ? { mode: current.mode } : {}), ...(current.mode !== 'website' && current.messages?.some((m) => m.role === 'assistant' && typeof m.content === 'string' && findHtml(m.content)) ? { hasSite: true } : {}), ...(current.sitePhotos?.length ? { sitePhotos: current.sitePhotos.length } : {}), ...(current.mode === 'website' && current.siteVideos?.length ? { siteVideos: current.siteVideos.length } : {}) }) });
   } catch { wait.remove(); bubble('bot', 'Pas de connexion. Vérifie internet et réessaie.', 'err'); return ''; }
   if (!res.ok) {
     wait.remove();
