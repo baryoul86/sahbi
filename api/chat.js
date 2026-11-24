@@ -1,4 +1,4 @@
-import { env, fail, getUserId, useCredit, refundCredit, useSiteCredit, refundSiteCredit, getPlan, openaiHeaders, OPENAI, generateImage, parsePhoto } from './_lib.js';
+import { env, fail, getUserId, useCredit, refundCredit, useSiteCredit, refundSiteCredit, getEnergy, addEnergy, SITE_ENERGY, getPlan, openaiHeaders, OPENAI, generateImage, parsePhoto } from './_lib.js';
 import { startVideo, videoEnabled } from './_video.js';
 import { getMemory, learnFromMessage, memoryPrompt } from './_memory.js';
 import { openaiAlert } from './_alert.js';
@@ -103,6 +103,13 @@ const WEBSITE_MODE = `
 MODALITÀ SITO INTERNET (questa chat serve SOLO a creare e pubblicare un sito web con l'utente, che di solito è un principiante con il telefono):
 - Fase 1 – Domande (al massimo 2-3 per messaggio): che tipo di sito (negozio, ristorante, servizi, portfolio, associazione, evento, CV…), nome, città/paese, cosa offre (servizi, prezzi, orari), contatti (WhatsApp, telefono, email, indirizzo, social), colori o stile preferito, lingua o lingue del sito.
 - Fase 2 – Codice: quando hai abbastanza informazioni, crea il sito COMPLETO in UN SOLO file index.html (HTML + CSS + JavaScript nello stesso file), dentro UN SOLO blocco di codice che inizia con \`\`\`html e finisce con \`\`\`. Requisiti: moderno e curato, perfetto su telefono, titolo e descrizione per Google (meta), sezioni chiare (accueil, services/menu, à propos, avis o FAQ, contact), pulsante WhatsApp https://wa.me/NUMERO se c'è un numero, link Google Maps se c'è un indirizzo, niente immagini da altri siti (usa colori, sfumature ed emoji; le FOTO DELL'UTENTE invece vanno usate, vedi sotto), niente librerie esterne tranne eventualmente Google Fonts. Testi veri basati su ciò che ha detto (niente "lorem ipsum"); dove manca un dato metti [À COMPLÉTER].
+- COME LAVORA UN BRAVO WEB DESIGNER (fai così, sempre):
+  • Conversazione: parli come un professionista amichevole. Capisci da solo quello che serve; se manca qualcosa di essenziale fai al massimo 2-3 domande brevi, poi COSTRUISCI. Se l'utente dice "fai tu", "comme tu veux", "dir li bghiti", decidi tu con buon gusto e inventa testi credibili per la sua attività (con [À COMPLÉTER] solo per dati personali: telefono, indirizzo, prezzi esatti).
+  • Prima di scrivere il codice pensa: chi visita il sito? cosa deve fare (chiamare, scrivere su WhatsApp, prenotare, comprare, venire al negozio)? Tutto il sito deve portare a QUELL'azione (pulsante principale visibile in alto e ripetuto).
+  • Design con personalità, non un modello banale: scegli una direzione adatta all'attività (es. elegante e scuro per un profumiere, caldo e appetitoso per un ristorante, pulito e rassicurante per un medico) e mantienila coerente: 1 colore principale + 1 accento + neutri; font Google adatti (un titolo con carattere + un testo leggibile; per l'arabo Cairo, Tajawal o Noto Kufi Arabic); spaziature generose, angoli e ombre coerenti, icone SVG semplici o emoji, piccole animazioni leggere allo scorrimento.
+  • Struttura tipica: intestazione fissa con logo/nome e menu (hamburger su telefono) → sezione principale con titolo forte, sottotitolo e pulsante → servizi/prodotti in schede → perché sceglierci/numeri → galleria → avis clients → FAQ → contatti con mappa Google (iframe con l'indirizzo) e pulsanti WhatsApp/telefono → piè di pagina. Adatta le sezioni al tipo di sito; non mettere sezioni vuote.
+  • Qualità tecnica: mobile-first, si vede perfetto su telefono; lingua giusta (lang e dir="rtl" per l'arabo); meta title/description, Open Graph, favicon emoji; immagini con alt; contrasti leggibili; link WhatsApp nel formato https://wa.me/NUMERO?text=…; niente librerie pesanti; nessun errore JavaScript.
+  • MODIFICHE: quando l'utente chiede un cambiamento (colore, testo, prezzo, foto, sezione), rimanda SEMPRE il file index.html COMPLETO aggiornato (non solo il pezzo), conservando tutto il resto. Poi in 1 riga di' cosa hai cambiato e proponi 1-2 miglioramenti utili (es. "Vuoi che aggiunga una sezione avis clients?").
 - FOTO DELL'UTENTE: l'utente può mandare foto (prodotti, negozio, piatti, lavori, logo). Ogni foto ricevuta in questa chat ha un nome: foto1.jpg, foto2.jpg… (lo vedi nel messaggio tra parentesi quadre). Mettile nel sito con esattamente quei nomi (es. <img src="foto1.jpg" alt="…">, o come sfondo url(foto1.jpg)) nel punto giusto secondo cosa mostrano e cosa chiede l'utente (galleria, prodotto con prezzo, logo, sfondo dell'intestazione…), con object-fit:cover e bordi arrotondati. Non inventare foto che non ha mandato. Se l'utente dice "metti le foto" o vuole una lista di prodotti con le foto, crea una griglia con una scheda per foto (foto, nome, prezzo, pulsante WhatsApp). Se pensi che delle foto aiuterebbero, invitalo a mandarle con il pulsante +.
 - VIDEO DELL'UTENTE (solo Pro): i video mandati in questa chat si chiamano video1.mp4, video2.mp4… Mettili con <video src="video1.mp4" controls playsinline preload="metadata" style="width:100%;border-radius:16px"></video> dove hanno senso (presentazione in alto, galleria, "chi siamo"); non usare autoplay con audio.
 - Subito dopo il codice spiega in 2 righe: "Appuie sur 👁️ Aperçu pour voir ton site, et sur 📥 index.html pour télécharger le fichier."
@@ -489,12 +496,13 @@ export async function POST(request) {
   const [{ limits, pro }, memory] = await Promise.all([getPlan(userId), temp ? [] : getMemory(userId)]);
   if (doc && !pro) return fail('pro', 402, 'La lecture de documents est incluse dans Sahbi Pro.');
   const userText = messages[messages.length - 1].content;
-  // Chat "sito internet" per i gratuiti: 20 messaggi al giorno a parte (il sito resta salvato per domani).
-  const siteFree = body?.mode === 'website';
-  const left = siteFree ? await useSiteCredit(userId, limits.site, pro, limits.chat) : await useCredit(userId, 'chat', limits.chat);
-  if (left < 0 && siteFree) return fail('site_limit', 429, pro
-    ? `Tu as atteint la limite de ${limits.site} messages du site pour aujourd’hui.`
-    : `Tu as utilisé tes ${limits.site} messages gratuits du site pour aujourd’hui.`);
+  // Chat dei siti: usa gli stessi messaggi della chat (15 gratis / 150 Pro). In più, per i Pro, l'energia dei siti.
+  const siteMode = body?.mode === 'website';
+  const siteFree = false;
+  if (siteMode && pro && (await getEnergy(userId)) >= SITE_ENERGY()) {
+    return fail('energy', 429, '⚡ Ton énergie pour créer des sites est épuisée pour aujourd’hui. Elle se recharge demain à 8 h. Ton site est bien enregistré.');
+  }
+  const left = await useCredit(userId, 'chat', limits.chat);
   if (left < 0) return fail('limit', 429, pro ? 'Limite de messages atteinte pour aujourd’hui.' : 'Limite gratuite atteinte pour aujourd’hui.');
   // Le parole esatte dell'utente vanno anche al disegnatore, così non può "inventare" un'altra scena.
   const clean = (t) => String(t || '').replace(/\(photo envoyée juste avant, jointe à nouveau\)/g, '').trim();
@@ -548,6 +556,8 @@ export async function POST(request) {
     messages: [{ role: 'system', content: SYSTEM.replace('{{VIDEO}}', videoEnabled() ? VIDEO_ON : VIDEO_OFF) + memoryPrompt(memory) + uiLangPrompt(body?.lang) + todayPrompt() + clientNowPrompt(body?.now) + langPrompt(detectLang(nowText) ? nowText : (again ? prevUserText : nowText)) + (body?.voice === true ? VOICE_STYLE : '') + (body?.mode === 'book' ? BOOK_MODE : body?.mode === 'travel' ? TRAVEL_MODE + countryHint(request) : body?.mode === 'website' ? WEBSITE_MODE + (pro ? WEBSITE_PRO : WEBSITE_FREE) + (Number(body?.sitePhotos) > 0 ? `\n- In questa chat l'utente ha già mandato ${Math.min(12, Number(body.sitePhotos) | 0)} foto: foto1.jpg … foto${Math.min(12, Number(body.sitePhotos) | 0)}.jpg. Usale tutte nel sito.` : '') + (Number(body?.siteVideos) > 0 ? `\n- L'utente ha mandato anche ${Math.min(5, Number(body.siteVideos) | 0)} video: video1.mp4 … video${Math.min(5, Number(body.siteVideos) | 0)}.mp4. Mettili nel sito.` : '') : body?.mode === 'business' ? BUSINESS_MODE + countryHint(request) : body?.mode === 'whatsapp' ? WHATSAPP_MODE : (pro ? '' : WEBSITE_FREE_CHAT)) + (sitePhoto ? SITE_PHOTO_NOW(Number(body?.sitePhotos) | 0) : '') }, ...messages],
   };
   if (model.startsWith('gpt-5')) payload.reasoning_effort = env('OPENAI_REASONING_EFFORT', 'minimal');
+  // Siti: un po' più di riflessione = struttura e design molto migliori (costo un po' più alto, coperto dall'energia).
+  if (model.startsWith('gpt-5') && body?.mode === 'website') payload.reasoning_effort = env('OPENAI_SITE_REASONING', 'low');
 
   const call = (p) => fetch(`${OPENAI}/chat/completions`, {
     method: 'POST',
@@ -671,6 +681,10 @@ export async function POST(request) {
         const video = tool.name === 'create_video';
         controller.enqueue(encoder.encode(frame({ type: video ? 'video_error' : 'image_error', error: 'upstream', message: video ? 'Impossible de créer la vidéo maintenant. Réessaie dans un instant.' : "Impossible de créer l'image maintenant. Réessaie dans un instant." })));
       } finally { clearInterval(hb); }
+      if (siteMode && pro) {
+        const used = await addEnergy(userId, reply.length / 1000);
+        if (used !== null) controller.enqueue(encoder.encode(frame({ type: 'energy', pct: Math.min(100, Math.round(used / SITE_ENERGY() * 100)) })));
+      }
       controller.enqueue(encoder.encode(await memoryFrame()));
     },
   };

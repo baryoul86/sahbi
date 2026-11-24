@@ -77,6 +77,32 @@ export async function refundSiteCredit(userId) {
   try { await refundCredit(userId, 'site'); } catch { try { await refundCredit(userId, 'tts'); } catch { /* niente */ } }
 }
 
+// ⚡ Energia dei siti (Pro): nessun numero di messaggi, ma un "serbatoio" giornaliero misurato in migliaia di
+// caratteri scritti da Sahbi nella chat dei siti (≈ costo OpenAI). Si ricarica ogni giorno alle 8 (ora di Parigi/Algeri).
+export const SITE_ENERGY = () => Number(env('SITE_ENERGY_DAILY', '150')); // ≈ 12-15 siti completi al giorno
+export function energyDay(now = new Date()) {
+  const t = new Date(now.getTime() - 8 * 3600e3); // prima delle 8 conta ancora il giorno prima
+  return new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Paris', year: 'numeric', month: '2-digit', day: '2-digit' }).format(t);
+}
+export async function getEnergy(userId) {
+  try {
+    const r = await fetch(`${supabaseUrl()}/rest/v1/usage?user_id=eq.${userId}&day=eq.${energyDay()}&kind=eq.site&select=count`, { headers: serviceHeaders() });
+    const rows = r.ok ? await r.json() : [];
+    return Number(rows?.[0]?.count || 0);
+  } catch { return 0; }
+}
+export async function addEnergy(userId, units) {
+  if (!(units > 0)) return null;
+  try {
+    const used = (await getEnergy(userId)) + Math.ceil(units);
+    await fetch(`${supabaseUrl()}/rest/v1/usage?on_conflict=user_id,day,kind`, {
+      method: 'POST', headers: serviceHeaders({ 'content-type': 'application/json', prefer: 'resolution=merge-duplicates,return=minimal' }),
+      body: JSON.stringify({ user_id: userId, day: energyDay(), kind: 'site', count: used }),
+    });
+    return used;
+  } catch { return null; }
+}
+
 export const remainingCredit = (userId, kind, limit) =>
   rpc('remaining_credit', { p_user: userId, p_kind: kind, p_limit: limit });
 
@@ -84,15 +110,15 @@ export const remainingCredit = (userId, kind, limit) =>
 export const limits = (pro = false) => (pro
   ? {
       chat: Number(env('PRO_CHAT_DAILY_LIMIT', '150')),
-      image: Number(env('PRO_IMAGE_DAILY_LIMIT', '6')),
+      image: Number(env('PRO_IMAGE_DAILY_LIMIT', '8')),
       voice: Number(env('PRO_VOICE_DAILY_LIMIT', '100')),
       tts: Number(env('PRO_TTS_DAILY_LIMIT', '100')),
       video: Number(env('PRO_VIDEO_MONTHLY_LIMIT', '3')), // video al MESE (creati con l'IA + caricati nei siti)
       site: Number(env('PRO_SITE_DAILY_LIMIT', '40')), // messaggi al giorno nella chat dei siti (scrivono molto codice)
     }
   : {
-      chat: Number(env('FREE_CHAT_DAILY_LIMIT', '30')),
-      image: Number(env('FREE_IMAGE_DAILY_LIMIT', '2')),
+      chat: Number(env('FREE_CHAT_DAILY_LIMIT', '15')),
+      image: Number(env('FREE_IMAGE_DAILY_LIMIT', '1')),
       voice: Number(env('FREE_VOICE_DAILY_LIMIT', '20')),
       tts: Number(env('FREE_TTS_DAILY_LIMIT', '0')),
       video: Number(env('FREE_VIDEO_MONTHLY_LIMIT', '0')),
