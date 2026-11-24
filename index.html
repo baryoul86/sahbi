@@ -2919,7 +2919,7 @@ async function supMeta() {
   let build = '';
   try { build = (await window.Capacitor?.Plugins?.App?.getInfo?.())?.build || ''; } catch { /* web */ }
   return {
-    platform: IOS_APP ? 'app iPhone' : IN_APP ? 'app Android' : `site web (${/Android/i.test(navigator.userAgent) ? 'Android' : /iPhone|iPad/i.test(navigator.userAgent) ? 'iPhone/iPad' : 'ordinateur'})`,
+    platform: IOS_APP ? 'app iPhone' : (IN_APP || (/Android/i.test(navigator.userAgent) && matchMedia('(display-mode: standalone), (display-mode: fullscreen)').matches)) ? 'app Android' : `site web (${/Android/i.test(navigator.userAgent) ? 'Android' : /iPhone|iPad/i.test(navigator.userAgent) ? 'iPhone/iPad' : 'ordinateur'})`,
     build: String(build || ''), ua: navigator.userAgent, lang: LANG, mode: current?.mode || '',
     screen: `${innerWidth}x${innerHeight}`, lastError: lastErr, time: localNow(),
   };
