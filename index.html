@@ -521,9 +521,11 @@ html[lang=ar] body{line-height:1.7}
         <div class="amenu" id="attachMenu" role="menu" hidden>
           <button type="button" role="menuitem" id="pickCam"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg><span>Appareil photo</span></button>
           <button type="button" role="menuitem" id="pickPhoto"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.8"/><path d="M21 15l-5-5L5 21"/></svg><span>Photos</span></button>
+          <button type="button" role="menuitem" id="pickVideo" hidden><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="5" width="15" height="14" rx="2"/><path d="M17 10l5-3v10l-5-3z"/></svg><span>Vidéo pour le site <small>Pro · 50 Mo max</small></span></button>
           <button type="button" role="menuitem" id="pickFile"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h6"/></svg><span>Fichiers <small>PDF, Word, Excel</small></span></button>
         </div>
         <input type="file" id="file" accept="image/*" hidden>
+        <input type="file" id="videoFile" accept="video/mp4,video/quicktime,video/webm,video/*" hidden>
         <input type="file" id="camFile" accept="image/*" capture="environment" hidden>
         <input type="file" id="docFile" accept=".pdf,.docx,.xlsx,.xls,.csv,.txt,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv,text/plain" hidden>
         <label for="msg" class="sr">Message</label>
@@ -1436,9 +1438,10 @@ function findHtml(text) {
 function extractHtml(text) { return findHtml(text)?.html || null; }
 // 📷 Foto dell'utente nel sito: il modello scrive src="foto1.jpg", qui si mette la foto vera (dentro il file, così funziona ovunque).
 function withPhotos(html) {
-  const ph = current?.sitePhotos || [];
-  if (!ph.length) return html;
-  return String(html).replace(/foto(\d{1,2})\.(?:jpe?g|png|webp)/gi, (m, n) => ph[Number(n) - 1] || m);
+  const ph = current?.sitePhotos || [], vd = current?.siteVideos || [];
+  return String(html)
+    .replace(/foto(\d{1,2})\.(?:jpe?g|png|webp)/gi, (m, n) => ph[Number(n) - 1] || m)
+    .replace(/video(\d{1,2})\.(?:mp4|mov|webm)/gi, (m, n) => vd[Number(n) - 1] || m);
 }
 function downloadSite(html) {
   // Scaricare il sito è riservato a Sahbi Pro (l'anteprima resta gratuita).
@@ -1995,7 +1998,7 @@ async function sendChat(text, pic = null, docAtt = null, opts = {}) {
   let res;
   try {
     sentAt = Date.now();
-    res = await api('/api/chat', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ messages: history, lang: LANG, ...(pic ? { photo: pic } : (recentPhoto && recentTurns > 0 && !opts.voice ? { photo: recentPhoto, photoEarlier: true } : {})), ...(docAtt ? { doc: { name: docAtt.name, text: docAtt.text } } : {}), ...(opts.voice ? { voice: true } : {}), now: localNow(), ...(current.temp ? { temp: true } : {}), ...(current.mode ? { mode: current.mode } : {}), ...(current.mode === 'website' && current.sitePhotos?.length ? { sitePhotos: current.sitePhotos.length } : {}) }) });
+    res = await api('/api/chat', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ messages: history, lang: LANG, ...(pic ? { photo: pic } : (recentPhoto && recentTurns > 0 && !opts.voice ? { photo: recentPhoto, photoEarlier: true } : {})), ...(docAtt ? { doc: { name: docAtt.name, text: docAtt.text } } : {}), ...(opts.voice ? { voice: true } : {}), now: localNow(), ...(current.temp ? { temp: true } : {}), ...(current.mode ? { mode: current.mode } : {}), ...(current.mode === 'website' && current.sitePhotos?.length ? { sitePhotos: current.sitePhotos.length } : {}), ...(current.mode === 'website' && current.siteVideos?.length ? { siteVideos: current.siteVideos.length } : {}) }) });
   } catch { wait.remove(); bubble('bot', 'Pas de connexion. Vérifie internet et réessaie.', 'err'); return ''; }
   if (!res.ok) {
     wait.remove();
@@ -2485,11 +2488,42 @@ function closeAttachMenu() { amenu.hidden = true; $('attach').setAttribute('aria
 $('attach').addEventListener('click', (e) => {
   e.stopPropagation();
   const open = amenu.hidden; amenu.hidden = !open; $('attach').setAttribute('aria-expanded', String(open));
+  $('pickVideo').hidden = current?.mode !== 'website';
   if (open) $('pickCam').focus();
 });
 $('pickCam').addEventListener('click', () => { closeAttachMenu(); $('camFile').click(); });
 $('pickPhoto').addEventListener('click', () => { closeAttachMenu(); $('file').click(); });
 $('pickFile').addEventListener('click', () => { closeAttachMenu(); pickDoc(); });
+// 🎬 Video per il sito (Pro): va direttamente dal telefono al nostro archivio, con la barra di avanzamento.
+$('pickVideo').addEventListener('click', () => {
+  closeAttachMenu();
+  if (me && !me.pro) { toast(tr('Les vidéos dans le site sont réservées à Sahbi Pro.')); openSheet(); return; }
+  $('videoFile').click();
+});
+$('videoFile').addEventListener('change', async () => {
+  const f = $('videoFile').files?.[0]; $('videoFile').value = '';
+  if (!f) return;
+  if (f.size > 50 * 1024 * 1024) { toast(tr('Vidéo trop lourde : 50 Mo maximum (environ 1 minute en HD).')); return; }
+  const type = f.type || (/\.mov$/i.test(f.name) ? 'video/quicktime' : 'video/mp4');
+  const card = el('div', 'work-card'); card.append(el('span', 'wk-spin'), el('span', 'wk-txt', tr('🎬 Envoi de la vidéo… 0 %')));
+  msgsEl.appendChild(card); card.scrollIntoView({ block: 'end' });
+  try {
+    const r = await api('/api/library?upload=video', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ type, size: f.size }) });
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(d.message || 'upload');
+    await new Promise((ok, ko) => {
+      const x = new XMLHttpRequest(); x.open('PUT', d.uploadUrl); x.setRequestHeader('content-type', type); x.setRequestHeader('x-upsert', 'true');
+      x.upload.onprogress = (e) => { if (e.lengthComputable) card.querySelector('.wk-txt').textContent = tr('🎬 Envoi de la vidéo…') + ` ${Math.round(e.loaded / e.total * 100)} %`; };
+      x.onload = () => (x.status < 300 ? ok() : ko(new Error(String(x.status)))); x.onerror = () => ko(new Error('net')); x.send(f);
+    });
+    const done = await (await api(`/api/library?upload=done&path=${encodeURIComponent(d.path)}`, { method: 'POST' })).json();
+    if (!done.url) throw new Error(done.message || 'url');
+    current.siteVideos = [...(current.siteVideos || []), done.url].slice(0, 5);
+    card.remove(); saveCurrent();
+    const n = current.siteVideos.length;
+    await sendChat(`${tr('Voici une vidéo pour mon site')} [video${n}.mp4]`);
+  } catch (e) { card.remove(); toast(e.message && e.message.length > 12 ? e.message : tr('Envoi de la vidéo impossible. Réessaie avec le Wi-Fi.')); }
+});
 document.addEventListener('click', (e) => { if (!amenu.hidden && !amenu.contains(e.target)) closeAttachMenu(); });
 amenu.addEventListener('keydown', (e) => { if (e.key === 'Escape') { closeAttachMenu(); $('attach').focus(); } });
 for (const id of ['file', 'camFile']) {
