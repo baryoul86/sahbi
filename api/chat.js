@@ -48,7 +48,7 @@ MODALITÀ LIBRO (questa chat serve SOLO a scrivere un libro con l'utente):
 - Sei il suo editore e coautore. L'utente scrive o detta al microfono pezzi del libro, idee, ricordi, personaggi, capitoli, anche in disordine.
 - A ogni messaggio: (1) conferma in una frase cosa hai capito e dove lo metti (es. "👍 Je le place dans le chapitre 2 : L'arrivée à Paris"); (2) se utile mostra il piano aggiornato in forma breve ("📖 Plan : 1. … 2. … 3. …"); (3) fai UNA o DUE domande per andare avanti (personaggi, luoghi, cosa succede dopo, il messaggio del libro, il pubblico, la lingua del libro).
 - All'inizio chiedi: di cosa parla il libro, per chi è, in che lingua sarà scritto, e se ha già un titolo (se no proponine 3).
-- Quando il piano dei capitoli è chiaro, chiedi: "Quelle couverture veux-tu pour ton livre ?" (colori, immagine, stile). Quando la descrive, crea SUBITO la copertina con create_image: formato verticale (portrait), con il titolo del libro scritto in grande e bene leggibile.
+- Quando il piano dei capitoli è chiaro, chiedi: "Quelle couverture veux-tu pour ton livre ?" (colori, immagine, stile). In questa chat NON si creano immagini: proponi un'idea di copertina precisa (colori, immagine, stile, titolo) già pronta da copiare, e di' che la crea nella chat normale di Sahbi (menu ☰ → "Nouvelle discussion") incollando quella descrizione.
 - Non scrivere il libro intero in chat: raccogli, ordina e migliora. Ricorda ogni tanto: "Quand ton livre est terminé, écris FIN et je le transforme en livre PDF."
 - Rispondi SEMPRE nella lingua in cui scrive o parla l'utente (qualsiasi lingua del mondo: arabo, darija, egiziano, turco, inglese, spagnolo, italiano, russo, urdu…), anche se il messaggio di benvenuto era in un'altra lingua. Se nella sua lingua la parola per finire è diversa (es. "النهاية", "son", "end", "fine"), digli quella. Frasi brevi e calorose.`;
 
@@ -74,7 +74,7 @@ const BUSINESS_MODE = `
 MODALITÀ AGENTE BUSINESS (questa chat serve SOLO ad aiutare l'attività dell'utente: negozio, ristorante, artigiano, servizi, vendita online…):
 - All'inizio capisci in 1-2 domande: che attività è, città/paese, clienti tipo, cosa vuole migliorare (più clienti, prezzi, organizzazione, social). Ricorda queste informazioni per tutta la chat.
 - Poi LAVORI tu e consegni risultati pronti da usare, non consigli vaghi:
-  • POST SOCIAL: un piano della settimana (lun→dom) con il testo completo di ogni post per Facebook/Instagram/TikTok, emoji, hashtag locali e l'idea dell'immagine; se l'utente vuole, crea l'immagine con create_image.
+  • POST SOCIAL: un piano della settimana (lun→dom) con il testo completo di ogni post per Facebook/Instagram/TikTok, emoji, hashtag locali e l'idea dell'immagine (descrizione pronta da copiare); in questa chat NON si creano immagini: per crearla usa la chat normale di Sahbi (menu ☰ → "Nouvelle discussion").
   • PREVENTIVI e FATTURE: con i dati che dà (cliente, prodotti, quantità, prezzi, IVA/TVA se serve) scrivi il documento completo e ordinato, con i totali calcolati correttamente; dove manca un dato metti [À COMPLÉTER].
   • PREZZI e GUADAGNI: calcola costi, margine e prezzo consigliato mostrando il calcolo in modo semplice.
   • CLIENTI: risposte a recensioni (positive e negative), messaggi di promozione, annunci (Marketplace, Avito, Ouedkniss, Leboncoin…).
@@ -159,8 +159,8 @@ const SITE_EDIT_NOW = (siteChat) => `
 `;
 
 // Chat dei siti + richiesta di un'immagine che non riguarda il sito.
-const OFF_TOPIC_IMG = `
-⚠️ L'utente chiede un'immagine (o di trasformare una foto) che NON riguarda il sito. Questa chat serve solo a creare il sito: NON creare l'immagine e NON fare il sito. Rispondi in 1-2 frasi gentili, nella sua lingua: qui è lo spazio per il suo sito; per le immagini usi la chat normale di Sahbi (menu ☰ → "Nouvelle discussion"), dove gliela crea subito. Se invece vuole quell'immagine NEL sito, basta dirlo ("mettila nel sito").
+const OFF_TOPIC_IMG_BASE = `
+⚠️ L'utente chiede di creare un'immagine, un video o di trasformare una foto. In QUESTA chat non è possibile: NON crearla e non fare altro lavoro. Rispondi in 1-2 frasi gentili, nella sua lingua: in questa chat non si possono creare immagini o video; deve andare nella chat normale di Sahbi (menu ☰ → "Nouvelle discussion"), dove gliela crea subito. Se è utile, dagli la descrizione pronta da copiare.
 `;
 
 const SITE_PHOTO_NOW = (n) => `
@@ -573,15 +573,22 @@ export async function POST(request) {
   const siteEdit = siteCtx && !photo && (!EXPLICIT_IMG.test(nowText) || IN_SITE.test(nowText));
   // Nella chat dei siti un'immagine che non c'entra col sito ("fammi un'immagine di un gatto", "trasforma questa foto in cartoon")
   // non si fa: Sahbi dice gentilmente di usare la chat normale.
-  const offTopicImg = body?.mode === 'website' && !sitePhoto && !IN_SITE.test(nowText) && (photo ? STYLE_ASK.test(nowText) || EXPLICIT_IMG.test(nowText) : EXPLICIT_IMG.test(nowText));
-  const noImage = siteEdit || offTopicImg;
+  // Regola generale: nelle chat speciali (sito, libro, viaggio, business, WhatsApp) NON si creano mai immagini né video.
+  // Se l'utente ne chiede una, Sahbi dice di usare la chat normale. Eccezione: nella chat dei siti, le immagini DENTRO il sito.
+  const modeChat = ['website', 'book', 'travel', 'business', 'whatsapp'].includes(body?.mode);
+  const TRANSFORM = /(trasform|transform|stile|style|disney|pixar|ghibli|cartoon|cartone|anime|manga|aquarell|acquerell|watercolor|ritaglia|scontorn|d[ée]tour|sfondo|arri[eè]re-plan|background|حوّل|حول|كرتون|خلفية)/i;
+  const VIDEO_REQ = /(fammi|fai|crea|creami|genera|voglio|vorrei|fais|crée|cree|génère|genere|je veux|make|create|generate|i want|اعمل|بغيت|dir ?li).{0,40}(vid[ée]o|فيديو|clip)/i;
+  const askImg = (body?.mode === 'website' ? EXPLICIT_IMG.test(nowText) : (EXPLICIT_IMG.test(nowText) || (!NOT_IMAGE.test(nowText) && IMAGE_REQ.test(nowText))))
+    || (!!photo && TRANSFORM.test(nowText)) || VIDEO_REQ.test(nowText);
+  const offTopicImg = modeChat && !sitePhoto && !(body?.mode === 'website' && IN_SITE.test(nowText)) && askImg;
+  const noImage = modeChat || siteEdit;
   const model = pro ? env('OPENAI_CHAT_MODEL_PRO', env('OPENAI_CHAT_MODEL', 'gpt-5-mini')) : env('OPENAI_CHAT_MODEL', 'gpt-5-mini');
   const payload = {
     model, stream: true, tools: noImage ? tools.filter((t) => t.function.name !== 'create_image' && t.function.name !== 'create_video') : tools,
     // Foto + "trasformala in stile…", oppure "fammi un'immagine di…": si disegna subito, senza domande.
     tool_choice: !sitePhoto && !noImage && (again || (!NOT_IMAGE.test(nowText) && ((photo && !body?.photoEarlier && STYLE_ASK.test(nowText)) || ((!photo || body?.photoEarlier) && IMAGE_REQ.test(nowText)))))
       ? { type: 'function', function: { name: 'create_image' } } : 'auto',
-    messages: [{ role: 'system', content: SYSTEM.replace('{{VIDEO}}', videoEnabled() ? VIDEO_ON : VIDEO_OFF) + memoryPrompt(memory) + uiLangPrompt(body?.lang) + todayPrompt() + clientNowPrompt(body?.now) + langPrompt(detectLang(nowText) ? nowText : (again ? prevUserText : nowText)) + (body?.voice === true ? VOICE_STYLE : '') + (body?.mode === 'book' ? BOOK_MODE : body?.mode === 'travel' ? TRAVEL_MODE + countryHint(request) : body?.mode === 'website' ? WEBSITE_MODE + (pro ? WEBSITE_PRO : WEBSITE_FREE) + (Number(body?.sitePhotos) > 0 ? `\n- In questa chat l'utente ha già mandato ${Math.min(12, Number(body.sitePhotos) | 0)} foto: foto1.jpg … foto${Math.min(12, Number(body.sitePhotos) | 0)}.jpg. Usale tutte nel sito.` : '') + (Number(body?.siteVideos) > 0 ? `\n- L'utente ha mandato anche ${Math.min(5, Number(body.siteVideos) | 0)} video: video1.mp4 … video${Math.min(5, Number(body.siteVideos) | 0)}.mp4. Mettili nel sito.` : '') : body?.mode === 'business' ? BUSINESS_MODE + countryHint(request) : body?.mode === 'whatsapp' ? WHATSAPP_MODE : (pro ? '' : WEBSITE_FREE_CHAT)) + (sitePhoto ? SITE_PHOTO_NOW(Number(body?.sitePhotos) | 0) : '') + (offTopicImg ? OFF_TOPIC_IMG : siteEdit ? SITE_EDIT_NOW(body?.mode === 'website') : '') }, ...messages],
+    messages: [{ role: 'system', content: SYSTEM.replace('{{VIDEO}}', videoEnabled() ? VIDEO_ON : VIDEO_OFF) + memoryPrompt(memory) + uiLangPrompt(body?.lang) + todayPrompt() + clientNowPrompt(body?.now) + langPrompt(detectLang(nowText) ? nowText : (again ? prevUserText : nowText)) + (body?.voice === true ? VOICE_STYLE : '') + (body?.mode === 'book' ? BOOK_MODE : body?.mode === 'travel' ? TRAVEL_MODE + countryHint(request) : body?.mode === 'website' ? WEBSITE_MODE + (pro ? WEBSITE_PRO : WEBSITE_FREE) + (Number(body?.sitePhotos) > 0 ? `\n- In questa chat l'utente ha già mandato ${Math.min(12, Number(body.sitePhotos) | 0)} foto: foto1.jpg … foto${Math.min(12, Number(body.sitePhotos) | 0)}.jpg. Usale tutte nel sito.` : '') + (Number(body?.siteVideos) > 0 ? `\n- L'utente ha mandato anche ${Math.min(5, Number(body.siteVideos) | 0)} video: video1.mp4 … video${Math.min(5, Number(body.siteVideos) | 0)}.mp4. Mettili nel sito.` : '') : body?.mode === 'business' ? BUSINESS_MODE + countryHint(request) : body?.mode === 'whatsapp' ? WHATSAPP_MODE : (pro ? '' : WEBSITE_FREE_CHAT)) + (sitePhoto ? SITE_PHOTO_NOW(Number(body?.sitePhotos) | 0) : '') + (offTopicImg ? OFF_TOPIC_IMG_BASE + (body?.mode === 'website' ? `Se invece vuole quell'immagine DENTRO il sito, basta dirlo ("mettila nel sito").\n` : '') : siteEdit ? SITE_EDIT_NOW(body?.mode === 'website') : '') }, ...messages],
   };
   if (model.startsWith('gpt-5')) payload.reasoning_effort = env('OPENAI_REASONING_EFFORT', 'minimal');
   // Siti: un po' più di riflessione = struttura e design molto migliori (costo un po' più alto, coperto dall'energia).
@@ -659,7 +666,7 @@ export async function POST(request) {
     if (tool.name || !PROMISE.test(reply) || REFUSAL.test(reply)) return null;
     // Un sito o una pagina web non è un'immagine: in quel caso si fa scrivere il codice (deliverNow).
     if (/(sito|site|pagina|page web|landing|html|codice|موقع)/i.test(reply + ' ' + lastText) && !/(image|immagine|photo|foto|صورة)/i.test(lastText)) return null;
-    if (videoEnabled() && VIDEO_WORDS.test(reply) && asked(VIDEO_WORDS)) return 'create_video';
+    if (!noImage && videoEnabled() && VIDEO_WORDS.test(reply) && asked(VIDEO_WORDS)) return 'create_video';
     if (!sitePhoto && !noImage && IMAGE_WORDS.test(reply) && asked(IMAGE_WORDS)) return 'create_image';
     return null;
   };

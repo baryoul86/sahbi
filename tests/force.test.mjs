@@ -64,5 +64,15 @@ console.log('site photo OK');
   assert.ok(!w.tools.some((x) => x.function.name === 'create_image'));
   assert.match(w.messages[0].content, /chat normale/);
   assert.doesNotMatch(w.messages[0].content, /QUESTA CHAT HA UN SITO/);
+  // Tutte le chat speciali: niente immagini/video, si manda alla chat normale.
+  for (const [t, mode, photo] of [["Fammi un'immagine di un gatto", 'business'], ['Dessine-moi la Kaaba', 'travel'], ['Crée la couverture du livre en image', 'book'], ['Fais-moi une vidéo de promo', 'whatsapp'], ['Transforme cette photo en cartoon', 'business', true]]) {
+    first = null; const r = await POST(new Request('https://w/api/chat', { method: 'POST', headers: { authorization: 'Bearer t' }, body: JSON.stringify({ messages: [{ role: 'user', content: t }], mode, ...(photo ? { photo: png } : {}) }) })); await r.text();
+    assert.equal(first.tool_choice, 'auto', t);
+    assert.ok(!first.tools.some((x) => /create_(image|video)/.test(x.function.name)), t);
+    assert.match(first.messages[0].content, /chat normale di Sahbi/, t);
+  }
+  // Domanda normale in modalità business: nessun avviso.
+  const n = await ask('Aide-moi à écrire un devis', { mode: 'business' });
+  assert.doesNotMatch(n.messages[0].content, /non si possono creare immagini/);
 }
 console.log('site edit OK');
