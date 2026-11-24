@@ -158,6 +158,11 @@ const SITE_EDIT_NOW = (siteChat) => `
 - Mantieni tutto quello che c'era già (testi, colori, foto, sezioni) salvo ciò che l'utente vuole cambiare.
 `;
 
+// Chat dei siti + richiesta di un'immagine che non riguarda il sito.
+const OFF_TOPIC_IMG = `
+⚠️ L'utente chiede un'immagine (o di trasformare una foto) che NON riguarda il sito. Questa chat serve solo a creare il sito: NON creare l'immagine e NON fare il sito. Rispondi in 1-2 frasi gentili, nella sua lingua: qui è lo spazio per il suo sito; per le immagini usi la chat normale di Sahbi (menu ☰ → "Nouvelle discussion"), dove gliela crea subito. Se invece vuole quell'immagine NEL sito, basta dirlo ("mettila nel sito").
+`;
+
 const SITE_PHOTO_NOW = (n) => `
 
 FOTO PER IL SITO: la foto che l'utente ha appena mandato è foto${Math.max(1, n)}.jpg ed è PER IL SITO (logo, sfondo, prodotto, galleria… come dice lui, in qualsiasi lingua: "mets-la comme logo", "metti questa come logo", "حطها لوغو", "use it as the logo").
@@ -566,13 +571,17 @@ export async function POST(request) {
   const EXPLICIT_IMG = /(^(dessine|disegna|draw|ارسم|rsem)\b|crée[- ]?moi une image|crée une image|génère une image|fais[- ]moi une image|crea(mi)? un'?immagine|genera(mi)? un'?immagine|fammi un'?immagine|disegnami|create an image|generate an image|make me an image|un poster|une affiche|اعمل لي صورة|ارسم لي)/i;
   const IN_SITE = /(nel sito|sul sito|per il sito|dans le site|sur le site|pour le site|du site|in the site|on the site|for the site|في الموقع|للموقع|f site|f l'?site)/i;
   const siteEdit = siteCtx && !photo && (!EXPLICIT_IMG.test(nowText) || IN_SITE.test(nowText));
+  // Nella chat dei siti un'immagine che non c'entra col sito ("fammi un'immagine di un gatto", "trasforma questa foto in cartoon")
+  // non si fa: Sahbi dice gentilmente di usare la chat normale.
+  const offTopicImg = body?.mode === 'website' && !sitePhoto && !IN_SITE.test(nowText) && (photo ? STYLE_ASK.test(nowText) || EXPLICIT_IMG.test(nowText) : EXPLICIT_IMG.test(nowText));
+  const noImage = siteEdit || offTopicImg;
   const model = pro ? env('OPENAI_CHAT_MODEL_PRO', env('OPENAI_CHAT_MODEL', 'gpt-5-mini')) : env('OPENAI_CHAT_MODEL', 'gpt-5-mini');
   const payload = {
-    model, stream: true, tools: siteEdit ? tools.filter((t) => t.function.name !== 'create_image') : tools,
+    model, stream: true, tools: noImage ? tools.filter((t) => t.function.name !== 'create_image' && t.function.name !== 'create_video') : tools,
     // Foto + "trasformala in stile…", oppure "fammi un'immagine di…": si disegna subito, senza domande.
-    tool_choice: !sitePhoto && !siteEdit && (again || (!NOT_IMAGE.test(nowText) && ((photo && !body?.photoEarlier && STYLE_ASK.test(nowText)) || ((!photo || body?.photoEarlier) && IMAGE_REQ.test(nowText)))))
+    tool_choice: !sitePhoto && !noImage && (again || (!NOT_IMAGE.test(nowText) && ((photo && !body?.photoEarlier && STYLE_ASK.test(nowText)) || ((!photo || body?.photoEarlier) && IMAGE_REQ.test(nowText)))))
       ? { type: 'function', function: { name: 'create_image' } } : 'auto',
-    messages: [{ role: 'system', content: SYSTEM.replace('{{VIDEO}}', videoEnabled() ? VIDEO_ON : VIDEO_OFF) + memoryPrompt(memory) + uiLangPrompt(body?.lang) + todayPrompt() + clientNowPrompt(body?.now) + langPrompt(detectLang(nowText) ? nowText : (again ? prevUserText : nowText)) + (body?.voice === true ? VOICE_STYLE : '') + (body?.mode === 'book' ? BOOK_MODE : body?.mode === 'travel' ? TRAVEL_MODE + countryHint(request) : body?.mode === 'website' ? WEBSITE_MODE + (pro ? WEBSITE_PRO : WEBSITE_FREE) + (Number(body?.sitePhotos) > 0 ? `\n- In questa chat l'utente ha già mandato ${Math.min(12, Number(body.sitePhotos) | 0)} foto: foto1.jpg … foto${Math.min(12, Number(body.sitePhotos) | 0)}.jpg. Usale tutte nel sito.` : '') + (Number(body?.siteVideos) > 0 ? `\n- L'utente ha mandato anche ${Math.min(5, Number(body.siteVideos) | 0)} video: video1.mp4 … video${Math.min(5, Number(body.siteVideos) | 0)}.mp4. Mettili nel sito.` : '') : body?.mode === 'business' ? BUSINESS_MODE + countryHint(request) : body?.mode === 'whatsapp' ? WHATSAPP_MODE : (pro ? '' : WEBSITE_FREE_CHAT)) + (sitePhoto ? SITE_PHOTO_NOW(Number(body?.sitePhotos) | 0) : '') + (siteEdit ? SITE_EDIT_NOW(body?.mode === 'website') : '') }, ...messages],
+    messages: [{ role: 'system', content: SYSTEM.replace('{{VIDEO}}', videoEnabled() ? VIDEO_ON : VIDEO_OFF) + memoryPrompt(memory) + uiLangPrompt(body?.lang) + todayPrompt() + clientNowPrompt(body?.now) + langPrompt(detectLang(nowText) ? nowText : (again ? prevUserText : nowText)) + (body?.voice === true ? VOICE_STYLE : '') + (body?.mode === 'book' ? BOOK_MODE : body?.mode === 'travel' ? TRAVEL_MODE + countryHint(request) : body?.mode === 'website' ? WEBSITE_MODE + (pro ? WEBSITE_PRO : WEBSITE_FREE) + (Number(body?.sitePhotos) > 0 ? `\n- In questa chat l'utente ha già mandato ${Math.min(12, Number(body.sitePhotos) | 0)} foto: foto1.jpg … foto${Math.min(12, Number(body.sitePhotos) | 0)}.jpg. Usale tutte nel sito.` : '') + (Number(body?.siteVideos) > 0 ? `\n- L'utente ha mandato anche ${Math.min(5, Number(body.siteVideos) | 0)} video: video1.mp4 … video${Math.min(5, Number(body.siteVideos) | 0)}.mp4. Mettili nel sito.` : '') : body?.mode === 'business' ? BUSINESS_MODE + countryHint(request) : body?.mode === 'whatsapp' ? WHATSAPP_MODE : (pro ? '' : WEBSITE_FREE_CHAT)) + (sitePhoto ? SITE_PHOTO_NOW(Number(body?.sitePhotos) | 0) : '') + (offTopicImg ? OFF_TOPIC_IMG : siteEdit ? SITE_EDIT_NOW(body?.mode === 'website') : '') }, ...messages],
   };
   if (model.startsWith('gpt-5')) payload.reasoning_effort = env('OPENAI_REASONING_EFFORT', 'minimal');
   // Siti: un po' più di riflessione = struttura e design molto migliori (costo un po' più alto, coperto dall'energia).
@@ -651,7 +660,7 @@ export async function POST(request) {
     // Un sito o una pagina web non è un'immagine: in quel caso si fa scrivere il codice (deliverNow).
     if (/(sito|site|pagina|page web|landing|html|codice|موقع)/i.test(reply + ' ' + lastText) && !/(image|immagine|photo|foto|صورة)/i.test(lastText)) return null;
     if (videoEnabled() && VIDEO_WORDS.test(reply) && asked(VIDEO_WORDS)) return 'create_video';
-    if (!sitePhoto && !siteEdit && IMAGE_WORDS.test(reply) && asked(IMAGE_WORDS)) return 'create_image';
+    if (!sitePhoto && !noImage && IMAGE_WORDS.test(reply) && asked(IMAGE_WORDS)) return 'create_image';
     return null;
   };
   async function forcedArgs(name) {

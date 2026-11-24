@@ -58,5 +58,11 @@ console.log('site photo OK');
   // Senza sito: "fai delle foto" resta un'immagine.
   const k = await ask('Voglio delle foto di profumi', {});
   assert.equal(k.tool_choice?.function?.name, 'create_image');
+  // Chat dei siti: immagine che non c'entra → niente immagine, si consiglia la chat normale.
+  const w = await ask("Fammi un'immagine di un gatto", { mode: 'website' });
+  assert.equal(w.tool_choice, 'auto');
+  assert.ok(!w.tools.some((x) => x.function.name === 'create_image'));
+  assert.match(w.messages[0].content, /chat normale/);
+  assert.doesNotMatch(w.messages[0].content, /QUESTA CHAT HA UN SITO/);
 }
 console.log('site edit OK');
