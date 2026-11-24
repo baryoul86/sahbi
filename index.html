@@ -1145,6 +1145,7 @@ function persist() {
     if (c === current) continue;
     let changed = false;
     for (const m of c.messages || []) if (m.thumb) { delete m.thumb; changed = true; }
+    if (c.sitePhotos?.length) { delete c.sitePhotos; changed = true; } // foto dei siti vecchi (la chat aperta le tiene)
     if (changed) { try { localStorage.setItem(STORE, JSON.stringify(all)); return; } catch { /* ancora piena */ } }
   }
 }
@@ -1433,10 +1434,16 @@ function findHtml(text) {
   return null;
 }
 function extractHtml(text) { return findHtml(text)?.html || null; }
+// 📷 Foto dell'utente nel sito: il modello scrive src="foto1.jpg", qui si mette la foto vera (dentro il file, così funziona ovunque).
+function withPhotos(html) {
+  const ph = current?.sitePhotos || [];
+  if (!ph.length) return html;
+  return String(html).replace(/foto(\d{1,2})\.(?:jpe?g|png|webp)/gi, (m, n) => ph[Number(n) - 1] || m);
+}
 function downloadSite(html) {
   // Scaricare il sito è riservato a Sahbi Pro (l'anteprima resta gratuita).
   if (me && !me.pro) { toast(tr('Télécharger ton site est réservé à Sahbi Pro.')); document.querySelector('.site-prev')?.remove(); openSheet(); return; }
-  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([html], { type: 'text/html' })); a.download = 'index.html'; a.click();
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([withPhotos(html)], { type: 'text/html' })); a.download = 'index.html'; a.click();
   toast(tr('Fichier index.html téléchargé.'));
 }
 // Anteprima in un riquadro isolato (sandbox): il codice del sito non può toccare Sahbi.
@@ -1447,7 +1454,7 @@ function siteCard(textEl, text, html) {
   textEl.textContent = rest; if (typeof linkify === 'function') { try { linkify(textEl); } catch { /* testo semplice */ } }
   const card = el('div', 'site-card');
   const view = el('div', 'sc-view'); view.title = tr('Aperçu du site');
-  const f = document.createElement('iframe'); f.setAttribute('sandbox', 'allow-scripts'); f.setAttribute('tabindex', '-1'); f.srcdoc = html; f.loading = 'lazy';
+  const f = document.createElement('iframe'); f.setAttribute('sandbox', 'allow-scripts'); f.setAttribute('tabindex', '-1'); f.srcdoc = withPhotos(html); f.loading = 'lazy';
   view.appendChild(f); view.addEventListener('click', () => previewSite(html));
   const bar = el('div', 'sc-bar');
   const open = el('button', 'main', tr('👁️ Ouvrir l’aperçu')); open.type = 'button'; open.addEventListener('click', () => previewSite(html));
@@ -1481,7 +1488,7 @@ function previewSite(html) {
   const x = el('button', '', tr('✕ Fermer l’aperçu')); x.type = 'button'; x.addEventListener('click', () => wrap.remove());
   const dl = el('button', '', '📥 index.html'); dl.type = 'button'; dl.addEventListener('click', () => downloadSite(html));
   bar.append(x, dl);
-  const f = document.createElement('iframe'); f.setAttribute('sandbox', 'allow-scripts allow-popups'); f.srcdoc = html; f.title = tr('Aperçu du site');
+  const f = document.createElement('iframe'); f.setAttribute('sandbox', 'allow-scripts allow-popups'); f.srcdoc = withPhotos(html); f.title = tr('Aperçu du site');
   wrap.append(bar, f); document.body.appendChild(wrap);
 }
 // 🔄 Rifare l'ultima risposta.
@@ -1966,6 +1973,10 @@ async function recoverImage(since, ph) {
 async function sendChat(text, pic = null, docAtt = null, opts = {}) {
   const msg = { role: 'user', content: text, at: Date.now() };
   if (pic) { msg.photo = true; msg.thumb = await makeThumb(pic) || undefined; }
+  if (pic && current.mode === 'website') {
+    const big = await makeThumb(pic, 900);
+    if (big) { current.sitePhotos = [...(current.sitePhotos || []), big].slice(0, 12); msg.content = `${text}\n\n[${tr('Photo pour le site')} : foto${current.sitePhotos.length}.jpg]`.trim(); }
+  }
   if (docAtt) msg.doc = docAtt.name;
   current.messages.push(msg);
   if (current.messages.length === 1) { render(); if (pic) msgsEl.lastElementChild?.remove(); }
@@ -1984,7 +1995,7 @@ async function sendChat(text, pic = null, docAtt = null, opts = {}) {
   let res;
   try {
     sentAt = Date.now();
-    res = await api('/api/chat', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ messages: history, lang: LANG, ...(pic ? { photo: pic } : (recentPhoto && recentTurns > 0 && !opts.voice ? { photo: recentPhoto, photoEarlier: true } : {})), ...(docAtt ? { doc: { name: docAtt.name, text: docAtt.text } } : {}), ...(opts.voice ? { voice: true } : {}), now: localNow(), ...(current.temp ? { temp: true } : {}), ...(current.mode ? { mode: current.mode } : {}) }) });
+    res = await api('/api/chat', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ messages: history, lang: LANG, ...(pic ? { photo: pic } : (recentPhoto && recentTurns > 0 && !opts.voice ? { photo: recentPhoto, photoEarlier: true } : {})), ...(docAtt ? { doc: { name: docAtt.name, text: docAtt.text } } : {}), ...(opts.voice ? { voice: true } : {}), now: localNow(), ...(current.temp ? { temp: true } : {}), ...(current.mode ? { mode: current.mode } : {}), ...(current.mode === 'website' && current.sitePhotos?.length ? { sitePhotos: current.sitePhotos.length } : {}) }) });
   } catch { wait.remove(); bubble('bot', 'Pas de connexion. Vérifie internet et réessaie.', 'err'); return ''; }
   if (!res.ok) {
     wait.remove();

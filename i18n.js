@@ -438,6 +438,7 @@ const D = [
 ['⏳ Je crée ton site…', '⏳ أنا أصنع موقعك…', '⏳ Building your site…'],
 ['⏳ J’écris le code…', '⏳ أكتب الكود…', '⏳ Writing the code…'],
 ['lignes', 'سطر', 'lines'],
+['Photo pour le site', 'صورة للموقع', 'Photo for the site'],
 ['➕ Nouveau site', '➕ موقع جديد', '➕ New site'],
 ['Télécharger ton site est réservé à Sahbi Pro.', 'تحميل موقعك متاح فقط مع صاحبي برو.', 'Downloading your site is for Sahbi Pro.'],
 ['Créer un site internet', 'أنشئ موقعًا إلكترونيًا', 'Create a website'],
