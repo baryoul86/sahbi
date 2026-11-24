@@ -83,6 +83,10 @@
     {
       "source": "/api/lemonsqueezy-webhook",
       "destination": "/api/stripe-webhook?provider=lemonsqueezy"
+    },
+    {
+      "source": "/assistance-feed",
+      "destination": "/api/admin?support=agent"
     }
   ],
   "crons": [
