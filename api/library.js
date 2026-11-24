@@ -1,4 +1,4 @@
-import { json, fail, getUserId, listImages, deleteImage, getPlan, supabaseUrl, serviceHeaders, signPath, BUCKET } from './_lib.js';
+import { json, fail, getUserId, listImages, deleteImage, getPlan, supabaseUrl, serviceHeaders, signPath, BUCKET, env } from './_lib.js';
 import { checkVideo } from './_video.js';
 
 // Galleria delle immagini e dei video creati dall'utente.
@@ -68,5 +68,71 @@ export async function POST(request) {
     try { return json({ url: await signPath(path, 60 * 60 * 24 * 365 * 5) }); }
     catch { return fail('not_found', 404, 'Vidéo introuvable : renvoie-la.'); }
   }
+  if (q.get('publish') === '1') return publishSite(userId, request);
+  if (q.get('unpublish') === '1') return unpublishSite(userId, String(q.get('slug') || ''));
   return fail('bad_request', 400, 'Requête inconnue.');
+}
+
+// 🚀 Pubblicazione in un clic (Pro): il sito va nella cartella pubblica "sites" e si vede su un progetto Vercel
+// SEPARATO (SITES_HOST), così un sito segnalato non tocca mai sahbi.bond. Il file va direttamente dal telefono
+// a Supabase (può contenere foto pesanti); qui si controllano il piano, il nome e il contenuto.
+export const SITES_HOST = () => env('SITES_HOST', 'https://sahbi-sites.vercel.app').replace(/\/$/, '');
+const RESERVED = new Set(['api', 'admin', 'sahbi', 'www', 'login', 'signin', 'paypal', 'bank', 'banque', 'support', 'help', 'contact', 'apple', 'google', 'facebook', 'instagram', 'whatsapp', 'secure', 'account', 'compte', 'verify', 'verification']);
+const slugify = (t) => String(t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 30);
+// Pagine fatte per rubare dati (phishing): niente password, carte o codici, niente imitazioni di banche e servizi noti.
+export function unsafeSite(text) {
+  const t = String(text || '');
+  if (/type\s*=\s*["']?password/i.test(t)) return 'Un site publié ne peut pas demander de mot de passe.';
+  if (/(autocomplete\s*=\s*["']?cc-|name\s*=\s*["']?(card|cardnumber|cc|ccnum|cvv|cvc|iban|pin|otp)\b)/i.test(t)) return 'Un site publié ne peut pas demander de carte bancaire ou de code.';
+  if (/<form/i.test(t) && /(paypal|attijari|cih\b|bmce|bank of africa|banque populaire|barid|alg[eé]rie poste|baridimob|\bccp\b|la banque postale|ameli|caf\.fr|impots\.gouv|netflix|apple id|icloud|microsoft|outlook|gmail|facebook|instagram|whatsapp|binance|western union)/i.test(t)) return 'Un site publié ne peut pas imiter une banque ou un service connu.';
+  return null;
+}
+let sitesBucket = false;
+async function ensureSitesBucket() {
+  if (sitesBucket) return;
+  const r = await fetch(`${supabaseUrl()}/storage/v1/bucket/sites`, { headers: serviceHeaders() });
+  if (!r.ok) {
+    await fetch(`${supabaseUrl()}/storage/v1/bucket`, { method: 'POST', headers: serviceHeaders({ 'content-type': 'application/json' }),
+      body: JSON.stringify({ id: 'sites', name: 'sites', public: true, file_size_limit: 20 * 1024 * 1024, allowed_mime_types: ['text/html'] }) });
+  }
+  sitesBucket = true;
+}
+async function siteOwner(slug) {
+  const r = await fetch(`${supabaseUrl()}/storage/v1/object/${BUCKET}/site-meta/${slug}.json`, { headers: serviceHeaders() });
+  if (!r.ok) return null;
+  return (await r.json().catch(() => ({}))).owner || null;
+}
+async function publishSite(userId, request) {
+  const { pro } = await getPlan(userId);
+  if (!pro) return fail('pro', 402, 'La mise en ligne en un clic est réservée à Sahbi Pro.');
+  let b = {}; try { b = await request.json(); } catch { /* vide */ }
+  const bad = unsafeSite(b.text);
+  if (bad) return fail('unsafe', 422, bad);
+  if (!(Number(b.size) > 0) || Number(b.size) > 20 * 1024 * 1024) return fail('too_big', 413, 'Site trop lourd (20 Mo maximum) : enlève quelques photos.');
+  let slug = slugify(b.slug);
+  if (slug && (await siteOwner(slug)) !== userId) slug = '';
+  if (!slug) {
+    const base = slugify(b.title) || 'mon-site';
+    for (let i = 0; i < 6 && !slug; i++) {
+      const s = `${base}-${Math.random().toString(36).slice(2, 6)}`.replace(/^-/, '');
+      if (!RESERVED.has(base) && !(await siteOwner(s))) slug = s;
+    }
+    if (!slug) return fail('upstream', 502, 'Choisis un autre nom pour ton site.');
+  }
+  await ensureSitesBucket().catch(() => {});
+  await fetch(`${supabaseUrl()}/storage/v1/object/${BUCKET}/site-meta/${slug}.json`, {
+    method: 'POST', headers: serviceHeaders({ 'content-type': 'application/json', 'x-upsert': 'true' }),
+    body: JSON.stringify({ owner: userId, at: new Date().toISOString(), title: String(b.title || '').slice(0, 120) }),
+  });
+  const r = await fetch(`${supabaseUrl()}/storage/v1/object/upload/sign/sites/${slug}/index.html`, {
+    method: 'POST', headers: serviceHeaders({ 'content-type': 'application/json', 'x-upsert': 'true' }), body: '{}' });
+  const d = await r.json().catch(() => ({}));
+  if (!r.ok || !d.url) return fail('upstream', 502, 'Mise en ligne impossible pour le moment.');
+  return json({ slug, uploadUrl: `${supabaseUrl()}/storage/v1${d.url}`, url: `${SITES_HOST()}/${slug}` });
+}
+async function unpublishSite(userId, slug) {
+  slug = slugify(slug);
+  if (!slug || (await siteOwner(slug)) !== userId) return fail('not_found', 404, 'Site introuvable.');
+  await fetch(`${supabaseUrl()}/storage/v1/object/sites`, { method: 'DELETE', headers: serviceHeaders({ 'content-type': 'application/json' }), body: JSON.stringify({ prefixes: [`${slug}/index.html`] }) });
+  return json({ ok: true });
 }

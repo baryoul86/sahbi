@@ -138,6 +138,9 @@ footer.composer .col{padding-block:10px 12px;display:flex;flex-direction:column;
 .site-card .sc-bar{display:flex;gap:8px;flex-wrap:wrap;padding:10px}
 .site-card .sc-bar button{min-height:38px;padding:0 14px;border-radius:999px;border:1px solid var(--line);background:var(--bg);color:var(--fg);font:inherit;cursor:pointer}
 .site-card .sc-bar button.main{background:var(--mint,#2FAE74);border-color:transparent;color:#062016;font-weight:600}
+.site-card .sc-live{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:12px;border-top:1px solid var(--line)}
+.site-card .sc-live a{word-break:break-all;color:var(--mint,#2FAE74);font-weight:600;flex-basis:100%}
+.site-card .sc-live button{min-height:36px;padding:0 12px;border-radius:999px;border:1px solid var(--line);background:var(--bg);color:var(--fg);font:inherit;cursor:pointer}
 .site-card pre{margin:0;max-height:320px;overflow:auto;padding:12px;font-size:12px;border-top:1px solid var(--line);white-space:pre-wrap;word-break:break-word}
 .lightbox{position:fixed;inset:0;z-index:70;background:rgba(0,0,0,.92);display:flex;flex-direction:column}
 .lightbox .lb-bar{display:flex;justify-content:space-between;gap:8px;padding:max(10px,env(safe-area-inset-top)) 12px 10px}
@@ -1464,14 +1467,37 @@ function siteCard(textEl, text, html) {
   const code = el('button', '', tr('</> Code')); code.type = 'button';
   let pre = null; code.addEventListener('click', () => { if (pre) { pre.remove(); pre = null; return; } pre = el('pre', '', html); card.appendChild(pre); });
   const pub = el('button', '', tr('🚀 Mettre en ligne')); pub.type = 'button';
-  pub.addEventListener('click', () => {
-    if (me && !me.pro) { toast(tr('Télécharger ton site est réservé à Sahbi Pro.')); openSheet(); return; }
-    downloadSite(html);
-    if (current.mode !== 'website') current.mode = 'website';
-    sendChat(tr('Mon site est prêt et j’ai téléchargé index.html. Guide-moi pas à pas pour le mettre en ligne gratuitement depuis mon téléphone.'));
-  });
+  pub.addEventListener('click', () => publishSite(html, pub, card));
   bar.append(open, pub, code); card.append(view, bar);
   textEl.after(card);
+}
+// 🚀 Pubblicazione in un clic (Pro): il sito va online su Sahbi Sites e si riceve il link da condividere.
+async function publishSite(html, btn, card) {
+  if (me && !me.pro) { toast(tr('La mise en ligne en un clic est réservée à Sahbi Pro.')); openSheet(); return; }
+  const full = withPhotos(html);
+  const title = (String(html).match(/<title>([^<]{1,120})<\/title>/i)?.[1] || String(html).match(/<h1[^>]*>([^<]{1,120})</i)?.[1] || '').trim();
+  const text = String(html).replace(/data:[^"')\s]+/g, '');
+  const old = btn.textContent; btn.disabled = true; btn.textContent = tr('⏳ Mise en ligne…');
+  try {
+    const r = await api('/api/library?publish=1', { method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ slug: current.siteSlug || '', title, text, size: new Blob([full]).size }) });
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(d.message || 'publish');
+    const up = await fetch(d.uploadUrl, { method: 'PUT', headers: { 'content-type': 'text/html', 'x-upsert': 'true' }, body: new Blob([full], { type: 'text/html' }) });
+    if (!up.ok) throw new Error(tr('Mise en ligne impossible pour le moment.'));
+    current.siteSlug = d.slug; saveCurrent();
+    card.querySelector('.sc-live')?.remove();
+    const live = el('div', 'sc-live');
+    const a = el('a', '', d.url); a.href = d.url; a.target = '_blank'; a.rel = 'noopener';
+    const cp = el('button', '', tr('📋 Copier le lien')); cp.type = 'button';
+    cp.addEventListener('click', () => { navigator.clipboard?.writeText(d.url).then(() => toast(tr('Lien copié ✅'))).catch(() => {}); });
+    const sh = el('button', '', tr('📤 Partager')); sh.type = 'button';
+    sh.addEventListener('click', () => { if (navigator.share) navigator.share({ title: title || 'Mon site', url: d.url }).catch(() => {}); else window.open(`https://wa.me/?text=${encodeURIComponent(d.url)}`, '_blank'); });
+    live.append(el('b', '', tr('✅ Ton site est en ligne :')), a, cp, sh);
+    card.appendChild(live);
+    toast(tr('✅ Ton site est en ligne !'));
+  } catch (e) { toast(e.message && e.message !== 'publish' ? e.message : tr('Mise en ligne impossible pour le moment.')); }
+  btn.disabled = false; btn.textContent = old;
 }
 // 🔍 Immagini a schermo intero: tocca per ingrandire, doppio tocco per lo zoom, pizzica per zoomare.
 function openLightbox(src, alt = '') {
