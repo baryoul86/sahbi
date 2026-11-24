@@ -446,6 +446,8 @@ const D = [
 ['Voici une vidéo pour mon site', 'هذا فيديو لموقعي', 'Here is a video for my site'],
 ['Envoi de la vidéo impossible. Réessaie avec le Wi-Fi.', 'تعذّر إرسال الفيديو. أعد المحاولة عبر الواي فاي.', 'Video upload failed. Try again on Wi-Fi.'],
 ['Vidéo pour le site', 'فيديو للموقع', 'Video for the site'],
+['🚀 Mettre en ligne', '🚀 نشر الموقع', '🚀 Publish'],
+['Mon site est prêt et j’ai téléchargé index.html. Guide-moi pas à pas pour le mettre en ligne gratuitement depuis mon téléphone.', 'موقعي جاهز وقمت بتحميل index.html. وجّهني خطوة بخطوة لنشره مجانًا من هاتفي.', 'My site is ready and I downloaded index.html. Guide me step by step to publish it for free from my phone.'],
 ['➕ Nouveau site', '➕ موقع جديد', '➕ New site'],
 ['Télécharger ton site est réservé à Sahbi Pro.', 'تحميل موقعك متاح فقط مع صاحبي برو.', 'Downloading your site is for Sahbi Pro.'],
 ['Créer un site internet', 'أنشئ موقعًا إلكترونيًا', 'Create a website'],

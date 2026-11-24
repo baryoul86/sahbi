@@ -1463,7 +1463,14 @@ function siteCard(textEl, text, html) {
   const open = el('button', 'main', tr('👁️ Ouvrir l’aperçu')); open.type = 'button'; open.addEventListener('click', () => previewSite(html));
   const code = el('button', '', tr('</> Code')); code.type = 'button';
   let pre = null; code.addEventListener('click', () => { if (pre) { pre.remove(); pre = null; return; } pre = el('pre', '', html); card.appendChild(pre); });
-  bar.append(open, code); card.append(view, bar);
+  const pub = el('button', '', tr('🚀 Mettre en ligne')); pub.type = 'button';
+  pub.addEventListener('click', () => {
+    if (me && !me.pro) { toast(tr('Télécharger ton site est réservé à Sahbi Pro.')); openSheet(); return; }
+    downloadSite(html);
+    if (current.mode !== 'website') current.mode = 'website';
+    sendChat(tr('Mon site est prêt et j’ai téléchargé index.html. Guide-moi pas à pas pour le mettre en ligne gratuitement depuis mon téléphone.'));
+  });
+  bar.append(open, pub, code); card.append(view, bar);
   textEl.after(card);
 }
 // 🔍 Immagini a schermo intero: tocca per ingrandire, doppio tocco per lo zoom, pizzica per zoomare.
