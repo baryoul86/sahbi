@@ -1417,7 +1417,7 @@ function findHtml(text) {
     /```(?:html|htm)?[^\n<]*?\n?\s*(<!doctype html[\s\S]*?<\/html>|<html[\s\S]*?<\/html>)[\s\S]*?(?:```|$)/i,
     /(<!doctype html[\s\S]*?<\/html>)/i,
     /(<html[\s\S]*?<\/html>)/i,
-    /```html\s*((?:<!doctype html|<html)[\s\S]*<body[\s\S]*)$/i, // risposta tagliata: si mostra quello che c'è
+    /((?:<!doctype html|<html[\s>])[\s\S]*)$/i, // risposta tagliata o senza ```: si prende tutto fino alla fine
   ];
   for (const re of tries) {
     const m = t.match(re);
@@ -1425,7 +1425,9 @@ function findHtml(text) {
       const start = t.lastIndexOf('```', m.index + m[0].indexOf(m[1])) >= m.index ? m.index : t.indexOf(m[1]);
       let end = t.indexOf(m[1]) + m[1].length;
       const close = t.indexOf('```', end); if (close >= 0 && t.slice(end, close).trim() === '') end = close + 3;
-      return { html: m[1].trim(), start: Math.min(start, t.indexOf(m[1])), end };
+      const h = m[1].replace(/```\s*$/, '').trim();
+      if (!/<(body|div|section|h1|main|header)/i.test(h)) continue;
+      return { html: h, start: Math.min(start, t.indexOf(m[1])), end };
     }
   }
   return null;
