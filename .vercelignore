@@ -4,3 +4,4 @@ android
 tests
 supabase
 LANCIO.md
+guides/_*.py
