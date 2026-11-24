@@ -1410,10 +1410,27 @@ function bookCard(m) {
   box.append(t, el('small', '', tr('{c} chapitres · environ {w} mots', { c: bk.chapters.length, w: words })), rb);
   st.appendChild(box); mm.append(avatar(), st); msgsEl.appendChild(mm); scroll();
 }
-function extractHtml(text) {
-  const m = String(text || '').match(/```html\s*\n([\s\S]*?)```/i) || String(text || '').match(/```\s*\n(<!doctype html[\s\S]*?)```/i);
-  return m && /<(html|body|!doctype)/i.test(m[1]) ? m[1].trim() : null;
+// Trova il sito nella risposta, anche se il modello non ha messo bene i ``` (blocco non chiuso o codice "nudo").
+function findHtml(text) {
+  const t = String(text || '');
+  const tries = [
+    /```(?:html|htm)?[^\n<]*?\n?\s*(<!doctype html[\s\S]*?<\/html>|<html[\s\S]*?<\/html>)[\s\S]*?(?:```|$)/i,
+    /(<!doctype html[\s\S]*?<\/html>)/i,
+    /(<html[\s\S]*?<\/html>)/i,
+    /```html\s*((?:<!doctype html|<html)[\s\S]*<body[\s\S]*)$/i, // risposta tagliata: si mostra quello che c'è
+  ];
+  for (const re of tries) {
+    const m = t.match(re);
+    if (m) {
+      const start = t.lastIndexOf('```', m.index + m[0].indexOf(m[1])) >= m.index ? m.index : t.indexOf(m[1]);
+      let end = t.indexOf(m[1]) + m[1].length;
+      const close = t.indexOf('```', end); if (close >= 0 && t.slice(end, close).trim() === '') end = close + 3;
+      return { html: m[1].trim(), start: Math.min(start, t.indexOf(m[1])), end };
+    }
+  }
+  return null;
 }
+function extractHtml(text) { return findHtml(text)?.html || null; }
 function downloadSite(html) {
   // Scaricare il sito è riservato a Sahbi Pro (l'anteprima resta gratuita).
   if (me && !me.pro) { toast(tr('Télécharger ton site est réservé à Sahbi Pro.')); document.querySelector('.site-prev')?.remove(); openSheet(); return; }
@@ -1423,7 +1440,8 @@ function downloadSite(html) {
 // Anteprima in un riquadro isolato (sandbox): il codice del sito non può toccare Sahbi.
 // Anteprima del sito direttamente nella chat (come una scheda): il codice lungo resta nascosto dietro "</> Code".
 function siteCard(textEl, text, html) {
-  const rest = String(text).replace(/```html[\s\S]*?```/i, '').replace(/```\s*\n<!doctype html[\s\S]*?```/i, '').replace(/\n{3,}/g, '\n\n').trim();
+  const f0 = findHtml(text); const t0 = String(text);
+  const rest = (f0 ? t0.slice(0, f0.start) + '\n\n' + t0.slice(f0.end) : t0).replace(/```[a-z]*\s*$/i, '').replace(/\n{3,}/g, '\n\n').trim();
   textEl.textContent = rest; if (typeof linkify === 'function') { try { linkify(textEl); } catch { /* testo semplice */ } }
   const card = el('div', 'site-card');
   const view = el('div', 'sc-view'); view.title = tr('Aperçu du site');
@@ -1987,10 +2005,11 @@ async function sendChat(text, pic = null, docAtt = null, opts = {}) {
   };
   // ✍️ Il testo appare a velocità regolare (come ChatGPT), anche se dal server arriva a pezzi grossi.
   const paint = (t) => {
-    const ci = t.indexOf('```');
+    const fi = t.indexOf('```'), di = t.search(/<!doctype html|<html[\s>]/i);
+    const ci = fi >= 0 && (di < 0 || fi < di) ? fi : di;
     if (ci >= 0) {
       out.textContent = t.slice(0, ci).trim();
-      const code = reply.slice(reply.indexOf('```'));
+      const code = t.slice(ci);
       showWork(/```html/i.test(code) || /<!doctype|<html/i.test(code) ? tr('⏳ Je crée ton site…') : tr('⏳ J’écris le code…'), code.split('\n').length);
     } else out.textContent = t;
   };
@@ -2001,7 +2020,7 @@ async function sendChat(text, pic = null, docAtt = null, opts = {}) {
       const back = target.length - shown;
       if (back > 0) {
         // ~90 caratteri al secondo, un po' più veloce se resta molto testo da mostrare; il codice dei siti non si anima.
-        const codeAt = target.indexOf('```');
+        const codeAt = (() => { const f = target.indexOf('```'), d = target.search(/<!doctype html|<html[\s>]/i); return f >= 0 && (d < 0 || f < d) ? f : d; })();
         if (codeAt >= 0 && shown >= codeAt) shown = target.length;
         else shown = Math.min(target.length, shown + (fast ? Math.max(12, Math.ceil(back / 6)) : Math.max(1, Math.round(1.5 + back / 45))));
         paint(target.slice(0, shown)); scroll();
