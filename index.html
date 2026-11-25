@@ -2452,6 +2452,8 @@ function renderSheet() {
   $('payPlay').hidden = !playOk; $('appNote').hidden = playOk;
   // App iPhone: abbonamento Apple (StoreKit).
   $('payApple').hidden = !appleOk; $('appleLegal').hidden = !appleOk; if (appleOk) $('appNote').hidden = true;
+  // iPhone: niente frase "arriva presto" (Apple la considera un contenuto provvisorio). Se l'App Store non risponde, si riprova.
+  if (IOS_APP && !appleOk) { $('appNote').textContent = tr('Connexion à l’App Store… Si le bouton n’apparaît pas, vérifie ta connexion et rouvre cette page.'); initApple().then(() => { if (appleOk && !$('sheet').hidden) openSheet(); }); }
   if (applePrice) $('payAppleSub').textContent = tr('{p} par mois', { p: applePrice });
   if (playPrice) $('payPlaySub').textContent = tr('{p} par mois', { p: playPrice });
   const st = $('proStatus');
@@ -3275,10 +3277,11 @@ if (DEMO_APPLE) (async () => {
   newChat(); await wait(2500);
   // 2. Une question à Sahbi
   await typeIn(ta, 'Salam Sahbi ! Donne-moi 3 conseils pour réussir un entretien d’embauche en France.', 55);
-  await wait(800); $('form').requestSubmit();
+  await wait(800); $('form').requestSubmit(); ta.blur();
   await wait(3000); await until(() => !busy, 60000); await wait(5000);
   $('msgs').scrollTo({ top: 0, behavior: 'smooth' }); await wait(2500); $('msgs').scrollTo({ top: $('msgs').scrollHeight, behavior: 'smooth' }); await wait(3000);
-  // 3. Abonnement Sahbi Pro (paiement Apple)
+  // 3. Abonnement Sahbi Pro (paiement Apple). Il simulatore non ha l'App Store: si mostra il pulsante com'è sul telefono.
+  if (!appleOk) { appleOk = true; applePrice = '6,99 €'; }
   $('openPlus').click(); await wait(4500);
   $('appleLegal')?.scrollIntoView({ behavior: 'smooth', block: 'center' }); await wait(4500);
   $('closeSheet').click(); await wait(1500);
