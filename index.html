@@ -1120,14 +1120,16 @@ $('googleBtn').addEventListener('click', async () => {
     const { data, error } = await supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: `${location.origin}/app-login.html`, skipBrowserRedirect: true, queryParams: { prompt: 'select_account' } } });
     const br = window.Capacitor?.Plugins?.Browser;
     if (!error && data?.url) { if (br) await br.open({ url: data.url }).catch(() => { location.href = data.url; }); else location.href = data.url; }
-    else $('emailErr').textContent = 'Connexion Google impossible pour le moment. Utilise ton e-mail.';
+    else { reportErr('login', `google ios: ${error?.message || 'pas d’url'}`); $('emailErr').textContent = 'Connexion Google impossible pour le moment. Utilise ton e-mail.'; }
     $('googleBtn').disabled = false; return;
   }
   const { error } = await supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: location.origin, queryParams: { prompt: 'select_account' } } });
-  if (error) { $('googleBtn').disabled = false; $('emailErr').textContent = 'Connexion Google impossible pour le moment. Utilise ton e-mail.'; }
+  if (error) { reportErr('login', `google: ${error.status ?? ''} ${error.message}`); $('googleBtn').disabled = false; $('emailErr').textContent = 'Connexion Google impossible pour le moment. Utilise ton e-mail.'; }
 });
 // Ritorno da Google con un errore (es. annullato): si mostra un messaggio chiaro.
 if (/error_description=/.test(location.hash + location.search)) {
+  const ed = new URLSearchParams((location.search + '&' + location.hash.slice(1)).replace(/^\?/, '')).get('error_description') || '';
+  reportErr('login', `google retour: ${ed}`);
   setTimeout(() => { $('emailErr').textContent = 'Connexion Google annulée ou impossible. Réessaie ou utilise ton e-mail.'; }, 500);
   history.replaceState(null, '', location.pathname);
 }
@@ -1158,7 +1160,7 @@ async function sendLink(email) {
   const d = await r?.json().catch(() => ({})) || {};
   if (r?.ok && d.ok) return '';
   if (r && !d.fallback && d.message) { if (r.status !== 429 && r.status !== 400) reportErr('login', `sahbi ${r.status}: ${d.message}`); return tr(d.message); }
-  reportErr('login', `sahbi-mail ${r ? r.status : 'réseau'}`);
+  reportErr('login', `sahbi-mail ${r ? r.status : 'réseau'} ${d.why || ''}`);
   // 2) Riserva: e-mail di Supabase.
   await ready.catch(() => {});
   const { error } = await supabase.auth.signInWithOtp({ email, options: { shouldCreateUser: true, emailRedirectTo: IOS_APP ? `${location.origin}/app-login.html` : location.origin } });

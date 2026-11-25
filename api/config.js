@@ -168,7 +168,7 @@ async function emailLogin(request) {
   }
   const d = await r.json().catch(() => ({}));
   const th = d.hashed_token || d.properties?.hashed_token;
-  if (!r.ok || !th) { console.error('login link', r.status, d?.error_code || d?.msg); return json({ ok: false, fallback: true }, 502); }
+  if (!r.ok || !th) { const why = `link ${r.status} ${d?.error_code || d?.code || ''} ${String(d?.msg || d?.message || '').slice(0, 120)}`; console.error('login', why); return json({ ok: false, fallback: true, why }, 502); }
   const t = LOGIN_TXT[b.lang] || LOGIN_TXT.fr;
   const link = `https://www.sahbi.bond/${b.ios === true ? 'app-login.html' : ''}?th=${encodeURIComponent(th)}`;
   const dir = b.lang === 'ar' ? 'rtl' : 'ltr';
@@ -177,7 +177,7 @@ async function emailLogin(request) {
     method: 'POST', headers: { authorization: `Bearer ${key}`, 'content-type': 'application/json' },
     body: JSON.stringify({ from: env('LOGIN_FROM', 'Sahbi <connexion@sahbi.bond>'), to: [email], subject: t.s, html, text: `${t.h}\n\n${t.p}\n\n${link}\n\n${t.n}` }),
   }).catch(() => null);
-  if (!m?.ok) { console.error('login mail', m?.status, (await m?.text().catch(() => ''))?.slice(0, 200)); return json({ ok: false, fallback: true }, 502); }
+  if (!m?.ok) { const t = await m?.text().catch(() => '') || ''; const why = `mail ${m?.status ?? 'réseau'} ${t.replace(/[\w.+-]+@[\w-]+\.[\w.-]+/g, '[e-mail]').slice(0, 160)}`; console.error('login', why); return json({ ok: false, fallback: true, why }, 502); }
   return json({ ok: true });
 }
 
