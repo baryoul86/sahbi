@@ -43,7 +43,7 @@ async function checkStripe() {
   } catch (e) { return { ok: false, detail: e.message }; }
 }
 
-async function health(deep) {
+export async function health(deep) {
   const [db, openai] = await Promise.all([checkDb(), checkOpenAI(deep)]);
   return {
     db, openai,

@@ -83,6 +83,7 @@ export async function POST(request) {
   if (url.searchParams.get('report') === '1') return report(request);
   if (url.searchParams.get('review') === '1') return review(request);
   if (url.searchParams.get('login') === '1') return emailLogin(request);
+  if (url.searchParams.get('err') === '1') return clientError(request);
   if (url.searchParams.get('visit') !== '1') return json({ ok: false }, 404);
   let b = {};
   try { b = await request.json(); } catch { /* corpo vuoto */ }
@@ -177,6 +178,25 @@ async function emailLogin(request) {
     body: JSON.stringify({ from: env('LOGIN_FROM', 'Sahbi <connexion@sahbi.bond>'), to: [email], subject: t.s, html, text: `${t.h}\n\n${t.p}\n\n${link}\n\n${t.n}` }),
   }).catch(() => null);
   if (!m?.ok) { console.error('login mail', m?.status, (await m?.text().catch(() => ''))?.slice(0, 200)); return json({ ok: false, fallback: true }, 502); }
+  return json({ ok: true });
+}
+
+// POST /api/config?err=1 { kind, message, meta } → errore visto da un utente (login, chat, pagina).
+// Niente dati personali: e-mail e numeri tolti, solo app/lingua/paese. Uguali nello stesso minuto = uno solo.
+const ERR_KINDS = ['login', 'chat', 'js', 'image', 'voice', 'pay', 'other'];
+async function clientError(request) {
+  const { createHash } = await import('node:crypto');
+  const { supabaseUrl, serviceHeaders, rpc } = await import('./_lib.js');
+  let b = {};
+  try { b = await request.json(); } catch { /* vuoto */ }
+  const kind = ERR_KINDS.includes(b.kind) ? b.kind : 'other';
+  const message = String(b.message || '').replace(/[\w.+-]+@[\w-]+\.[\w.-]+/g, '[e-mail]').replace(/\+?\d[\d\s.-]{7,}\d/g, '[tél]').replace(/[\u0000-\u001f]/g, ' ').trim().slice(0, 500);
+  if (!message) return json({ ok: true });
+  const m = b.meta || {};
+  const meta = { app: String(m.app || '').slice(0, 30), lang: String(m.lang || '').slice(0, 5), build: String(m.build || '').slice(0, 12), ua: String(m.ua || '').slice(0, 160), country: request.headers.get('x-vercel-ip-country') || '' };
+  const id = createHash('sha256').update(`${kind}|${message}|${meta.country}`).digest('hex').slice(0, 16);
+  const due = await rpc('admin_alert', { p_kind: `probe_err_${id}`, p_message: 'err', p_every_minutes: 1 }).catch(() => false);
+  if (due) await fetch(`${supabaseUrl()}/rest/v1/client_errors`, { method: 'POST', headers: serviceHeaders({ 'content-type': 'application/json' }), body: JSON.stringify({ kind, message, meta }) }).catch(() => {});
   return json({ ok: true });
 }
 

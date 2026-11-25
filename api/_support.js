@@ -115,5 +115,17 @@ export async function agentFeed(request) {
       `- Message : ${redact(t.message).replace(/\n+/g, ' / ')}`,
       t.reply ? `- Réponse déjà envoyée : ${redact(t.reply).replace(/\n+/g, ' / ')}` : '', '');
   }
+  // Salute del sito e errori visti dagli utenti (raccolti in automatico).
+  const { health } = await import('./admin.js').catch(() => ({}));
+  out.push('# Santé du site');
+  try { const h = await health?.(false); out.push(h ? `- Base de données : ${h.db.ok ? 'ok' : 'PANNE ' + h.db.detail} · OpenAI : ${h.openai.ok ? 'ok' : 'PANNE ' + h.openai.detail} · Vidéo : ${h.video.ok === null ? 'non configurée' : h.video.ok ? 'ok' : 'PANNE'}` : '- indisponible'); } catch { out.push('- contrôle impossible'); }
+  const e = await fetch(`${supabaseUrl()}/rest/v1/client_errors?select=kind,message,meta,created_at&created_at=gte.${since}&order=created_at.desc&limit=300`, { headers: H() }).catch(() => null);
+  if (!e?.ok) out.push('', '# Erreurs vues par les utilisateurs', '- table client_errors absente : exécuter supabase/009_errors.sql');
+  else {
+    const rows2 = await e.json(); const groups = new Map();
+    for (const x of rows2) { const k = `${x.kind}|${x.message}`; const g = groups.get(k) || { ...x, n: 0, where: new Set() }; g.n++; g.where.add(`${x.meta?.app || '?'}/${x.meta?.country || '?'}/${x.meta?.lang || '?'}`); groups.set(k, g); }
+    out.push('', `# Erreurs vues par les utilisateurs (${rows2.length}, ${groups.size} différentes)`);
+    for (const g of [...groups.values()].sort((a, b) => b.n - a.n).slice(0, 40)) out.push(`- ${g.n}× [${g.kind}] ${redact(g.message)} — dernière ${g.created_at.slice(0, 16).replace('T', ' ')} UTC — app/pays/langue : ${[...g.where].slice(0, 6).join(', ')}`);
+  }
   return new Response(out.filter((l) => l !== null).join('\n'), { headers: { 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'no-store', 'x-robots-tag': 'noindex' } });
 }

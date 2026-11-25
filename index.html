@@ -1001,6 +1001,18 @@ let supabase = null, busy = false, imgLeft = null, imgLimit = 2, userId = null, 
 // App iPhone (Capacitor, App Store): niente pagamenti del sito, niente pubblicità, accesso con e-mail.
 const IOS_APP = /SahbiIOS/.test(navigator.userAgent);
 // Video dimostrativa per Apple: letta subito, prima che l'indirizzo venga ripulito.
+// Errori visti dall'utente → mandati in automatico (senza dati personali) per il controllo del mattino.
+const errSent = new Set();
+function reportErr(kind, message) {
+  const m = String(message || '').slice(0, 400);
+  if (!m || errSent.has(kind + m) || errSent.size >= 8 || DEMO_APPLE) return;
+  errSent.add(kind + m);
+  const app = IOS_APP ? 'ios' : (/Android/i.test(navigator.userAgent) && matchMedia('(display-mode: standalone), (display-mode: fullscreen)').matches) ? 'android-app' : 'web';
+  fetch('/api/config?err=1', { method: 'POST', headers: { 'content-type': 'application/json' }, keepalive: true,
+    body: JSON.stringify({ kind, message: m, meta: { app, lang: document.documentElement.lang || '', ua: navigator.userAgent } }) }).catch(() => {});
+}
+window.addEventListener('error', (e) => { if (e.message && e.message !== 'Script error.') reportErr('js', `${e.message} @${String(e.filename || '').split('/').pop()}:${e.lineno || ''}`); });
+window.addEventListener('unhandledrejection', (e) => { const r = e.reason; if (r && r.name !== 'AbortError') reportErr('js', `promise: ${r.message || r}`.slice(0, 300)); });
 const DEMO_APPLE = IOS_APP && new URLSearchParams(location.search).get('demo') === 'apple';
 const DEMO_PW = DEMO_APPLE ? decodeURIComponent((location.hash.match(/pw=([^&]+)/) || [])[1] || '') : '';
 if (IOS_APP) document.documentElement.classList.add('ios-app');
@@ -1040,12 +1052,12 @@ const ready = (async () => {
       const apple = IOS_APP && !!s?.external?.apple && await appleReady();
       const google = !!s?.external?.google && (!IOS_APP || apple);
       $('appleBtn').hidden = !apple; $('googleBtn').hidden = !google; $('googleBox').hidden = !apple && !google;
-    }).catch(() => {});
+    }).catch((e) => reportErr('login', `supabase injoignable (auth/settings): ${e?.message || e}`));
 })();
 
 async function loginWithHash(th) {
   const { error } = await supabase.auth.verifyOtp({ token_hash: th, type: 'magiclink' });
-  if (error) { $('auth').hidden = false; $('emailErr').textContent = tr('Lien expiré ou déjà utilisé. Demande un nouveau lien.'); }
+  if (error) { reportErr('login', `lien ${error.status ?? '?'} ${error.message || ''}`); $('auth').hidden = false; $('emailErr').textContent = tr('Lien expiré ou déjà utilisé. Demande un nouveau lien.'); }
 }
 // App iPhone: il link dell'e-mail passa da /app-login.html e torna nell'app con bond.sahbi.app://auth#…
 async function iosAuthFromUrl(u) {
@@ -1145,11 +1157,13 @@ async function sendLink(email) {
   const r = await fetch('/api/config?login=1', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email, ios: IOS_APP, lang: LANG }) }).catch(() => null);
   const d = await r?.json().catch(() => ({})) || {};
   if (r?.ok && d.ok) return '';
-  if (r && !d.fallback && d.message) return tr(d.message);
+  if (r && !d.fallback && d.message) { if (r.status !== 429 && r.status !== 400) reportErr('login', `sahbi ${r.status}: ${d.message}`); return tr(d.message); }
+  reportErr('login', `sahbi-mail ${r ? r.status : 'réseau'}`);
   // 2) Riserva: e-mail di Supabase.
   await ready.catch(() => {});
   const { error } = await supabase.auth.signInWithOtp({ email, options: { shouldCreateUser: true, emailRedirectTo: IOS_APP ? `${location.origin}/app-login.html` : location.origin } });
   if (!error) return '';
+  reportErr('login', `supabase-otp ${error.status ?? '?'} ${error.name || ''} ${error.message || ''}`);
   return error.status === 429 ? 'Trop de demandes. Attends une minute et réessaie.' : 'Impossible d’envoyer l’e-mail. Vérifie l’adresse et réessaie.';
 }
 // Compte de démonstration Apple : le champ mot de passe apparaît dès que l'adresse est écrite.
@@ -2104,7 +2118,7 @@ async function sendChat(text, pic = null, docAtt = null, opts = {}) {
   // Bloccato? Errore? Pulsante "↻ Réessayer" che rifà la stessa domanda da solo.
   const ctrl = new AbortController(); chatCtrl = ctrl;
   const again = () => retryAsk(text, pic, docAtt, opts);
-  const errB = (t) => { const b = bubble('bot', t, 'err'); addRetry(b.closest('.msg'), again); return b; };
+  const errB = (t) => { reportErr('chat', `${t} (mode ${current.mode || 'normal'})`); const b = bubble('bot', t, 'err'); addRetry(b.closest('.msg'), again); return b; };
   let lastTick = Date.now(), stalled = false;
   const watch = setInterval(() => {
     if (stalled || ctrl.signal.aborted || Date.now() - lastTick < 45000) return;
