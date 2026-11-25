@@ -8,7 +8,7 @@ on:
         description: 'Mettere il video su App Store Connect (yes/no)'
         default: 'yes'
 permissions:
-  contents: read
+  contents: write
 jobs:
   video:
     runs-on: macos-15
@@ -66,10 +66,16 @@ jobs:
           xcrun simctl install "$UDID" $RUNNER_TEMP/dd/Build/Products/Debug-iphonesimulator/App.app
           xcrun simctl io "$UDID" recordVideo --codec=h264 --force $RUNNER_TEMP/sahbi-demo.mp4 & REC=$!
           sleep 3; xcrun simctl launch "$UDID" bond.sahbi.app
-          sleep 125
+          mkdir -p frames; for i in $(seq -w 1 25); do sleep 5; xcrun simctl io "$UDID" screenshot --type=jpeg frames/f$i.jpg >/dev/null 2>&1 || true; done
           kill -INT $REC; wait $REC || true
           ls -la $RUNNER_TEMP/sahbi-demo.mp4
           mkdir -p out; cp $RUNNER_TEMP/sahbi-demo.mp4 out/
+      - name: Immagini di controllo (ramo ios-video-check)
+        run: |
+          sips -Z 700 frames/*.jpg >/dev/null 2>&1 || true
+          git config user.name "Sahbi CI"; git config user.email "ci@sahbi.bond"
+          git checkout --orphan ios-video-check; git rm -rfq --cached . ; git add -f frames/*.jpg
+          git commit -qm "Immagini del video $GITHUB_RUN_NUMBER"; git push -fq origin ios-video-check
       - uses: actions/upload-artifact@v4
         with: { name: sahbi-demo, path: out/sahbi-demo.mp4, retention-days: 7 }
       - name: Mettere il video per Apple
