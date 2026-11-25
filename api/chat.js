@@ -746,18 +746,28 @@ export async function POST(request) {
     const search = tool.name === 'web_search';
     const data = await runInfoTool(tool.name, args);
     const r = await call({ ...payload, tool_choice: 'none', messages: weatherMessages(payload.messages, reply, tool.id || (search ? 'call_search' : 'call_weather'), tool.args || '{}', data, tool.name) }).catch(() => null);
-    if (!r?.ok || !r.body) { controller.enqueue(encoder.encode(data.error ? (search ? `Je n'ai pas pu chercher sur internet (${data.error}).` : `Je n'ai pas pu obtenir la météo (${data.error}).`) : '')); return; }
-    const rd = r.body.getReader(); let buf = '';
-    for (;;) {
-      const { value, done } = await rd.read(); if (done) break;
-      buf += decoder.decode(value, { stream: true });
-      const lines = buf.split('\n'); buf = lines.pop();
-      for (const line of lines) {
-        const d = line.startsWith('data:') ? line.slice(5).trim() : '';
-        if (!d || d === '[DONE]') continue;
-        try { const c = JSON.parse(d).choices?.[0]?.delta?.content; if (c) controller.enqueue(encoder.encode(c.replaceAll(SEP, ''))); } catch { /* riga incompleta */ }
-      }
-    }
+    // Mai una risposta vuota: se il modello non scrive niente, si mostrano i risultati trovati (o l'errore).
+    const fallback = () => (data.error
+      ? (search ? `Je n'ai pas pu chercher sur internet (${data.error}). Réessaie dans un instant.` : `Je n'ai pas pu obtenir la météo (${data.error}).`)
+      : search && data.results ? `${data.results}${data.sources?.length ? `\n\nSources :\n${data.sources.map((x) => `${x.title || x.url} – ${x.url}`).join('\n')}` : ''}`
+      : "Je n'ai pas trouvé de réponse. Reformule ta question, s'il te plaît.");
+    let wrote = 0;
+    if (r?.ok && r.body) {
+      const rd = r.body.getReader(); let buf = '';
+      try {
+        for (;;) {
+          const { value, done } = await rd.read(); if (done) break;
+          buf += decoder.decode(value, { stream: true });
+          const lines = buf.split('\n'); buf = lines.pop();
+          for (const line of lines) {
+            const d = line.startsWith('data:') ? line.slice(5).trim() : '';
+            if (!d || d === '[DONE]') continue;
+            try { const c = JSON.parse(d).choices?.[0]?.delta?.content; if (c) { wrote += c.length; controller.enqueue(encoder.encode(c.replaceAll(SEP, ''))); } } catch { /* riga incompleta */ }
+          }
+        }
+      } catch { /* flusso interrotto */ }
+    } else console.error('info follow-up', r?.status);
+    if (!wrote) controller.enqueue(encoder.encode(fallback()));
   }
 
   // Il modello ha solo annunciato ("sto generando…", "un attimo") senza consegnare: lo si fa continuare subito.
