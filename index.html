@@ -3271,7 +3271,8 @@ if (DEMO_APPLE) (async () => {
   await typeIn($('email'), 'review@sahbi.bond'); await wait(700);
   $('reviewPass').hidden = false; await typeIn($('reviewPass'), pw, 45); await wait(900);
   $('emailForm').requestSubmit();
-  await until(logged); await wait(3500);
+  await until(logged); await wait(1500);
+  newChat(); await wait(2500);
   // 2. Une question à Sahbi
   await typeIn(ta, 'Salam Sahbi ! Donne-moi 3 conseils pour réussir un entretien d’embauche en France.', 55);
   await wait(800); $('form').requestSubmit();

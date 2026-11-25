@@ -145,6 +145,8 @@ const WEBSITE_FREE = `
 - Niente guida di pubblicazione e niente versioni complete: spiega in UNA frase che con Sahbi Pro ottiene il sito completo (tutte le sezioni e le pagine, modifiche illimitate, file da scaricare) e la guida passo passo per metterlo online, e che può passare a Pro dal pulsante "Pro" in alto.`;
 
 // Frasi con cui il modello promette un risultato "dopo" (che non arriverebbe mai): it, fr, en, es, ar/darija.
+// "Si tu veux, je te prépare…" è una PROPOSTA (aspetta la risposta dell'utente), non una promessa da consegnare subito.
+const OFFER = /(si tu (le )?veux|si vous (le )?voulez|veux-tu|tu veux que|se vuoi|se ti va|vuoi che|if you (want|like)|do you want|want me to|si quieres|ila bghiti|ila bghit|إذا (تحب|بغيت|أردت|حبيت)|واش تبغي|تحب ن)/i;
 const DELIVER_PROMISE = /(sto (generando|creando|preparando|scrivendo)|lo riceverai|te l[oa] (preparo|creo|mando) (ora|adesso|subito)|un attimo|je (te )?(prépare|génère|crée|m'en occupe)|je reviens|i(?:'m| am) (generating|creating|preparing|working)|one moment|give me a (moment|minute)|estoy (generando|creando|preparando)|un momento|لحظة|دقيقة|راني كنوجد|جاري)/i;
 // La foto appena mandata serve al sito: va messa nel codice così com'è, non trasformata.
 // Chat con un sito: ogni richiesta (immagini, anteprime, pagine, link) si fa DENTRO il sito, riscrivendo il file intero.
@@ -710,7 +712,7 @@ export async function POST(request) {
       // Mentre si crea l'immagine (fino a 1-2 minuti) si manda un piccolo segnale ogni 8 secondi:
       // così il telefono e la rete non chiudono la connessione credendola ferma.
       const hb = setInterval(() => { try { controller.enqueue(encoder.encode(frame({ type: 'ping' }))); } catch { /* chiuso */ } }, 8000);
-      try { await finishTools(controller); if (!tool.name && !promised() && (DELIVER_PROMISE.test(reply) || PROMISE.test(reply)) && !reply.includes('```')) await deliverNow(controller); }
+      try { await finishTools(controller); if (!tool.name && !promised() && (DELIVER_PROMISE.test(reply) || PROMISE.test(reply)) && !OFFER.test(reply) && !reply.includes('```')) await deliverNow(controller); }
       catch (e) {
         console.error('Strumento', e?.message);
         const video = tool.name === 'create_video';
@@ -774,7 +776,7 @@ export async function POST(request) {
   // Il modello ha solo annunciato ("sto generando…", "un attimo") senza consegnare: lo si fa continuare subito.
   async function deliverNow(controller) {
     controller.enqueue(encoder.encode(frame({ type: 'working' })));
-    const nudge = "Consegna ADESSO, in questa risposta, il risultato completo che hai appena annunciato (per un sito o una pagina: tutto il file index.html in un unico blocco ```html). Nessuna frase di attesa, nessuna domanda prima del risultato.";
+    const nudge = "(Scrivi nella STESSA lingua della tua risposta precedente.) Consegna ADESSO, in questa risposta, il risultato completo che hai appena annunciato (per un sito o una pagina: tutto il file index.html in un unico blocco ```html). Nessuna frase di attesa, nessuna domanda prima del risultato.";
     const r = await call({ ...payload, tool_choice: 'none', messages: [...payload.messages, { role: 'assistant', content: reply }, { role: 'user', content: nudge }] }).catch(() => null);
     if (!r?.ok || !r.body) return;
     controller.enqueue(encoder.encode('\n\n'));
