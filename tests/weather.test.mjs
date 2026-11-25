@@ -25,6 +25,6 @@ globalThis.fetch = async (url, opt = {}) => {
 const { POST } = await import('../api/chat.js');
 const r = await POST(new Request('https://w/api/chat', { method: 'POST', headers: { authorization: 'Bearer t' }, body: JSON.stringify({ messages: [{ role: 'user', content: 'Quel temps fait-il à Oran ?' }] }) }));
 const text = await r.text();
-assert.match(text, /^À Oran : \d+°C, ciel dégagé\. \(MET Norway\)$/, text); assert.match(metUA, /Sahbi/);
+assert.match(text.replace(/\u001e[^\u001e]*\u001e/g, ""), /^À Oran : \d+°C, ciel dégagé\. \(MET Norway\)$/, text); assert.match(metUA, /Sahbi/);
 assert.equal(calls.length, 2);
 console.log('weather OK:', text);

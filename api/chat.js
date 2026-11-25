@@ -744,6 +744,7 @@ export async function POST(request) {
   async function weatherFollowUp(controller) {
     let args = {}; try { args = JSON.parse(tool.args || '{}'); } catch { /* argomenti rotti */ }
     const search = tool.name === 'web_search';
+    controller.enqueue(encoder.encode(frame({ type: 'status', text: search ? 'search' : 'weather' })));
     const data = await runInfoTool(tool.name, args);
     const r = await call({ ...payload, tool_choice: 'none', messages: weatherMessages(payload.messages, reply, tool.id || (search ? 'call_search' : 'call_weather'), tool.args || '{}', data, tool.name) }).catch(() => null);
     // Mai una risposta vuota: se il modello non scrive niente, si mostrano i risultati trovati (o l'errore).

@@ -3,6 +3,11 @@
 // {x} = parte variabile (numero, data, nome...).
 (() => {
 const D = [
+['Sahbi réfléchit…', 'صاحبي كيفكر…', 'Sahbi is thinking…'],
+['Sahbi prépare sa réponse…', 'صاحبي كيوجد الجواب…', 'Sahbi is preparing the answer…'],
+['Encore un instant…', 'لحظة صغيرة…', 'Just a moment…'],
+['🔎 Sahbi cherche sur internet…', '🔎 صاحبي كيقلب فالأنترنت…', '🔎 Sahbi is searching the web…'],
+['🌤️ Sahbi regarde la météo…', '🌤️ صاحبي كيشوف الطقس…', '🌤️ Sahbi is checking the weather…'],
 ['↻ Réessayer', '↻ أعد المحاولة', '↻ Try again'],
 ['Ça prend plus de temps que prévu…', 'الأمر يأخذ وقتًا أطول من المتوقع…', 'This is taking longer than expected…'],
 // ---------- Assistance ----------
