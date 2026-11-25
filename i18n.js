@@ -3,6 +3,8 @@
 // {x} = parte variabile (numero, data, nome...).
 (() => {
 const D = [
+['↻ Réessayer', '↻ أعد المحاولة', '↻ Try again'],
+['Ça prend plus de temps que prévu…', 'الأمر يأخذ وقتًا أطول من المتوقع…', 'This is taking longer than expected…'],
 // ---------- Assistance ----------
 ['Assistance', 'المساعدة', 'Support'],
 ['Nouvelle réponse', 'رد جديد', 'New reply'],
