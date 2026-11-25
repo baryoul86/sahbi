@@ -3,6 +3,7 @@
 // {x} = parte variabile (numero, data, nome...).
 (() => {
 const D = [
+['Attends une minute avant de redemander un lien.', 'انتظر دقيقة قبل أن تطلب رابطًا جديدًا.', 'Wait a minute before asking for a new link.'],
 ['Connexion à l’App Store… Si le bouton n’apparaît pas, vérifie ta connexion et rouvre cette page.', 'جارٍ الاتصال بمتجر App Store… إذا لم يظهر الزر، تحقق من الاتصال وأعد فتح هذه الصفحة.', 'Connecting to the App Store… If the button doesn’t appear, check your connection and reopen this page.'],
 ['Sahbi réfléchit…', 'صاحبي كيفكر…', 'Sahbi is thinking…'],
 ['Sahbi prépare sa réponse…', 'صاحبي كيوجد الجواب…', 'Sahbi is preparing the answer…'],

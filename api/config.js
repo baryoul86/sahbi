@@ -82,6 +82,7 @@ export async function POST(request) {
   if (url.searchParams.get('contact') === '1') return contact(request);
   if (url.searchParams.get('report') === '1') return report(request);
   if (url.searchParams.get('review') === '1') return review(request);
+  if (url.searchParams.get('login') === '1') return emailLogin(request);
   if (url.searchParams.get('visit') !== '1') return json({ ok: false }, 404);
   let b = {};
   try { b = await request.json(); } catch { /* corpo vuoto */ }
@@ -136,6 +137,47 @@ async function review(request) {
   const tokenHash = d.hashed_token || d.properties?.hashed_token;
   if (!r.ok || !tokenHash) return json({ ok: false, message: 'Connexion impossible pour le moment.' }, 502);
   return json({ ok: true, tokenHash });
+}
+
+// POST /api/config?login=1 { email, ios, lang } → e-mail di connessione mandata da Sahbi stesso (Resend),
+// con un link su sahbi.bond. Non dipende dall'SMTP di Supabase né dal dominio supabase.co (bloccato in alcuni paesi).
+const LOGIN_TXT = {
+  fr: { s: 'Ton lien de connexion à Sahbi', h: 'Connexion à Sahbi', p: 'Appuie sur le bouton pour te connecter. Le lien marche une seule fois, pendant 1 heure.', b: 'Me connecter', n: 'Si tu n’as rien demandé, ignore cet e-mail.' },
+  en: { s: 'Your Sahbi sign-in link', h: 'Sign in to Sahbi', p: 'Tap the button to sign in. The link works once, for 1 hour.', b: 'Sign me in', n: 'If you didn’t ask for this, just ignore this email.' },
+  ar: { s: 'رابط الدخول إلى صاحبي', h: 'الدخول إلى صاحبي', p: 'اضغط على الزر للدخول. الرابط يعمل مرة واحدة لمدة ساعة.', b: 'الدخول', n: 'إذا لم تطلب ذلك، تجاهل هذه الرسالة.' },
+};
+async function emailLogin(request) {
+  const { createHash } = await import('node:crypto');
+  const { supabaseUrl, serviceHeaders, rpc } = await import('./_lib.js');
+  let b = {};
+  try { b = await request.json(); } catch { /* vuoto */ }
+  const email = String(b.email || '').trim().toLowerCase().replace(/[.,;]+$/, '');
+  if (!/^[^\s@]{1,64}@[^\s@]+\.[^\s@]{2,}$/.test(email) || email.length > 160) return json({ ok: false, message: 'Écris une adresse e-mail valide.' }, 400);
+  const key = env('RESEND_API_KEY', '');
+  if (!key) return json({ ok: false, fallback: true }, 503);
+  const id = createHash('sha256').update(email).digest('hex').slice(0, 16);
+  const due = await rpc('admin_alert', { p_kind: `probe_login_${id}`, p_message: 'login', p_every_minutes: 1 }).catch(() => true);
+  if (!due) return json({ ok: false, message: 'Attends une minute avant de redemander un lien.' }, 429);
+  const H = serviceHeaders({ 'content-type': 'application/json' });
+  const gen = () => fetch(`${supabaseUrl()}/auth/v1/admin/generate_link`, { method: 'POST', headers: H, body: JSON.stringify({ type: 'magiclink', email }) });
+  let r = await gen();
+  if (!r.ok) { // nuovo utente: si crea il conto (e-mail confermata dal link stesso) e si riprova
+    await fetch(`${supabaseUrl()}/auth/v1/admin/users`, { method: 'POST', headers: H, body: JSON.stringify({ email, email_confirm: true }) }).catch(() => {});
+    r = await gen();
+  }
+  const d = await r.json().catch(() => ({}));
+  const th = d.hashed_token || d.properties?.hashed_token;
+  if (!r.ok || !th) { console.error('login link', r.status, d?.error_code || d?.msg); return json({ ok: false, fallback: true }, 502); }
+  const t = LOGIN_TXT[b.lang] || LOGIN_TXT.fr;
+  const link = `https://www.sahbi.bond/${b.ios === true ? 'app-login.html' : ''}?th=${encodeURIComponent(th)}`;
+  const dir = b.lang === 'ar' ? 'rtl' : 'ltr';
+  const html = `<div dir="${dir}" style="font-family:Arial,sans-serif;max-width:480px;margin:auto;padding:24px;color:#0F2E24"><h2 style="margin:0 0 12px">${t.h}</h2><p style="font-size:16px;line-height:1.5">${t.p}</p><p style="margin:24px 0"><a href="${link}" style="background:#2FAE74;color:#0F2E24;text-decoration:none;font-weight:bold;padding:14px 22px;border-radius:999px;display:inline-block">${t.b}</a></p><p style="font-size:13px;color:#5b6b64">${t.n}</p></div>`;
+  const m = await fetch('https://api.resend.com/emails', {
+    method: 'POST', headers: { authorization: `Bearer ${key}`, 'content-type': 'application/json' },
+    body: JSON.stringify({ from: env('LOGIN_FROM', 'Sahbi <connexion@sahbi.bond>'), to: [email], subject: t.s, html, text: `${t.h}\n\n${t.p}\n\n${link}\n\n${t.n}` }),
+  }).catch(() => null);
+  if (!m?.ok) { console.error('login mail', m?.status, (await m?.text().catch(() => ''))?.slice(0, 200)); return json({ ok: false, fallback: true }, 502); }
+  return json({ ok: true });
 }
 
 async function contact(request) {

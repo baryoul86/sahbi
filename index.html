@@ -1028,6 +1028,9 @@ const ready = (async () => {
   imgLimit = cfg.limits?.free?.image ?? 2;
   supabase = createClient(cfg.supabaseUrl, cfg.supabaseAnonKey, { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true } });
   supabase.auth.onAuthStateChange((_event, session) => { setTimeout(() => onSession(session), 0); });
+  // Link di connessione mandato da Sahbi: /?th=… (o #th=… nell'app iPhone).
+  const th = new URLSearchParams(location.search).get('th');
+  if (th) { history.replaceState(null, '', location.pathname); await loginWithHash(th); }
   const { data } = await supabase.auth.getSession();
   onSession(data.session);
   // "Continuer avec Google" appare solo se Google è attivato in Supabase.
@@ -1040,6 +1043,10 @@ const ready = (async () => {
     }).catch(() => {});
 })();
 
+async function loginWithHash(th) {
+  const { error } = await supabase.auth.verifyOtp({ token_hash: th, type: 'magiclink' });
+  if (error) { $('auth').hidden = false; $('emailErr').textContent = tr('Lien expiré ou déjà utilisé. Demande un nouveau lien.'); }
+}
 // App iPhone: il link dell'e-mail passa da /app-login.html e torna nell'app con bond.sahbi.app://auth#…
 async function iosAuthFromUrl(u) {
   if (!u || !String(u).startsWith('bond.sahbi.app://')) return;
@@ -1048,7 +1055,8 @@ async function iosAuthFromUrl(u) {
   const q = new URLSearchParams(rest.replace(/^[^?#]*[?#]?/, '').replace('#', '&'));
   await ready.catch(() => {});
   try {
-    if (q.get('access_token') && q.get('refresh_token')) await supabase.auth.setSession({ access_token: q.get('access_token'), refresh_token: q.get('refresh_token') });
+    if (q.get('th')) await loginWithHash(q.get('th'));
+    else if (q.get('access_token') && q.get('refresh_token')) await supabase.auth.setSession({ access_token: q.get('access_token'), refresh_token: q.get('refresh_token') });
     else if (q.get('code')) await supabase.auth.exchangeCodeForSession(q.get('code'));
     else if (q.get('error_description')) $('emailErr').textContent = tr('Lien expiré ou déjà utilisé. Demande un nouveau lien.');
   } catch { $('emailErr').textContent = tr('Connexion impossible. Demande un nouveau lien.'); }
@@ -1133,6 +1141,12 @@ async function token() {
 // Accesso con un link via e-mail (niente codice da copiare)
 let pendingEmail = '';
 async function sendLink(email) {
+  // 1) E-mail mandata da Sahbi (link su sahbi.bond: funziona anche dove supabase.co è bloccato).
+  const r = await fetch('/api/config?login=1', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email, ios: IOS_APP, lang: LANG }) }).catch(() => null);
+  const d = await r?.json().catch(() => ({})) || {};
+  if (r?.ok && d.ok) return '';
+  if (r && !d.fallback && d.message) return tr(d.message);
+  // 2) Riserva: e-mail di Supabase.
   await ready.catch(() => {});
   const { error } = await supabase.auth.signInWithOtp({ email, options: { shouldCreateUser: true, emailRedirectTo: IOS_APP ? `${location.origin}/app-login.html` : location.origin } });
   if (!error) return '';
