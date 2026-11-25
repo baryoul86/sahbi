@@ -1,0 +1,78 @@
+# Registra il video di dimostrazione di Sahbi su un iPhone simulato (Mac di GitHub) e lo mette nelle informazioni per Apple.
+# Il video mostra: connessione con il compte de test, una domanda in chat, l'abbonamento Pro, la suppressione du compte.
+name: iPhone – video per Apple
+on:
+  workflow_dispatch:
+    inputs:
+      attach:
+        description: 'Mettere il video su App Store Connect (yes/no)'
+        default: 'yes'
+permissions:
+  contents: read
+jobs:
+  video:
+    runs-on: macos-15
+    timeout-minutes: 50
+    env:
+      ASC_KEY_ID: MB5LDSL2XR
+      ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+      ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '22' }
+      - name: Xcode le plus récent
+        run: X=$(ls -d /Applications/Xcode_*.app | sort -V | tail -1); sudo xcode-select -s "$X"; xcodebuild -version
+      - name: Projet iOS en mode démonstration
+        working-directory: ios-app
+        run: |
+          pip3 install --break-system-packages -q pyjwt cryptography requests
+          # Il mot de passe du compte de test è quello già dato ad Apple (letto da App Store Connect, mai stampato).
+          (cd ../ios-ci && python3 - <<'PY'
+          import json, urllib.parse
+          from asc import call, BID
+          app = [a for a in call('GET', '/apps', params={'filter[bundleId]': BID})['data'] if a['attributes']['bundleId'] == BID][0]
+          ver = call('GET', f"/apps/{app['id']}/appStoreVersions", params={'filter[platform]': 'IOS'})['data'][0]
+          pw = call('GET', f"/appStoreVersions/{ver['id']}/appStoreReviewDetail")['data']['attributes']['demoAccountPassword'] or ''
+          print('::add-mask::' + pw)
+          c = json.load(open('../ios-app/capacitor.config.json'))
+          c['server']['url'] = 'https://www.sahbi.bond/?source=ios&demo=apple#pw=' + urllib.parse.quote(pw.strip().rstrip('.'), safe='')
+          json.dump(c, open('../ios-app/capacitor.config.json', 'w'))
+          print('Config démo prête, mot de passe:', 'oui' if pw else 'NON')
+          PY
+          )
+          npm install --no-audit --no-fund
+          npx cap add ios
+          npx capacitor-assets generate --ios || echo "::warning::icônes non générées"
+          bash ../ios-ci/plist.sh
+          npx cap sync ios
+          sudo gem install xcodeproj --no-document -q
+          TEAM=AAAAAAAAAA MV=1.0 BN=99 ruby ../ios-ci/patch.rb
+      - name: Compiler pour le simulateur
+        working-directory: ios-app
+        run: |
+          set -o pipefail
+          xcodebuild -project ios/App/App.xcodeproj -scheme App -configuration Debug -sdk iphonesimulator \
+            -destination 'generic/platform=iOS Simulator' -derivedDataPath $RUNNER_TEMP/dd build \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO | grep -E "error|BUILD" | tail -40
+          ls $RUNNER_TEMP/dd/Build/Products/Debug-iphonesimulator/
+      - name: Registrare il video
+        run: |
+          UDID=$(xcrun simctl list devices available -j | python3 -c "import json,sys; d=json.load(sys.stdin)['devices']; c=[x for k,v in d.items() if 'iOS' in k for x in v if x['name'].startswith('iPhone 16 Pro') or x['name'].startswith('iPhone 17 Pro')] or [x for k,v in d.items() if 'iOS' in k for x in v if x['name'].startswith('iPhone')]; print(c[-1]['udid'])")
+          echo "Simulatore: $UDID"
+          xcrun simctl boot "$UDID"; xcrun simctl bootstatus "$UDID" -b
+          xcrun simctl status_bar "$UDID" override --time 9:41 --batteryState charged --batteryLevel 100 --wifiBars 3 --cellularBars 4 || true
+          xcrun simctl ui "$UDID" appearance dark || true
+          xcrun simctl install "$UDID" $RUNNER_TEMP/dd/Build/Products/Debug-iphonesimulator/App.app
+          xcrun simctl io "$UDID" recordVideo --codec=h264 --force $RUNNER_TEMP/sahbi-demo.mp4 & REC=$!
+          sleep 3; xcrun simctl launch "$UDID" bond.sahbi.app
+          sleep 125
+          kill -INT $REC; wait $REC || true
+          ls -la $RUNNER_TEMP/sahbi-demo.mp4
+          mkdir -p out; cp $RUNNER_TEMP/sahbi-demo.mp4 out/
+      - uses: actions/upload-artifact@v4
+        with: { name: sahbi-demo, path: out/sahbi-demo.mp4, retention-days: 7 }
+      - name: Mettere il video per Apple
+        if: inputs.attach == 'yes'
+        run: |
+          cd ios-ci && python3 attach.py $RUNNER_TEMP/sahbi-demo.mp4
