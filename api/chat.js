@@ -514,13 +514,14 @@ export async function POST(request) {
 
   // Chat temporanea: niente memoria (né letta né salvata).
   const temp = body?.temp === true;
-  const [{ limits, pro }, memory] = await Promise.all([getPlan(userId), temp ? [] : getMemory(userId)]);
+  const [{ limits, pro, trial }, memory] = await Promise.all([getPlan(userId), temp ? [] : getMemory(userId)]);
+  const energyMax = trial ? SITE_ENERGY() / 2 : SITE_ENERGY(); // in prova: metà energia per i siti
   if (doc && !pro) return fail('pro', 402, 'La lecture de documents est incluse dans Sahbi Pro.');
   const userText = messages[messages.length - 1].content;
   // Chat dei siti: usa gli stessi messaggi della chat (15 gratis / 150 Pro). In più, per i Pro, l'energia dei siti.
   const siteMode = body?.mode === 'website';
   const siteFree = false;
-  if (siteMode && pro && (await getEnergy(userId)) >= SITE_ENERGY()) {
+  if (siteMode && pro && (await getEnergy(userId)) >= energyMax) {
     return fail('energy', 429, '⚡ Ton énergie pour créer des sites est épuisée pour aujourd’hui. Elle se recharge demain à 8 h. Ton site est bien enregistré.');
   }
   const left = await useCredit(userId, 'chat', limits.chat);
@@ -721,7 +722,7 @@ export async function POST(request) {
       } finally { clearInterval(hb); }
       if (siteMode && pro) {
         const used = await addEnergy(userId, reply.length / 1000);
-        if (used !== null) controller.enqueue(encoder.encode(frame({ type: 'energy', pct: Math.min(100, Math.round(used / SITE_ENERGY() * 100)) })));
+        if (used !== null) controller.enqueue(encoder.encode(frame({ type: 'energy', pct: Math.min(100, Math.round(used / energyMax * 100)) })));
       }
       controller.enqueue(encoder.encode(await memoryFrame()));
     },

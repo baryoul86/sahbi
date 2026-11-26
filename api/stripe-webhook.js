@@ -20,6 +20,9 @@ async function lemonWebhook(request, raw) {
   if (/^subscription_(created|updated|resumed|unpaused|payment_success|payment_recovered)$/.test(name) && event.data?.type === 'subscriptions') {
     const until = ['active', 'on_trial', 'past_due'].includes(a.status) ? a.renews_at : (a.status === 'cancelled' ? a.ends_at : null);
     if (until) await rpc('extend_pro_until', { p_user: userId, p_until: new Date(new Date(until).getTime() + 2 * 864e5).toISOString() });
+    // Prova gratuita (variante con "free trial"): Pro leggero fino a trial_ends_at; appena è attivo e pagato, Pro completo.
+    if (a.status === 'on_trial' && a.trial_ends_at) await rpc('set_trial', { p_user: userId, p_until: new Date(a.trial_ends_at).toISOString() }).catch(() => {});
+    else if (a.status === 'active') await rpc('end_trial', { p_user: userId }).catch(() => {});
   }
   // Pagamento riuscito (primo o rinnovo): si registra per il pannello e, per sicurezza, si allunga il Pro.
   if (name === 'subscription_payment_success' && event.data?.type === 'subscription-invoices') {

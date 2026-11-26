@@ -1,5 +1,5 @@
 import { env, json, fail, getUser, getProfile } from './_lib.js';
-import { publicUrl, stripe, chargily, lemon, lemonReady, lemonIds } from './_pay.js';
+import { publicUrl, stripe, chargily, lemon, lemonReady, lemonIds, lemonTrialVariant } from './_pay.js';
 import { playReady, verifyPlay } from './_play.js';
 import { verifyApple } from './_apple.js';
 
@@ -42,6 +42,12 @@ export async function POST(request) {
     if (body?.provider === 'lemonsqueezy') {
       const ids = lemonReady(year) ? await lemonIds(year) : null;
       if (!ids) return fail('unavailable', 503, year ? 'L’abonnement annuel n’est pas encore disponible.' : 'Le paiement n’est pas encore disponible.');
+      // Prova gratuita: solo per chi non è mai stato Pro e non l'ha già usata (variante con "free trial").
+      let variant = ids.variant;
+      if (!year && body?.trial === true) {
+        const [profile, tv] = await Promise.all([getProfile(user.id), lemonTrialVariant()]);
+        if (tv && profile.trialEligible) variant = tv;
+      }
       const c = await lemon('checkouts', {
         data: {
           type: 'checkouts',
@@ -52,7 +58,7 @@ export async function POST(request) {
           },
           relationships: {
             store: { data: { type: 'stores', id: ids.store } },
-            variant: { data: { type: 'variants', id: ids.variant } },
+            variant: { data: { type: 'variants', id: variant } },
           },
         },
       });

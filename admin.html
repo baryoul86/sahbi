@@ -121,6 +121,17 @@ function render(d) {
   if (s.error) frag.append(el('div', 'banner ko', `Statistiques indisponibles : exécute supabase/005_admin.sql (${s.error}).`));
   const grid = el('div', 'grid');
   const sup = el('div', 'card full'); sup.id = 'support'; grid.append(sup); loadSupport(sup);
+  // Prova gratuita Google Play (3 giorni): si crea una volta.
+  const tri = el('div', 'card full'); tri.append(el('h2', '', 'Essai gratuit Google Play'));
+  const tb = el('button', 'btn main', '🎁 Activer l’essai de 3 jours sur Google Play'); tb.type = 'button';
+  const tm = el('p', 'muted', 'Crée l’offre « essai-3j » (3 jours gratuits pour les nouveaux abonnés) et l’active dans l’app.');
+  tb.addEventListener('click', async () => {
+    tb.disabled = true; tm.textContent = 'En cours…';
+    const r = await fetch('/api/admin?play=trial', { method: 'POST', headers: { authorization: `Bearer ${tok}` } }).catch(() => null);
+    const d = await r?.json().catch(() => ({})) || {};
+    tm.textContent = (d.ok ? '✅ ' : '❌ ') + (d.message || 'Erreur'); tb.disabled = false;
+  });
+  tri.append(tm, tb); grid.append(tri);
 
   // Soldi
   const money = el('div', 'card');

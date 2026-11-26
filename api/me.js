@@ -8,7 +8,7 @@ import { userSupport } from './_support.js';
 export async function GET(request) {
   const user = await getUser(request);
   if (!user) return fail('auth', 401, 'Session expirée. Recharge la page.');
-  const { profile, pro, limits } = await getPlan(user.id);
+  const { profile, pro, trial, limits } = await getPlan(user.id);
   if (new URL(request.url).searchParams.has('support')) return userSupport(request, user, pro);
   const kinds = ['chat', 'image', 'tts'];
   const [left, videoLeft, memory] = await Promise.all([
@@ -21,6 +21,7 @@ export async function GET(request) {
     email: user.email,
     pro,
     proUntil: profile.pro_until,
+    trial, trialUntil: profile.trial_until || null, trialEligible: !!profile.trialEligible,
     referralCode: profile.referral_code,
     referrals: profile.referrals,
     referredBy: !!profile.referred_by,

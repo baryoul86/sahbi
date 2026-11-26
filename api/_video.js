@@ -15,6 +15,7 @@ export const remainingVideo = (userId, limit) => rpc('remaining_video_credit', {
 const MSG = {
   pro: 'Les vidéos sont réservées à Sahbi Pro.',
   limit: 'Tu as utilisé tes vidéos de ce mois. Elles reviennent le 1er du mois.',
+  trial: 'Les vidéos se débloquent à la fin de ton essai gratuit, avec ton abonnement Sahbi Pro.',
   blocked: 'Je ne peux pas créer cette vidéo. Essaie une autre description.',
   upstream: 'Impossible de créer la vidéo maintenant. Réessaie dans un instant.',
 };
@@ -47,7 +48,7 @@ export async function startVideo(userId, rawPrompt, { pro, limit, photo = null }
 
   const left = await useVideoCredit(userId, limit).catch(() => -2);
   if (left === -2) return { ok: false, error: 'upstream', message: MSG.upstream };
-  if (left < 0) return { ok: false, error: 'limit', message: MSG.limit };
+  if (left < 0) return { ok: false, error: 'limit', message: Number(limit) === 0 && pro ? MSG.trial : MSG.limit };
   const month = await rpc('sahbi_month', {}).catch(() => null);
   const refund = () => (month ? refundVideoCredit(userId, month).catch(() => {}) : null);
 

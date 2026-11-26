@@ -47,14 +47,18 @@ export async function verifyApple(userId, jws) {
   if (owner && owner !== userId) return { ok: false, code: 'taken', message: 'Cet abonnement Apple est déjà lié à un autre compte Sahbi.' };
   if (t.revocationDate) return { ok: false, code: 'inactive', message: 'Cet abonnement a été remboursé.' };
   const expiry = Number(t.expiresDate || 0);
+  // Prova gratuita Apple (offerta introduttiva "FREE_TRIAL"): Pro leggero fino alla fine della prova.
+  const isTrial = Number(t.offerType) === 1 && String(t.offerDiscountType || '').toUpperCase() === 'FREE_TRIAL';
   // Il primo acquisto si registra sempre (lega l'abbonamento a questo account), anche se poi è scaduto.
   await rpc('record_payment', {
     p_id: `as_${original}_${t.transactionId}`, p_user: userId, p_provider: t.environment === 'Production' ? 'appstore' : 'appstore_test',
-    p_amount: t.environment === 'Production' ? Math.round(Number(t.price || 0) / 10) || Number(env('APPLE_PRICE_CENTS', '699')) : 0,
+    p_amount: isTrial ? 0 : t.environment === 'Production' ? Math.round(Number(t.price || 0) / 10) || Number(env('APPLE_PRICE_CENTS', '699')) : 0,
     p_currency: String(t.currency || 'eur').toLowerCase(),
   }).catch(() => {}); // già registrato (stessa transazione)
   if (!(expiry > Date.now())) return { ok: false, code: 'inactive', message: 'Cet abonnement est expiré.' };
   const until = new Date(expiry + 2 * 864e5).toISOString();
+  if (isTrial) await rpc('set_trial', { p_user: userId, p_until: new Date(expiry).toISOString() }).catch(() => {});
+  else await rpc('end_trial', { p_user: userId }).catch(() => {});
   await rpc('extend_pro_until', { p_user: userId, p_until: until });
-  return { ok: true, until };
+  return { ok: true, until, trial: isTrial };
 }

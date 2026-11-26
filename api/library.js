@@ -57,7 +57,7 @@ export async function POST(request) {
     if (!(Number(b.size) > 0) || Number(b.size) > SITE_VIDEO_MAX) return fail('too_big', 413, 'Vidéo trop lourde : 50 Mo maximum (environ 1 minute en HD).');
     // Stesso contatore dei video creati con l'IA: limits.video video al mese in tutto.
     const left = await rpc('use_video_credit', { p_user: userId, p_limit: limits.video }).catch(() => 0);
-    if (Number(left) < 0) return fail('video_limit', 429, `Tu as utilisé tes ${limits.video} vidéos de ce mois. Le compteur repart à zéro le 1er du mois.`);
+    if (Number(left) < 0) return fail('video_limit', 429, limits.video === 0 ? 'Les vidéos se débloquent à la fin de ton essai gratuit, avec ton abonnement Sahbi Pro.' : `Tu as utilisé tes ${limits.video} vidéos de ce mois. Le compteur repart à zéro le 1er du mois.`);
     await ensureVideoTypes().catch(() => {});
     const path = `${userId}/site-videos/${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}.${ext}`;
     const r = await fetch(`${supabaseUrl()}/storage/v1/object/upload/sign/${BUCKET}/${path}`, { method: 'POST', headers: serviceHeaders({ 'content-type': 'application/json' }), body: '{}' });

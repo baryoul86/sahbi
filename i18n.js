@@ -3,6 +3,12 @@
 // {x} = parte variabile (numero, data, nome...).
 (() => {
 const D = [
+['Essai gratuit jusqu’au {d}', 'تجربة مجانية حتى {d}', 'Free trial until {d}'],
+['🎁 Essaie Pro gratuitement', '🎁 جرّب برو مجانًا', '🎁 Try Pro for free'],
+['🎁 {n} jours gratuits, puis {p} / mois. Sans engagement.', '🎁 {n} أيام مجانًا، ثم {p} / شهر. بدون التزام.', '🎁 {n} days free, then {p} / month. Cancel anytime.'],
+['Essai gratuit de {n} jours', 'تجربة مجانية لمدة {n} أيام', '{n}-day free trial'],
+['🎁 Essai gratuit jusqu’au {d}. Ensuite ton abonnement démarre et les vidéos se débloquent.', '🎁 تجربة مجانية حتى {d}. بعدها يبدأ اشتراكك وتُفتح الفيديوهات.', '🎁 Free trial until {d}. Then your subscription starts and videos unlock.'],
+['⏳ Ton essai gratuit se termine demain. Ton abonnement Sahbi Pro démarrera automatiquement (annulable à tout moment).', '⏳ تجربتك المجانية تنتهي غدًا. سيبدأ اشتراك صاحبي برو تلقائيًا (يمكن إلغاؤه في أي وقت).', '⏳ Your free trial ends tomorrow. Your Sahbi Pro subscription will start automatically (cancel anytime).'],
 ['Arrêter et écrire le texte', 'إيقاف وكتابة النص', 'Stop and write the text'],
 ['Arrêter la réponse', 'إيقاف الرد', 'Stop the answer'],
 ['Attends une minute avant de redemander un lien.', 'انتظر دقيقة قبل أن تطلب رابطًا جديدًا.', 'Wait a minute before asking for a new link.'],

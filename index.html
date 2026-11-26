@@ -126,6 +126,7 @@ footer.composer .col{padding-block:10px 12px;display:flex;flex-direction:column;
 .mic.busy{opacity:.5;cursor:default}
 @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(47,174,116,.55)}100%{box-shadow:0 0 0 14px rgba(47,174,116,0)}}
 .send{background:var(--mint);color:var(--mint-ink)}
+.trial-badge{margin:6px 0 0;padding:8px 12px;border-radius:12px;background:var(--mint);color:var(--mint-ink);font-weight:700;font-size:15px;text-align:center}
 .send.stop{background:var(--fg);color:var(--panel,#fff)}
 .send:disabled{background:var(--panel-2);color:var(--muted);cursor:default}
 .hint{font-size:12px;color:var(--muted);text-align:center}
@@ -635,6 +636,7 @@ html[lang=ar] body{line-height:1.7}
     <div class="price"><b id="priceEur">7 €</b> <span id="pricePer">/ mois</span></div>
     <div class="s-note" id="priceLocal" hidden data-noi18n></div>
     <p class="s-note" id="priceNote" hidden></p>
+    <p class="trial-badge" id="trialBadge" hidden></p>
     <ul class="feats">
       <li><svg width="20" height="20" aria-hidden="true"><use href="#check"/></svg><span><span id="fChat">150</span> messages par jour, dans toutes les langues</span></li>
       <li><svg width="20" height="20" aria-hidden="true"><use href="#check"/></svg><span><span id="fImg">5</span> images par jour, rechargées chaque nuit</span></li>
@@ -2448,9 +2450,14 @@ async function refreshMe() {
     me = await r.json();
     imgLeft = me.remaining.image; imgLimit = me.limits.image;
     $('openPlus').textContent = me.pro ? 'Pro ✓' : 'Pro';
-    $('drawerProText').textContent = me.pro ? tr('Actif jusqu’au {d}', { d: fmtDate(me.proUntil) }) : 'Images, vidéos, voix, sans pub';
+    $('drawerProText').textContent = me.trial ? tr('Essai gratuit jusqu’au {d}', { d: fmtDate(me.trialUntil) }) : me.pro ? tr('Actif jusqu’au {d}', { d: fmtDate(me.proUntil) }) : me.trialEligible && (cfg.payments?.trialDays | 0) > 0 && !IN_APP ? tr('🎁 Essaie Pro gratuitement') : 'Images, vidéos, voix, sans pub';
     updateAds();
     supCheck().catch(() => {});
+    // Avviso il giorno prima della fine della prova (una volta al giorno).
+    if (me.trial && me.trialUntil && Date.parse(me.trialUntil) - Date.now() < 864e5) {
+      const k = `sahbi-trial-warn-${new Date().toDateString()}`;
+      try { if (!localStorage.getItem(k)) { localStorage.setItem(k, '1'); toast(tr('⏳ Ton essai gratuit se termine demain. Ton abonnement Sahbi Pro démarrera automatiquement (annulable à tout moment).')); } } catch { /* ignorato */ }
+    }
   } catch { /* offline */ }
 }
 const fmtDate = (d) => (d ? new Date(d).toLocaleDateString(LOCALE, { day: 'numeric', month: 'long', year: 'numeric' }) : '');
@@ -2514,13 +2521,24 @@ function renderSheet() {
   if (IOS_APP && !appleOk) { $('appNote').textContent = tr('Connexion à l’App Store… Si le bouton n’apparaît pas, vérifie ta connexion et rouvre cette page.'); initApple().then(() => { if (appleOk && !$('sheet').hidden) openSheet(); }); }
   if (applePrice) $('payAppleSub').textContent = tr('{p} par mois', { p: applePrice });
   if (playPrice) $('payPlaySub').textContent = tr('{p} par mois', { p: playPrice });
+  // 🎁 Prova gratuita: sul sito (Lemon Squeezy) per chi non è mai stato Pro; su Android se Google Play la propone.
+  const trialDays = !me?.pro && !year ? (IN_APP ? (/^P(\d+)D$/.exec(playTrial)?.[1] | 0) : (me?.trialEligible && !IOS_APP ? (pay.trialDays | 0) : 0)) : 0;
+  const tb = $('trialBadge');
+  tb.hidden = !trialDays;
+  if (trialDays) {
+    const price = (IN_APP && playPrice) || (pay.lemonsqueezy && pay.cardPriceEur) || pay.priceEur || '7 €';
+    tb.textContent = tr('🎁 {n} jours gratuits, puis {p} / mois. Sans engagement.', { n: trialDays, p: price });
+    $('payCardSub').textContent = tr('Essai gratuit de {n} jours', { n: trialDays });
+    if (IN_APP) $('payPlaySub').textContent = tr('Essai gratuit de {n} jours', { n: trialDays });
+  }
   const st = $('proStatus');
-  if (me?.pro && IN_APP) { st.hidden = false; st.textContent = tr('Tu es Pro jusqu’au {d}.', { d: fmtDate(me.proUntil) }); }
+  if (me?.trial) { st.hidden = false; st.textContent = tr('🎁 Essai gratuit jusqu’au {d}. Ensuite ton abonnement démarre et les vidéos se débloquent.', { d: fmtDate(me.trialUntil) }); }
+  else if (me?.pro && IN_APP) { st.hidden = false; st.textContent = tr('Tu es Pro jusqu’au {d}.', { d: fmtDate(me.proUntil) }); }
   else if (me?.pro) { st.hidden = false; st.textContent = tr(year ? 'Tu es Pro jusqu’au {d}. Un paiement Edahabia / CIB ajoute 1 an.' : 'Tu es Pro jusqu’au {d}. Un paiement Edahabia / CIB ajoute 30 jours.', { d: fmtDate(me.proUntil) }); }
   else st.hidden = true;
 }
 // ---------- Google Play Billing (solo nell'app Android del Play Store) ----------
-let playOk = false, playPrice = '', playSvc = null;
+let playOk = false, playPrice = '', playSvc = null, playTrial = '';
 async function initPlay() {
   if (!IN_APP || !cfg.payments?.googleplay || !('getDigitalGoodsService' in window)) return;
   try {
@@ -2529,6 +2547,7 @@ async function initPlay() {
     if (!d) return;
     playOk = true;
     try { playPrice = new Intl.NumberFormat(LOCALE, { style: 'currency', currency: d.price.currency }).format(d.price.value); } catch { /* ignorato */ }
+    playTrial = d.freeTrialPeriod || ''; // es. "P3D" se l'offerta di prova di Google Play vale per questa persona
     // Abbonamenti già comprati (anche rinnovi): si ricontrollano per tenere il Pro aggiornato.
     for (const p of await playSvc.listPurchases()) await sendPlay(p.purchaseToken, p.itemId);
   } catch { /* Play Billing non disponibile */ }
@@ -2600,7 +2619,7 @@ async function restoreApple(b) {
 
 async function startCheckout(provider, b) {
   b.disabled = true;
-  const r = await api('/api/checkout', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ provider, plan }) }).catch(() => null);
+  const r = await api('/api/checkout', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ provider, plan, trial: provider === 'lemonsqueezy' && plan !== 'year' && !!me?.trialEligible && (cfg.payments?.trialDays | 0) > 0 }) }).catch(() => null);
   const d = await r?.json().catch(() => ({})) || {};
   if (r?.ok && d.url) { location.href = d.url; return; }
   b.disabled = false; toast(d.message || 'Le paiement n’a pas pu démarrer. Réessaie.');

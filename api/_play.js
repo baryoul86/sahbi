@@ -6,6 +6,7 @@ import { env, rpc, supabaseUrl, serviceHeaders } from './_lib.js';
 
 export const playSku = () => env('PLAY_SUBSCRIPTION_ID', 'sahbi_pro');
 export const playPackage = () => env('ANDROID_PACKAGE', 'bond.sahbi.app');
+export const playTrialOffer = () => env('PLAY_TRIAL_OFFER_ID', 'essai-3j');
 
 function account() {
   const raw = env('GOOGLE_PLAY_SERVICE_ACCOUNT', '').trim();
@@ -34,10 +35,10 @@ async function accessToken() {
   return cached.token;
 }
 
-async function google(path, method = 'GET') {
+async function google(path, method = 'GET', body = null) {
   const res = await fetch(`https://androidpublisher.googleapis.com/androidpublisher/v3/applications/${encodeURIComponent(playPackage())}/${path}`, {
-    method, headers: { authorization: `Bearer ${await accessToken()}`, ...(method === 'POST' ? { 'content-type': 'application/json' } : {}) },
-    ...(method === 'POST' ? { body: '{}' } : {}),
+    method, headers: { authorization: `Bearer ${await accessToken()}`, ...(method !== 'GET' ? { 'content-type': 'application/json' } : {}) },
+    ...(method !== 'GET' ? { body: JSON.stringify(body || {}) } : {}),
   });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) { const e = new Error(`Google Play ${res.status} ${data?.error?.message || ''}`); e.status = res.status; throw e; }
@@ -52,6 +53,42 @@ export async function playCheck() {
     const plans = (d.basePlans || []).map((b) => `${b.basePlanId}:${b.state}`);
     return plans.some((x) => x.endsWith(':ACTIVE')) ? `ok (${plans.join(', ')})` : `abonnement inactif (${plans.join(', ') || 'aucun forfait'})`;
   } catch (e) { return String(e.message || e).slice(0, 160); }
+}
+
+// Prova gratuita su Google Play: offerta "essai-3j" (3 giorni gratis, solo per chi non ha mai avuto un abbonamento),
+// attivata e usata anche dall'app (acquisto "compatibile" della Digital Goods API). Si crea una volta dal pannello.
+export async function setupPlayTrial() {
+  if (!playReady()) return { ok: false, message: 'GOOGLE_PLAY_SERVICE_ACCOUNT manquant sur Vercel.' };
+  const sku = playSku(), offerId = playTrialOffer(), days = Number(env('TRIAL_DAYS', '3'));
+  const sub = await google(`subscriptions/${encodeURIComponent(sku)}`);
+  const bp = (sub.basePlans || []).find((b) => b.state === 'ACTIVE' && b.autoRenewingBasePlanType) || (sub.basePlans || [])[0];
+  if (!bp) return { ok: false, message: 'Aucun forfait de base actif.' };
+  const regions = (bp.regionalConfigs || []).map((r) => r.regionCode);
+  const steps = [];
+  const path = `subscriptions/${encodeURIComponent(sku)}/basePlans/${encodeURIComponent(bp.basePlanId)}/offers`;
+  let offer = null;
+  try { offer = await google(`${path}/${encodeURIComponent(offerId)}`); } catch (e) { if (e.status !== 404) throw e; }
+  if (!offer) {
+    offer = await google(`${path}?offerId=${encodeURIComponent(offerId)}&regionsVersion.version=2022/02`, 'POST', {
+      packageName: playPackage(), productId: sku, basePlanId: bp.basePlanId, offerId,
+      phases: [{ recurrenceCount: 1, duration: `P${days}D`, regionalConfigs: regions.map((regionCode) => ({ regionCode, free: {} })) }],
+      targeting: { acquisitionRule: { scope: { anySubscriptionInApp: {} } } },
+      regionalConfigs: regions.map((regionCode) => ({ regionCode, newSubscriberAvailability: true })),
+      offerTags: [{ tag: 'essai' }],
+    });
+    steps.push('offre créée');
+  }
+  if (offer.state !== 'ACTIVE') {
+    await google(`${path}/${encodeURIComponent(offerId)}:activate`, 'POST', { packageName: playPackage(), productId: sku, basePlanId: bp.basePlanId, offerId });
+    steps.push('offre activée');
+  }
+  // Offerta usata dagli acquisti "compatibili" (come quelli dell'app Sahbi).
+  if (bp.autoRenewingBasePlanType?.legacyCompatibleSubscriptionOfferId !== offerId) {
+    bp.autoRenewingBasePlanType = { ...bp.autoRenewingBasePlanType, legacyCompatible: true, legacyCompatibleSubscriptionOfferId: offerId };
+    await google(`subscriptions/${encodeURIComponent(sku)}?updateMask=basePlans&regionsVersion.version=2022/02`, 'PATCH', { ...sub, basePlans: sub.basePlans.map((b) => (b.basePlanId === bp.basePlanId ? bp : b)) });
+    steps.push('offre utilisée par l’app');
+  }
+  return { ok: true, message: `Essai Google Play (${days} jours) prêt : ${steps.join(', ') || 'déjà en place'}. Pays : ${regions.length}.` };
 }
 
 // Paesi dove l'abbonamento ha un prezzo (= dove la gente può pagare con Google Play): codici ISO.
@@ -91,12 +128,17 @@ export async function verifyPlay(userId, token, sku = playSku()) {
   if (sub.acknowledgementState !== 'ACKNOWLEDGEMENT_STATE_ACKNOWLEDGED') {
     await google(`purchases/subscriptions/${encodeURIComponent(sku)}/tokens/${encodeURIComponent(token)}:acknowledge`, 'POST');
   }
-  if (order) await rpc('record_payment', { p_id: `gp_${order}`, p_user: userId, p_provider: 'googleplay', p_amount: Number(env('PLAY_PRICE_CENTS', '650')), p_currency: 'eur' });
+  // Prova gratuita Google Play (offerta "essai-3j"): Pro leggero per i primi giorni.
+  const trialEnd = Date.parse(sub.startTime || 0) + Number(env('TRIAL_DAYS', '3')) * 864e5;
+  const isTrial = item.offerDetails?.offerId === playTrialOffer() && trialEnd > Date.now();
+  if (order) await rpc('record_payment', { p_id: `gp_${order}`, p_user: userId, p_provider: 'googleplay', p_amount: isTrial ? 0 : Number(env('PLAY_PRICE_CENTS', '650')), p_currency: 'eur' });
   const expiry = new Date(item.expiryTime || 0).getTime();
   if (!(expiry > Date.now())) return { ok: false, code: 'inactive', message: 'Cet abonnement est expiré.' };
   const until = new Date(expiry + 2 * 864e5).toISOString();
+  if (isTrial) await rpc('set_trial', { p_user: userId, p_until: new Date(trialEnd).toISOString() }).catch(() => {});
+  else await rpc('end_trial', { p_user: userId }).catch(() => {});
   await rpc('extend_pro_until', { p_user: userId, p_until: until });
-  return { ok: true, until };
+  return { ok: true, until, trial: isTrial };
 }
 
 // Impronte SHA-256 della chiave con cui Google Play firma l'app (Play App Signing), per assetlinks.json.

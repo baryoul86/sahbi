@@ -107,7 +107,17 @@ export const remainingCredit = (userId, kind, limit) =>
   rpc('remaining_credit', { p_user: userId, p_kind: kind, p_limit: limit });
 
 // Limiti giornalieri: diversi per Gratis e Pro (modificabili dalle variabili di Vercel).
-export const limits = (pro = false) => (pro
+// Prova gratuita (3 giorni): un Pro "leggero", così la prova costa poco (niente video, meno immagini).
+const TRIAL_LIMITS = () => ({
+  chat: Number(env('TRIAL_CHAT_DAILY_LIMIT', '60')),
+  image: Number(env('TRIAL_IMAGE_DAILY_LIMIT', '3')),
+  voice: Number(env('TRIAL_VOICE_DAILY_LIMIT', '60')),
+  tts: Number(env('TRIAL_TTS_DAILY_LIMIT', '60')),
+  video: 0,
+  site: Number(env('TRIAL_SITE_DAILY_LIMIT', '20')),
+});
+export const TRIAL_DAYS = () => Number(env('TRIAL_DAYS', '3'));
+export const limits = (pro = false, trial = false) => (pro && trial ? TRIAL_LIMITS() : pro
   ? {
       chat: Number(env('PRO_CHAT_DAILY_LIMIT', '150')),
       image: Number(env('PRO_IMAGE_DAILY_LIMIT', '8')),
@@ -134,12 +144,15 @@ export async function getProfile(userId) {
     p = { pro_until: null, referral_code: null, referred_by: null, referrals: 0, stripe_customer_id: null };
   }
   const pro = !!p?.pro_until && new Date(p.pro_until) > new Date();
-  return { ...p, pro };
+  const trial = pro && !!p?.trial_until && new Date(p.trial_until) > new Date();
+  // Prova possibile solo per chi non è mai stato Pro e non l'ha già usata.
+  const trialEligible = !pro && !p?.trial_used && !p?.pro_until;
+  return { ...p, pro, trial, trialEligible };
 }
 
 export async function getPlan(userId) {
   const profile = await getProfile(userId);
-  return { profile, pro: profile.pro, limits: limits(profile.pro) };
+  return { profile, pro: profile.pro, trial: profile.trial, limits: limits(profile.pro, profile.trial) };
 }
 
 export function openaiHeaders(extra = {}) {

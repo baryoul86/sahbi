@@ -85,6 +85,13 @@ export function verifyLemon(raw, signature, secret) {
 // Basta la chiave API: negozio e prezzo (mensile / annuale) si trovano da soli, se non sono indicati su Vercel.
 export const lemonReady = (year = false) => !!(env('LEMONSQUEEZY_API_KEY') && (!year || env('LEMONSQUEEZY_VARIANT_ID_YEAR')));
 const lemonCache = {};
+// Elenco delle varianti (una sola chiamata, tenuta 10 minuti): serve a trovare il mensile, l'annuale e quello con prova.
+let variantsCache = { at: 0, list: null, p: null };
+async function lemonVariants() {
+  if (variantsCache.list && Date.now() - variantsCache.at < 10 * 60 * 1000) return variantsCache.list;
+  if (!variantsCache.p) variantsCache.p = lemon('variants?page[size]=100').then((d) => { variantsCache = { at: Date.now(), list: d?.data || [], p: null }; return variantsCache.list; }).catch((e) => { variantsCache.p = null; throw e; });
+  return variantsCache.p;
+}
 export async function lemonIds(year = false) {
   const key = year ? 'year' : 'month';
   if (lemonCache[key]) return lemonCache[key];
@@ -92,8 +99,8 @@ export async function lemonIds(year = false) {
   let store = env('LEMONSQUEEZY_STORE_ID');
   let product = null;
   if (!variant) {
-    const list = (await lemon('variants?page[size]=100'))?.data || [];
-    const ok = list.filter((v) => v.attributes?.is_subscription && v.attributes?.interval === key && v.attributes?.status !== 'draft');
+    const list = await lemonVariants();
+    const ok = list.filter((v) => v.attributes?.is_subscription && v.attributes?.interval === key && v.attributes?.status !== 'draft' && !v.attributes?.has_free_trial);
     const pick = ok.find((v) => v.attributes.status === 'published') || ok[0];
     if (!pick) return null;
     variant = pick.id; product = pick.attributes.product_id;
@@ -104,6 +111,20 @@ export async function lemonIds(year = false) {
     if (!store) return null;
   }
   return (lemonCache[key] = { store: String(store), variant: String(variant) });
+}
+
+// Variante mensile con prova gratuita (creata su Lemon Squeezy con "Free trial"): per chi non è mai stato Pro.
+let lemonTrialCache = { at: 0, id: null };
+export async function lemonTrialVariant() {
+  if (env('LEMONSQUEEZY_TRIAL_VARIANT_ID')) return env('LEMONSQUEEZY_TRIAL_VARIANT_ID');
+  if (!env('LEMONSQUEEZY_API_KEY')) return null;
+  if (Date.now() - lemonTrialCache.at < 10 * 60 * 1000) return lemonTrialCache.id;
+  try {
+    const list = await lemonVariants();
+    const v = list.find((x) => x.attributes?.is_subscription && x.attributes?.interval === 'month' && x.attributes?.has_free_trial && x.attributes?.status === 'published');
+    lemonTrialCache = { at: Date.now(), id: v ? String(v.id) : null };
+  } catch { lemonTrialCache = { at: Date.now(), id: lemonTrialCache.id }; }
+  return lemonTrialCache.id;
 }
 
 // Prezzo VERO dell'abbonamento mensile su Lemon Squeezy (es. "6,50 €"), così il sito mostra quello che il cliente paga.

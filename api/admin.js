@@ -6,7 +6,7 @@ import { json, fail, env, getUser, rpc, openaiHeaders, OPENAI } from './_lib.js'
 import { isAdmin, alert, sendMail, adminEmails } from './_alert.js';
 import { stripe } from './_pay.js';
 import { videoEnabled } from './_video.js';
-import { playCheck, playRegions } from './_play.js';
+import { playCheck, playRegions, setupPlayTrial } from './_play.js';
 import { adminSupportList, adminSupportUpdate, agentFeed } from './_support.js';
 
 const timed = (p, ms = 8000) => Promise.race([p, new Promise((_, no) => setTimeout(() => no(new Error('timeout')), ms))]);
@@ -137,5 +137,8 @@ export async function POST(request) {
   const user = await getUser(request);
   if (!user) return fail('auth', 401, 'Connecte-toi d’abord sur Sahbi.');
   if (!isAdmin(user.email)) return fail('forbidden', 403, 'Réservé à l’administrateur.');
+  if (new URL(request.url).searchParams.get('play') === 'trial') {
+    try { return json(await setupPlayTrial()); } catch (e) { return json({ ok: false, message: String(e.message || e).slice(0, 300) }, 502); }
+  }
   return adminSupportUpdate(request);
 }

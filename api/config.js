@@ -33,7 +33,7 @@ export async function GET(request) {
     version: (process.env.VERCEL_GIT_COMMIT_SHA || '').slice(0, 12),
     supabaseUrl: env('SUPABASE_URL', ''),
     supabaseAnonKey: env('SUPABASE_ANON_KEY', ''),
-    limits: { free: limits(false), pro: limits(true) },
+    limits: { free: limits(false), pro: limits(true), trial: limits(true, true) },
     // Google AdSense per chi non è Pro (senza "slot" = solo promozioni di Sahbi).
     ads: { client: adsenseClient(), slot: env('ADSENSE_SLOT', '1479809952') },
     payments: {
@@ -45,6 +45,8 @@ export async function GET(request) {
       stripeYear: !!(env('STRIPE_SECRET_KEY') && env('STRIPE_PRICE_ID_YEAR')),
       // Lemon Squeezy (carta e PayPal, IVA gestita da loro): se è configurato, il pulsante "Carte" usa lui.
       lemonsqueezy: !!env('LEMONSQUEEZY_API_KEY'),
+      // Prova gratuita sul sito (variante Lemon Squeezy con "free trial"): giorni di prova, 0 = non disponibile.
+      trialDays: await Promise.race([import('./_pay.js').then((m) => m.lemonTrialVariant()).then((v) => (v ? Number(env('TRIAL_DAYS', '3')) : 0)).catch(() => 0), new Promise((ok) => setTimeout(() => ok(0), 1500))]),
       // Prezzo reale della carta (Lemon Squeezy); al massimo 1,5 secondi di attesa.
       cardPriceEur: await Promise.race([lemonPriceLabel(), new Promise((ok) => setTimeout(() => ok(''), 1500))]),
       // Moneta del paese di chi guarda (dal server Vercel) e cambio indicativo dall'euro: per mostrare « ≈ 380 EGP ».
