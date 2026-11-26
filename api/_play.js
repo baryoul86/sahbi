@@ -71,7 +71,7 @@ export async function setupPlayTrial() {
   if (!offer) {
     // Versione delle regioni: si prova la più recente; un paese "non fatturabile" in quella versione si toglie e si riprova.
     let list = [...regions], lastErr = null;
-    for (const ver of ['2025/03', '2022/02']) {
+    for (const ver of ['2022/02', '2025/03']) {
       for (let i = 0; i < 25 && !offer; i++) {
         try {
           offer = await google(`${path}?offerId=${encodeURIComponent(offerId)}&regionsVersion.version=${ver}`, 'POST', {
@@ -85,7 +85,7 @@ export async function setupPlayTrial() {
           lastErr = e;
           const bad = /Region code ([A-Z]{2}) /.exec(e.message || '')?.[1];
           if (e.status === 400 && bad && list.includes(bad)) { list = list.filter((r) => r !== bad); continue; }
-          if (e.status === 400 && /regions version|regionsVersion/i.test(e.message || '')) break;
+          if (e.status === 400) break; // altra versione delle regioni
           throw e;
         }
       }
@@ -101,7 +101,7 @@ export async function setupPlayTrial() {
   // Offerta usata dagli acquisti "compatibili" (come quelli dell'app Sahbi).
   if (bp.autoRenewingBasePlanType?.legacyCompatibleSubscriptionOfferId !== offerId) {
     bp.autoRenewingBasePlanType = { ...bp.autoRenewingBasePlanType, legacyCompatible: true, legacyCompatibleSubscriptionOfferId: offerId };
-    await google(`subscriptions/${encodeURIComponent(sku)}?updateMask=basePlans&regionsVersion.version=2025/03`, 'PATCH', { ...sub, basePlans: sub.basePlans.map((b) => (b.basePlanId === bp.basePlanId ? bp : b)) });
+    await google(`subscriptions/${encodeURIComponent(sku)}?updateMask=basePlans&regionsVersion.version=2022/02`, 'PATCH', { ...sub, basePlans: sub.basePlans.map((b) => (b.basePlanId === bp.basePlanId ? bp : b)) });
     steps.push('offre utilisée par l’app');
   }
   return { ok: true, message: `Essai Google Play (${days} jours) prêt : ${steps.join(', ') || 'déjà en place'}. Pays : ${regions.length}.` };
