@@ -75,3 +75,6 @@ if MODE == 'undraft':
             call('PATCH', f"/reviewSubmissions/{d['id']}", json={'data': {'type': 'reviewSubmissions', 'id': d['id'], 'attributes': {'canceled': True}}})
             print('Bozza annullata:', d['id'])
         except Exception as e: print('Bozza:', str(e)[:200])
+
+if MODE == 'check':
+    import runpy; runpy.run_path('subcheck.py')
