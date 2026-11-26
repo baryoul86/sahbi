@@ -65,3 +65,13 @@ if MODE == 'notes':
     new = first + ('\n\n' + parts[1] if len(parts) > 1 and parts[0].startswith('1.') else '\n\n' + notes)
     call('PATCH', f"/appStoreReviewDetails/{rd['id']}", json={'data': {'type': 'appStoreReviewDetails', 'id': rd['id'], 'attributes': {'notes': new[:4000]}}})
     print('Note aggiornate:', len(new), 'caratteri')
+
+if MODE == 'undraft':
+    # Toglie la versione dalla bozza d'invio: così nella pagina 1.0 riappare "Achats intégrés et abonnements".
+    for d in submissions(('READY_FOR_REVIEW',)):
+        for it in call('GET', f"/reviewSubmissions/{d['id']}/items")['data']:
+            call('DELETE', f"/reviewSubmissionItems/{it['id']}"); print('Tolto dalla bozza:', it['id'])
+        try:
+            call('PATCH', f"/reviewSubmissions/{d['id']}", json={'data': {'type': 'reviewSubmissions', 'id': d['id'], 'attributes': {'canceled': True}}})
+            print('Bozza annullata:', d['id'])
+        except Exception as e: print('Bozza:', str(e)[:200])
