@@ -466,7 +466,7 @@ a.s-row[hidden]{display:none}
 .rec{position:absolute;inset:0;z-index:2;display:flex;align-items:center;gap:8px;padding:6px;border-radius:inherit;background:var(--panel)}
 .rec[hidden]{display:none}
 .rec button{width:44px;height:44px;border-radius:50%;border:0;display:grid;place-items:center;flex:0 0 44px}
-.rec .rx{background:transparent;color:var(--muted)}
+.rec .rx{background:var(--panel-2);color:var(--fg)}
 .rec .rx:hover{color:var(--fg);background:var(--panel-2)}
 .rec .rs{background:var(--mint);color:var(--mint-ink)}
 .rec canvas{flex:1;min-width:0;height:36px}
@@ -568,7 +568,7 @@ html[lang=ar] body{line-height:1.7}
           <button type="button" class="rx" id="recCancel" aria-label="Annuler l’enregistrement"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
           <canvas id="recWave" aria-hidden="true"></canvas>
           <span class="rt" id="recTime">0:00</span>
-          <button type="button" class="rs" id="recStop" aria-label="Arrêter et transcrire"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="5" y="5" width="14" height="14" rx="3"/></svg></button>
+          <button type="button" class="rs" id="recStop" aria-label="Arrêter et écrire le texte"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></button>
         </div>
         <button class="send stop" id="stopBtn" type="button" aria-label="Arrêter la réponse" hidden>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="5" y="5" width="14" height="14" rx="3"/></svg>
@@ -2811,7 +2811,7 @@ const recBar = $('rec'), recWave = $('recWave');
 function micState(on) {
   mic.classList.toggle('on', on); mic.setAttribute('aria-pressed', String(on));
   recBar.hidden = !on; recBar.classList.remove('busy');
-  $('recStop').innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="5" y="5" width="14" height="14" rx="3"/></svg>';
+  $('recStop').innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
   $('recStop').disabled = false;
   if (on) $('recStop').focus();
 }
