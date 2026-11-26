@@ -126,6 +126,7 @@ footer.composer .col{padding-block:10px 12px;display:flex;flex-direction:column;
 .mic.busy{opacity:.5;cursor:default}
 @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(47,174,116,.55)}100%{box-shadow:0 0 0 14px rgba(47,174,116,0)}}
 .send{background:var(--mint);color:var(--mint-ink)}
+.send.stop{background:var(--fg);color:var(--panel,#fff)}
 .send:disabled{background:var(--panel-2);color:var(--muted);cursor:default}
 .hint{font-size:12px;color:var(--muted);text-align:center}
 .scrim{position:fixed;inset:0;background:var(--scrim);z-index:20}
@@ -569,6 +570,9 @@ html[lang=ar] body{line-height:1.7}
           <span class="rt" id="recTime">0:00</span>
           <button type="button" class="rs" id="recStop" aria-label="Arrêter et transcrire"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="5" y="5" width="14" height="14" rx="3"/></svg></button>
         </div>
+        <button class="send stop" id="stopBtn" type="button" aria-label="Arrêter la réponse" hidden>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="5" y="5" width="14" height="14" rx="3"/></svg>
+        </button>
         <button class="send" id="send" type="submit" aria-label="Envoyer" disabled hidden>
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
         </button>
@@ -992,6 +996,7 @@ const $ = (id) => document.getElementById(id);
 for (const id of ['langLp', 'langSet']) { const s = $(id); if (s) { s.value = LANG_AUTO ? 'auto' : LANG; s.addEventListener('change', () => setLang(s.value)); } }
 const msgsEl = $('msgs'), thread = $('thread'), ta = $('msg'), sendBtn = $('send'), mic = $('mic');
 let STORE = 'sahbi-chats-v1';
+let chatCtrl = null; // richiesta chat in corso (per ■ Stop e ↻ Réessayer)
 let supabase = null, busy = false, imgLeft = null, imgLimit = 2, userId = null, cfg = {}, me = null, photo = null;
 
 // ---------- App Android (Google Play) ----------
@@ -2118,7 +2123,7 @@ async function sendChat(text, pic = null, docAtt = null, opts = {}) {
   saveCurrent();
   const wait = typing();
   // Bloccato? Errore? Pulsante "↻ Réessayer" che rifà la stessa domanda da solo.
-  const ctrl = new AbortController(); chatCtrl = ctrl;
+  const ctrl = new AbortController(); chatCtrl = ctrl; grow();
   const again = () => retryAsk(text, pic, docAtt, opts);
   const errB = (t) => { reportErr('chat', `${t} (mode ${current.mode || 'normal'})`); const b = bubble('bot', t, 'err'); addRetry(b.closest('.msg'), again); return b; };
   let lastTick = Date.now(), stalled = false;
@@ -2142,7 +2147,7 @@ async function sendChat(text, pic = null, docAtt = null, opts = {}) {
   try {
     sentAt = Date.now();
     res = await api('/api/chat', { method: 'POST', signal: ctrl.signal, headers: { 'content-type': 'application/json' }, body: JSON.stringify({ messages: history, lang: LANG, ...(pic ? { photo: pic } : (recentPhoto && recentTurns > 0 && !opts.voice ? { photo: recentPhoto, photoEarlier: true } : {})), ...(docAtt ? { doc: { name: docAtt.name, text: docAtt.text } } : {}), ...(opts.voice ? { voice: true } : {}), now: localNow(), ...(current.temp ? { temp: true } : {}), ...(current.mode ? { mode: current.mode } : {}), ...(current.mode !== 'website' && current.messages?.some((m) => m.role === 'assistant' && typeof m.content === 'string' && findHtml(m.content)) ? { hasSite: true } : {}), ...(current.sitePhotos?.length ? { sitePhotos: current.sitePhotos.length } : {}), ...(current.mode === 'website' && current.siteVideos?.length ? { siteVideos: current.siteVideos.length } : {}) }) });
-  } catch { wait.remove(); errB('Pas de connexion. Vérifie internet et réessaie.'); return ''; }
+  } catch { wait.remove(); if (ctrl.stopped) return ''; errB('Pas de connexion. Vérifie internet et réessaie.'); return ''; }
   if (!res.ok) {
     wait.remove();
     const err = await res.json().catch(() => ({}));
@@ -2197,6 +2202,7 @@ async function sendChat(text, pic = null, docAtt = null, opts = {}) {
     };
     return {
       to(t) { target = t; if (!raf) raf = requestAnimationFrame(tick); },
+      stop() { if (raf) cancelAnimationFrame(raf); raf = 0; const d = done; done = null; d?.(); return target.slice(0, shown); },
       end() { fast = true; return new Promise((ok) => { if (shown >= target.length) ok(); else { done = ok; if (!raf) raf = requestAnimationFrame(tick); } setTimeout(ok, Math.max(20000, (target.length - shown) * 30)); }); },
     };
   })();
@@ -2240,7 +2246,7 @@ async function sendChat(text, pic = null, docAtt = null, opts = {}) {
   for (;;) {
     let chunk;
     // Connessione interrotta (rete o server troppo lento): si tiene il testo già arrivato.
-    try { chunk = await reader.read(); lastTick = Date.now(); } catch { if (!pending && !reply.trim()) errB('La connexion a été coupée. Réessaie.'); break; }
+    try { chunk = await reader.read(); lastTick = Date.now(); } catch { if (!ctrl.stopped && !pending && !reply.trim()) errB('La connexion a été coupée. Réessaie.'); break; }
     const { done, value } = chunk;
     if (done) break;
     raw += dec.decode(value, { stream: true });
@@ -2256,6 +2262,8 @@ async function sendChat(text, pic = null, docAtt = null, opts = {}) {
     }
     scroll();
   }
+  // ■ Stop: si tiene solo il testo già mostrato, senza errori.
+  if (ctrl.stopped) { reply = flow.stop(); pending?.remove(); pending = null; work?.remove(); work = null; }
   if (pending) {
     const img = await recoverImage(sentAt, pending);
     pending.done?.(); pending.remove(); pending = null;
@@ -2270,7 +2278,7 @@ async function sendChat(text, pic = null, docAtt = null, opts = {}) {
   work?.remove(); work = null; out.textContent = reply;
   if (!reply.trim()) {
     out.closest(".msg").remove();
-    if (!extra.length && !handled) errB('Je n’ai pas pu répondre. Réessaie.');
+    if (!extra.length && !handled && !ctrl.stopped) errB('Je n’ai pas pu répondre. Réessaie.');
   } else {
     current.messages.push({ role: 'assistant', content: reply });
     linkify(out);
@@ -2280,11 +2288,11 @@ async function sendChat(text, pic = null, docAtt = null, opts = {}) {
   current.messages.push(...extra);
   saveCurrent(); renderHistory();
   return reply;
-  } finally { clearInterval(watch); if (chatCtrl === ctrl) chatCtrl = null; msgsEl.querySelector('.stall')?.remove(); }
+  } finally { clearInterval(watch); if (chatCtrl === ctrl) { chatCtrl = null; grow(); } msgsEl.querySelector('.stall')?.remove(); }
 }
 
 // ↻ Rifà l'ultima domanda: ferma quella bloccata, toglie il tentativo fallito e rimanda lo stesso messaggio.
-let chatCtrl = null;
+$('stopBtn').addEventListener('click', () => { if (!chatCtrl) return; chatCtrl.stopped = true; chatCtrl.abort(); });
 function addRetry(msgEl, again) {
   if (!msgEl || msgEl.querySelector('.retry')) return;
   const b = el('button', 'retry', tr('↻ Réessayer')); b.type = 'button';
@@ -2891,7 +2899,8 @@ function grow() {
   const empty = !ta.value.trim() && !photo && !doc;
   sendBtn.disabled = busy || empty;
   // Casella vuota: al posto di "envoyer" c'è il pulsante della conversazione vocale.
-  sendBtn.hidden = empty && !busy; $('talk').hidden = !(empty && !busy);
+  sendBtn.hidden = (empty && !busy) || (busy && !!chatCtrl); $('talk').hidden = !(empty && !busy);
+  $('stopBtn').hidden = !(busy && chatCtrl);
 }
 function prefill(p) { ta.value = tr(p); grow(); ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); }
 ta.addEventListener('input', grow);
