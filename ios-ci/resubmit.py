@@ -50,3 +50,18 @@ if MODE == 'submit':
     if not d: raise SystemExit('Nessuna bozza pronta')
     call('PATCH', f"/reviewSubmissions/{d[0]['id']}", json={'data': {'type': 'reviewSubmissions', 'id': d[0]['id'], 'attributes': {'submitted': True}}})
     print('::notice title=Inviata ad Apple::', d[0]['id'])
+
+if MODE == 'notes':
+    # Nota 1 corretta: il video è registrato sul simulatore iPhone (non su un iPad fisico).
+    app = [a for a in call('GET', '/apps', params={'filter[bundleId]': BID})['data'] if a['attributes']['bundleId'] == BID][0]
+    ver = call('GET', f"/apps/{app['id']}/appStoreVersions", params={'filter[platform]': 'IOS'})['data'][0]
+    rd = call('GET', f"/appStoreVersions/{ver['id']}/appStoreReviewDetail")['data']
+    notes = rd['attributes'].get('notes') or ''
+    first = ('1. SCREEN RECORDING: attached (Attachment field, sahbi-demo.mp4) - recorded on the iOS Simulator (iPhone) with this same build: '
+             'launch, login with the demo account, a chat question and answer, the Sahbi Pro subscription screen (Apple In-App Purchase, auto-renewable, 6.99 EUR/month, '
+             'with Terms of Use and Privacy links), and account deletion (Menu > Settings > "Supprimer mon compte"). The simulator has no App Store sandbox, so the '
+             'Subscribe button is shown but not tapped; on a device it opens the standard Apple purchase sheet.')
+    parts = notes.split('\n\n', 1)
+    new = first + ('\n\n' + parts[1] if len(parts) > 1 and parts[0].startswith('1.') else '\n\n' + notes)
+    call('PATCH', f"/appStoreReviewDetails/{rd['id']}", json={'data': {'type': 'appStoreReviewDetails', 'id': rd['id'], 'attributes': {'notes': new[:4000]}}})
+    print('Note aggiornate:', len(new), 'caratteri')
