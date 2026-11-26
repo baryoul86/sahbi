@@ -3,6 +3,21 @@
 // {x} = parte variabile (numero, data, nome...).
 (() => {
 const D = [
+['Création de sites internet', 'إنشاء مواقع إنترنت', 'Website creation'],
+[' et mise en ligne en un clic', ' ونشرها بنقرة واحدة', ' and one-tap publishing'],
+['et mise en ligne en un clic', 'ونشرها بنقرة واحدة', 'and one-tap publishing'],
+['Beaucoup plus de messages', 'رسائل أكثر بكثير', 'Many more messages'],
+['Images et transformation de photos', 'صور وتحويل الصور', 'Images and photo transformations'],
+['Vidéos', 'فيديوهات', 'Videos'],
+['Beaucoup plus de messages, dans toutes les langues', 'رسائل أكثر بكثير، بكل اللغات', 'Many more messages, in every language'],
+['Création d’images et transformation de tes photos : cartoon, anime, 3D…', 'إنشاء الصور وتحويل صورك: كرتون، أنمي، ثلاثي الأبعاد…', 'Image creation and photo transformations: cartoon, anime, 3D…'],
+['Création de vidéos', 'إنشاء فيديوهات', 'Video creation'],
+['Une jauge d’énergie en % au lieu de compteurs, rechargée chaque jour', 'مؤشر طاقة بالنسبة المئوية بدل العدّادات، يتجدد كل يوم', 'An energy gauge in % instead of counters, refilled every day'],
+['Sites internet, images, vidéos, voix', 'مواقع إنترنت، صور، فيديوهات، صوت', 'Websites, images, videos, voice'],
+['Les vidéos sont réservées à Sahbi Pro.', 'الفيديوهات خاصة بصاحبي برو.', 'Videos are part of Sahbi Pro.'],
+['Tu as utilisé tes vidéos de ce mois. Elles reviennent le 1er du mois.', 'استعملت فيديوهات هذا الشهر. تعود في أول الشهر.', 'You have used this month’s videos. They come back on the 1st.'],
+['Tu as utilisé tes images gratuites d’aujourd’hui. Avec Sahbi Pro tu en as beaucoup plus.', 'استعملت صورك المجانية لليوم. مع صاحبي برو عندك أكثر بكثير.', 'You have used today’s free images. Sahbi Pro gives you many more.'],
+['Après l’essai', 'بعد التجربة', 'After the trial'],
 ['Essai gratuit jusqu’au {d}', 'تجربة مجانية حتى {d}', 'Free trial until {d}'],
 ['🎁 Essaie Pro gratuitement', '🎁 جرّب برو مجانًا', '🎁 Try Pro for free'],
 ['🎁 {n} jours gratuits, puis {p} / mois. Sans engagement.', '🎁 {n} أيام مجانًا، ثم {p} / شهر. بدون التزام.', '🎁 {n} days free, then {p} / month. Cancel anytime.'],
