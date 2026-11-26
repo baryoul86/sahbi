@@ -87,6 +87,10 @@
     {
       "source": "/assistance-feed",
       "destination": "/api/admin?support=agent"
+    },
+    {
+      "source": "/img",
+      "destination": "/api/config?img=1"
     }
   ],
   "crons": [

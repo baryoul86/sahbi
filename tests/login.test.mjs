@@ -23,3 +23,13 @@ const er = (b, h = {}) => new Request('https://www.sahbi.bond/api/config?err=1',
 r = await POST(er({ kind: 'login', message: 'supabase-otp 500 pour lisi@gmail.com', meta: { app: 'web', lang: 'en' } }));
 assert.equal(r.status, 200); assert.equal(errRow.kind, 'login'); assert.equal(errRow.meta.country, 'RU'); assert.doesNotMatch(errRow.message, /gmail/);
 console.log('login OK');
+{
+  const { GET } = await import('../api/config.js');
+  globalThis.fetch = async (u) => u.startsWith('https://api.openverse.org') ? new Response(JSON.stringify({ results: [{ thumbnail: 'https://api.openverse.org/v1/images/a/thumb/' }, { thumbnail: 'https://api.openverse.org/v1/images/b/thumb/' }] }), { headers: { 'content-type': 'application/json' } }) : new Response('{}');
+  let r = await GET(new Request('https://www.sahbi.bond/api/config?img=1&w=800&h=600&q=perfume,bottle&s=1'));
+  assert.equal(r.status, 302); assert.equal(r.headers.get('location'), 'https://api.openverse.org/v1/images/b/thumb/');
+  globalThis.fetch = async () => { throw new Error('down'); };
+  r = await GET(new Request('https://www.sahbi.bond/api/config?img=1&q=tv&s=2'));
+  assert.match(r.headers.get('location'), /^https:\/\/picsum\.photos\/seed\/tv-2\/800\/600$/);
+  console.log('img OK');
+}

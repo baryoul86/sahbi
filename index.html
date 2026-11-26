@@ -1521,7 +1521,16 @@ function extractHtml(text) { return findHtml(text)?.html || null; }
 // 📷 Foto dell'utente nel sito: il modello scrive src="foto1.jpg", qui si mette la foto vera (dentro il file, così funziona ovunque).
 function withPhotos(html) {
   const ph = current?.sitePhotos || [], vd = current?.siteVideos || [];
+  let k = 0;
   return String(html)
+    // Vecchie immagini loremflickr (servizio instabile) → immagini di Sahbi.
+    .replace(/https?:\/\/loremflickr\.com\/(\d+)\/(\d+)\/([^"'?\s)]+)(?:\?lock=(\d+))?/gi, (m, w, h, q, n) => `https://www.sahbi.bond/img?w=${w}&h=${h}&q=${q}&s=${n || ++k}`)
+    // <img> con un file inventato (es. "lv.jpg") → immagine reale scelta dal testo alternativo.
+    .replace(/<img\b([^>]*?)\ssrc=(["'])(?!https?:|data:|blob:|foto\d|\/\/)([^"']*)\2([^>]*)>/gi, (m, a1, qt, src, a2) => {
+      const alt = (/\salt=(["'])([^"']*)\1/i.exec(a1 + a2) || [])[2] || src.replace(/\.[a-z0-9]+$/i, '');
+      const q = alt.toLowerCase().replace(/[^\p{L}\p{N} ]/gu, ' ').split(/\s+/).filter((x) => x.length > 2).slice(0, 3).join(',') || 'abstract';
+      return `<img${a1} src="https://www.sahbi.bond/img?w=800&h=600&q=${encodeURIComponent(q)}&s=${++k}"${a2}>`;
+    })
     .replace(/foto(\d{1,2})\.(?:jpe?g|png|webp)/gi, (m, n) => ph[Number(n) - 1] || m)
     .replace(/video(\d{1,2})\.(?:mp4|mov|webm)/gi, (m, n) => vd[Number(n) - 1] || m);
 }

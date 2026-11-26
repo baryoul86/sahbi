@@ -9,6 +9,7 @@ const adsenseClient = () => env('ADSENSE_CLIENT', 'ca-pub-4750815574904840');
 // limiti dei piani, pubblicità e quali pagamenti sono attivi.
 // Con ?file=ads.txt restituisce il file ads.txt di Google AdSense (servito su /ads.txt).
 export async function GET(request) {
+  { const u = new URL(request.url); if (u.searchParams.has('img')) return siteImage(u); }
   // /.well-known/assetlinks.json: collega l'app Android (Google Play) al sito, così si apre a schermo intero.
   // Su Vercel: ANDROID_PACKAGE (es. bond.sahbi.app) e ANDROID_SHA256 (impronte separate da virgola).
   if (new URL(request.url).searchParams.get('file') === 'assetlinks') {
@@ -198,6 +199,26 @@ async function clientError(request) {
   const due = await rpc('admin_alert', { p_kind: `probe_err_${id}`, p_message: 'err', p_every_minutes: 1 }).catch(() => false);
   if (due) await fetch(`${supabaseUrl()}/rest/v1/client_errors`, { method: 'POST', headers: serviceHeaders({ 'content-type': 'application/json' }), body: JSON.stringify({ kind, message, meta }) }).catch(() => {});
   return json({ ok: true });
+}
+
+// GET /img/800/600/perfume,bottle?s=3 → foto vera per i siti creati da Sahbi (Openverse, licenze libere),
+// sempre la stessa per la stessa richiesta; se Openverse non risponde, una foto generica (picsum). In cache 7 giorni.
+async function siteImage(url) {
+  const q = url.searchParams;
+  const w = Math.min(1600, Math.max(64, Number(q.get('w')) || 800)), h = Math.min(1600, Math.max(64, Number(q.get('h')) || 600));
+  const words = String(q.get('q') || 'abstract').toLowerCase().replace(/[^\p{L}\p{N}, -]/gu, '').split(/[, ]+/).filter(Boolean).slice(0, 4);
+  const n = Math.abs(Number(q.get('s')) || 0) % 40;
+  const seed = encodeURIComponent(`${words.join('-')}-${n}`);
+  let target = `https://picsum.photos/seed/${seed}/${w}/${h}`;
+  try {
+    const r = await fetch(`https://api.openverse.org/v1/images/?q=${encodeURIComponent(words.join(' '))}&page_size=20&mature=false&aspect_ratio=${w >= h ? 'wide' : 'tall'}`,
+      { headers: { 'user-agent': 'Sahbi/1.0 (https://www.sahbi.bond)' }, signal: AbortSignal.timeout(4000) });
+    if (r.ok) {
+      const list = ((await r.json()).results || []).filter((x) => x.thumbnail || x.url);
+      if (list.length) { const x = list[n % list.length]; target = x.thumbnail || x.url; }
+    }
+  } catch { /* riserva: picsum */ }
+  return new Response(null, { status: 302, headers: { location: target, 'cache-control': 'public, max-age=86400, s-maxage=604800', 'access-control-allow-origin': '*' } });
 }
 
 async function contact(request) {
