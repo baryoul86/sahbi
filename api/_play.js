@@ -104,7 +104,7 @@ export async function setupPlayTrial() {
     let linked = false, why = '';
     for (const ver of ['2022/02', '2025/03']) {
       try { await google(`subscriptions/${encodeURIComponent(sku)}?updateMask=basePlans&regionsVersion.version=${ver}`, 'PATCH', { ...sub, basePlans: sub.basePlans.map((b) => (b.basePlanId === bp.basePlanId ? bp : b)) }); linked = true; break; }
-      catch (e) { why = String(e.message || e).slice(0, 160); if (e.status !== 400) break; }
+      catch (e) { why += `[${ver}] ${String(e.message || e).slice(0, 140)} `; if (e.status !== 400) break; }
     }
     steps.push(linked ? 'offre utilisée par l’app' : `⚠️ liaison à l’app impossible (${why})`);
   }
