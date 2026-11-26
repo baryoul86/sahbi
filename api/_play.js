@@ -102,10 +102,25 @@ export async function setupPlayTrial() {
   if (bp.autoRenewingBasePlanType?.legacyCompatibleSubscriptionOfferId !== offerId) {
     bp.autoRenewingBasePlanType = { ...bp.autoRenewingBasePlanType, legacyCompatible: true, legacyCompatibleSubscriptionOfferId: offerId };
     let linked = false, why = '';
+    // Google chiede ormai il prezzo in un'altra moneta per alcuni paesi (es. Argentina: USD invece di ARS):
+    // si mette il prezzo dello stesso valore (quello USA o quello in euro) e si riprova.
+    const priceIn = (cur) => (bp.regionalConfigs || []).find((r) => r.price?.currencyCode === cur && (cur !== 'USD' || r.regionCode === 'US'))?.price;
+    const fixed = [];
     for (const ver of ['2022/02', '2025/03']) {
-      try { await google(`subscriptions/${encodeURIComponent(sku)}?updateMask=basePlans&regionsVersion.version=${ver}`, 'PATCH', { ...sub, basePlans: sub.basePlans.map((b) => (b.basePlanId === bp.basePlanId ? bp : b)) }); linked = true; break; }
-      catch (e) { why += `[${ver}] ${String(e.message || e).slice(0, 140)} `; if (e.status !== 400) break; }
+      for (let i = 0; i < 15 && !linked; i++) {
+        try { await google(`subscriptions/${encodeURIComponent(sku)}?updateMask=basePlans&regionsVersion.version=${ver}`, 'PATCH', { ...sub, basePlans: sub.basePlans.map((b) => (b.basePlanId === bp.basePlanId ? bp : b)) }); linked = true; }
+        catch (e) {
+          const m = /region code ([A-Z]{2}) .*Expected ([A-Z]{3}) but got ([A-Z]{3})/i.exec(e.message || '');
+          const rc = m && (bp.regionalConfigs || []).find((r) => r.regionCode === m[1]);
+          const np = m && priceIn(m[2]);
+          if (e.status === 400 && rc && np) { rc.price = { ...np }; fixed.push(`${m[1]}→${m[2]}`); continue; }
+          why += `[${ver}] ${String(e.message || e).slice(0, 140)} `;
+          break;
+        }
+      }
+      if (linked) break;
     }
+    if (fixed.length) steps.push(`prix mis à jour : ${fixed.join(', ')}`);
     steps.push(linked ? 'offre utilisée par l’app' : `⚠️ liaison à l’app impossible (${why})`);
   }
   return { ok: true, message: `Essai Google Play (${days} jours) prêt : ${steps.join(', ') || 'déjà en place'}. Pays : ${regions.length}.` };
