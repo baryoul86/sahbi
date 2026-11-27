@@ -1571,6 +1571,16 @@ function downloadSite(html) {
   const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([withPhotos(html)], { type: 'text/html' })); a.download = 'index.html'; a.click();
   toast(tr('Fichier index.html téléchargé.'));
 }
+// Nell'anteprima (iframe srcdoc) i link "#pagina" e i moduli puntavano all'indirizzo di Sahbi e ricaricavano Sahbi
+// dentro il riquadro (es. "Gioca" → pagina di Sahbi). Si fissa la base su about:srcdoc, i moduli non si inviano,
+// e i link esterni si aprono in una nuova scheda.
+const PREVIEW_FIX = '<base href="about:srcdoc"><script>document.addEventListener("submit",function(e){e.preventDefault()},true);'
+  + 'document.addEventListener("click",function(e){var a=e.target.closest&&e.target.closest("a[href]");if(!a)return;var h=a.getAttribute("href")||"";'
+  + 'if(h==="#"||h===""){e.preventDefault();return}if(/^(https?:|mailto:|tel:|sms:|whatsapp:)/i.test(h)){a.target="_blank";a.rel="noopener"}},true);<\/script>';
+const previewDoc = (html) => {
+  const h = withPhotos(html);
+  return /<head[^>]*>/i.test(h) ? h.replace(/<head[^>]*>/i, (m) => m + PREVIEW_FIX) : PREVIEW_FIX + h;
+};
 // Anteprima in un riquadro isolato (sandbox): il codice del sito non può toccare Sahbi.
 // Anteprima del sito direttamente nella chat (come una scheda): il codice lungo resta nascosto dietro "</> Code".
 function siteCard(textEl, text, html) {
@@ -1579,7 +1589,7 @@ function siteCard(textEl, text, html) {
   textEl.textContent = rest; if (typeof linkify === 'function') { try { linkify(textEl); } catch { /* testo semplice */ } }
   const card = el('div', 'site-card');
   const view = el('div', 'sc-view'); view.title = tr('Aperçu du site');
-  const f = document.createElement('iframe'); f.setAttribute('sandbox', 'allow-scripts'); f.setAttribute('tabindex', '-1'); f.srcdoc = withPhotos(html); f.loading = 'lazy';
+  const f = document.createElement('iframe'); f.setAttribute('sandbox', 'allow-scripts'); f.setAttribute('tabindex', '-1'); f.srcdoc = previewDoc(html); f.loading = 'lazy';
   view.appendChild(f); view.addEventListener('click', () => previewSite(html));
   const bar = el('div', 'sc-bar');
   const open = el('button', 'main', tr('👁️ Ouvrir l’aperçu')); open.type = 'button'; open.addEventListener('click', () => previewSite(html));
@@ -1735,7 +1745,7 @@ function previewSite(html) {
   const x = el('button', '', tr('✕ Fermer l’aperçu')); x.type = 'button'; x.addEventListener('click', () => wrap.remove());
   const dl = el('button', '', '📥 index.html'); dl.type = 'button'; dl.addEventListener('click', () => downloadSite(html));
   bar.append(x, dl);
-  const f = document.createElement('iframe'); f.setAttribute('sandbox', 'allow-scripts allow-popups'); f.srcdoc = withPhotos(html); f.title = tr('Aperçu du site');
+  const f = document.createElement('iframe'); f.setAttribute('sandbox', 'allow-scripts allow-popups allow-popups-to-escape-sandbox'); f.srcdoc = previewDoc(html); f.title = tr('Aperçu du site');
   wrap.append(bar, f); document.body.appendChild(wrap);
 }
 // 🔄 Rifare l'ultima risposta.
