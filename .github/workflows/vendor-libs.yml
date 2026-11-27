@@ -1,0 +1,22 @@
+# Copia nel sito le librerie usate dai giochi 3D creati da Sahbi (servite da sahbi.bond, funzionano anche offline nell'app).
+name: Librerie per i giochi
+on: workflow_dispatch
+permissions:
+  contents: write
+jobs:
+  vendor:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Three.js r160 (versione con THREE globale)
+        run: |
+          set -e
+          mkdir -p lib
+          npm pack three@0.160.0 --silent
+          tar xzf three-0.160.0.tgz
+          cp package/build/three.min.js lib/three-0.160.min.js
+          cp package/LICENSE lib/three-LICENSE.txt
+          ls -la lib
+          rm -rf package three-0.160.0.tgz
+          git config user.name "Sahbi CI"; git config user.email "ci@sahbi.bond"
+          git add lib && git commit -m "Librerie giochi: Three.js r160" && git push
