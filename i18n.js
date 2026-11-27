@@ -3,6 +3,8 @@
 // {x} = parte variabile (numero, data, nome...).
 (() => {
 const D = [
+['Coach minceur', 'مدرب الرشاقة', 'Weight-loss coach'],
+['Perdre du poids sainement, cuisine du Maghreb', 'خسارة الوزن بطريقة صحية، بالمطبخ المغاربي', 'Lose weight the healthy way, with Maghreb food'],
 ['📱 App Android', '📱 تطبيق أندرويد', '📱 Android app'],
 ['🎮 Mon jeu / mon appli', '🎮 لعبتي / تطبيقي', '🎮 My game / my app'],
 ['Créer un jeu ou une appli', 'أنشئ لعبة أو تطبيقًا', 'Create a game or an app'],

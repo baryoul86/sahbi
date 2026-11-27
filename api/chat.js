@@ -69,6 +69,17 @@ MODALITÀ GUIDA TURISTICA (questa chat serve SOLO a preparare un viaggio):
 - PROMEMORIA: per scadenze importanti (domanda di visto o permesso Nusuk, check-in del volo 24 h prima, vaccini, partenza) proponi un promemoria e, se l'utente dice sì o ha già dato le date, chiama create_reminder.
 - Rispondi SEMPRE nella lingua in cui scrive l'utente.`;
 // 💼 Agente Business: lavora per il piccolo commercio dell'utente.
+// ⚖️ Coach minceur: perdere peso in modo sano, con la cucina del Maghreb. Mai diete estreme.
+const COACH_MODE = `
+MODALITÀ COACH MINCEUR (perdere peso in modo sano). Sei un coach gentile, concreto e motivante, mai giudicante.
+- All'inizio (se non lo sai già dalla memoria) chiedi in UN solo messaggio: età, altezza, peso attuale, obiettivo, sesso, attività della giornata, cosa mangia di solito, problemi di salute o farmaci. Se è minorenne, incinta/allatta, ha diabete, malattie del cuore, dei reni o un disturbo alimentare: niente programma di dimagrimento, consiglia con gentilezza di farsi seguire da un medico o dietista; puoi dare solo consigli generali di alimentazione equilibrata.
+- Obiettivo sano: al massimo 0,5–1 kg a settimana. MAI sotto 1200 kcal (donne) / 1500 kcal (uomini), mai digiuni estremi, pillole, "detox", vomito, lassativi o esercizio eccessivo. Se l'utente mostra segni di un rapporto difficile con il cibo (sensi di colpa forti, saltare tutti i pasti, abbuffate, peso molto basso), non dare numeri: rispondi con calore e consiglia un professionista.
+- Programma con la cucina del Maghreb e di casa: couscous, tajine, harira, chorba, msemen, pane, thé à la menthe, dolci… niente divieti: porzioni, più verdure e legumi, meno zucchero e fritto, il pane senza esagerare, acqua. Pasti semplici, economici e halal. Ramadan: consigli per ftour e shour.
+- Movimento: camminata, esercizi a casa senza attrezzi (10–20 minuti), adatti al livello.
+- Dai un piano chiaro (giornata tipo o settimana in tabella), una lista della spesa se serve, e piccoli obiettivi. Ogni volta che l'utente ti dice il suo peso, ricordalo (memoria), fai i complimenti per i progressi e adatta il piano. Se il peso non scende per 2–3 settimane, aggiusta con calma.
+- Ricorda in UNA riga, solo la prima volta: "Je ne remplace pas un médecin."
+`;
+
 const BUSINESS_MODE = `
 
 MODALITÀ AGENTE BUSINESS (questa chat serve SOLO ad aiutare l'attività dell'utente: negozio, ristorante, artigiano, servizi, vendita online…):
@@ -581,7 +592,7 @@ export async function POST(request) {
   // non si fa: Sahbi dice gentilmente di usare la chat normale.
   // Regola generale: nelle chat speciali (sito, libro, viaggio, business, WhatsApp) NON si creano mai immagini né video.
   // Se l'utente ne chiede una, Sahbi dice di usare la chat normale. Eccezione: nella chat dei siti, le immagini DENTRO il sito.
-  const modeChat = ['website', 'book', 'travel', 'business', 'whatsapp'].includes(body?.mode);
+  const modeChat = ['website', 'book', 'travel', 'business', 'whatsapp', 'coach'].includes(body?.mode);
   const TRANSFORM = /(trasform|transform|stile|style|disney|pixar|ghibli|cartoon|cartone|anime|manga|aquarell|acquerell|watercolor|ritaglia|scontorn|d[ée]tour|sfondo|arri[eè]re-plan|background|حوّل|حول|كرتون|خلفية)/i;
   const VIDEO_REQ = /(fammi|fai|crea|creami|genera|voglio|vorrei|fais|crée|cree|génère|genere|je veux|make|create|generate|i want|اعمل|بغيت|dir ?li).{0,40}(vid[ée]o|فيديو|clip)/i;
   const askImg = (body?.mode === 'website' ? EXPLICIT_IMG.test(nowText) : (EXPLICIT_IMG.test(nowText) || (!NOT_IMAGE.test(nowText) && IMAGE_REQ.test(nowText))))
@@ -594,7 +605,7 @@ export async function POST(request) {
     // Foto + "trasformala in stile…", oppure "fammi un'immagine di…": si disegna subito, senza domande.
     tool_choice: !sitePhoto && !noImage && (again || (!NOT_IMAGE.test(nowText) && ((photo && !body?.photoEarlier && STYLE_ASK.test(nowText)) || ((!photo || body?.photoEarlier) && IMAGE_REQ.test(nowText)))))
       ? { type: 'function', function: { name: 'create_image' } } : 'auto',
-    messages: [{ role: 'system', content: SYSTEM.replace('{{VIDEO}}', videoEnabled() ? VIDEO_ON : VIDEO_OFF) + memoryPrompt(memory) + uiLangPrompt(body?.lang) + todayPrompt() + clientNowPrompt(body?.now) + langPrompt(detectLang(nowText) ? nowText : (again ? prevUserText : nowText)) + (body?.voice === true ? VOICE_STYLE : '') + (body?.mode === 'book' ? BOOK_MODE : body?.mode === 'travel' ? TRAVEL_MODE + countryHint(request) : body?.mode === 'website' ? WEBSITE_MODE + (pro ? WEBSITE_PRO : WEBSITE_FREE) + (Number(body?.sitePhotos) > 0 ? `\n- In questa chat l'utente ha già mandato ${Math.min(12, Number(body.sitePhotos) | 0)} foto: foto1.jpg … foto${Math.min(12, Number(body.sitePhotos) | 0)}.jpg. Usale tutte nel sito.` : '') + (Number(body?.siteVideos) > 0 ? `\n- L'utente ha mandato anche ${Math.min(5, Number(body.siteVideos) | 0)} video: video1.mp4 … video${Math.min(5, Number(body.siteVideos) | 0)}.mp4. Mettili nel sito.` : '') : body?.mode === 'business' ? BUSINESS_MODE + countryHint(request) : body?.mode === 'whatsapp' ? WHATSAPP_MODE : (pro ? '' : WEBSITE_FREE_CHAT)) + (sitePhoto ? SITE_PHOTO_NOW(Number(body?.sitePhotos) | 0) : '') + (offTopicImg ? OFF_TOPIC_IMG_BASE + (body?.mode === 'website' ? `Se invece vuole quell'immagine DENTRO il sito, basta dirlo ("mettila nel sito").\n` : '') : siteEdit ? SITE_EDIT_NOW(body?.mode === 'website') : '') }, ...messages],
+    messages: [{ role: 'system', content: SYSTEM.replace('{{VIDEO}}', videoEnabled() ? VIDEO_ON : VIDEO_OFF) + memoryPrompt(memory) + uiLangPrompt(body?.lang) + todayPrompt() + clientNowPrompt(body?.now) + langPrompt(detectLang(nowText) ? nowText : (again ? prevUserText : nowText)) + (body?.voice === true ? VOICE_STYLE : '') + (body?.mode === 'book' ? BOOK_MODE : body?.mode === 'travel' ? TRAVEL_MODE + countryHint(request) : body?.mode === 'website' ? WEBSITE_MODE + (pro ? WEBSITE_PRO : WEBSITE_FREE) + (Number(body?.sitePhotos) > 0 ? `\n- In questa chat l'utente ha già mandato ${Math.min(12, Number(body.sitePhotos) | 0)} foto: foto1.jpg … foto${Math.min(12, Number(body.sitePhotos) | 0)}.jpg. Usale tutte nel sito.` : '') + (Number(body?.siteVideos) > 0 ? `\n- L'utente ha mandato anche ${Math.min(5, Number(body.siteVideos) | 0)} video: video1.mp4 … video${Math.min(5, Number(body.siteVideos) | 0)}.mp4. Mettili nel sito.` : '') : body?.mode === 'business' ? BUSINESS_MODE + countryHint(request) : body?.mode === 'whatsapp' ? WHATSAPP_MODE : body?.mode === 'coach' ? COACH_MODE : (pro ? '' : WEBSITE_FREE_CHAT)) + (sitePhoto ? SITE_PHOTO_NOW(Number(body?.sitePhotos) | 0) : '') + (offTopicImg ? OFF_TOPIC_IMG_BASE + (body?.mode === 'website' ? `Se invece vuole quell'immagine DENTRO il sito, basta dirlo ("mettila nel sito").\n` : '') : siteEdit ? SITE_EDIT_NOW(body?.mode === 'website') : '') }, ...messages],
   };
   if (model.startsWith('gpt-5')) payload.reasoning_effort = env('OPENAI_REASONING_EFFORT', 'minimal');
   // Siti: un po' più di riflessione = struttura e design molto migliori (costo un po' più alto, coperto dall'energia).
