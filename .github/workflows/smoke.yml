@@ -1,0 +1,35 @@
+# Controllo completo di Sahbi come un utente vero: login, chat, creazione di un sito, immagini, pubblicazione.
+# Gira ogni mattina (prima del controllo delle 7:33) e quando si vuole (Run workflow).
+name: Controllo completo Sahbi
+on:
+  schedule:
+    - cron: '7 5 * * *'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      ASC_KEY_ID: MB5LDSL2XR
+      ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+      ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '22' }
+      - name: Mot de passe du compte de test (da App Store Connect, mai stampato)
+        run: |
+          pip3 install -q pyjwt cryptography requests
+          cd ios-ci && python3 - <<'PY'
+          import os
+          from asc import call, BID
+          app = [a for a in call('GET', '/apps', params={'filter[bundleId]': BID})['data'] if a['attributes']['bundleId'] == BID][0]
+          ver = call('GET', f"/apps/{app['id']}/appStoreVersions", params={'filter[platform]': 'IOS'})['data'][0]
+          pw = (call('GET', f"/appStoreVersions/{ver['id']}/appStoreReviewDetail")['data']['attributes']['demoAccountPassword'] or '').strip().rstrip('.')
+          print('::add-mask::' + pw)
+          open(os.environ['GITHUB_ENV'], 'a').write(f'REVIEW_PASSWORD={pw}\n')
+          PY
+      - name: Controllo
+        run: node scripts/smoke.mjs

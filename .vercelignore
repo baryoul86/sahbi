@@ -5,3 +5,4 @@ tests
 supabase
 LANCIO.md
 guides/_*.py
+scripts/
