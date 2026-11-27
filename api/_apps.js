@@ -12,7 +12,7 @@ import { json, fail, getPlan, supabaseUrl, serviceHeaders, env } from './_lib.js
 const BUCKET = 'apps';
 const REPO = () => env('APP_BUILDER_REPO', 'baryoul86/sahbi');
 const WORKFLOW = 'app-build.yml';
-const MONTHLY = () => Number(env('APP_BUILDS_MONTHLY', '2'));
+const MONTHLY = () => Number(env('APP_BUILDS_MONTHLY', '5')); // app NUOVE al mese (gli aggiornamenti non contano)
 const H = (extra = {}) => serviceHeaders(extra);
 const isId = (v) => /^[a-z0-9]{12}$/.test(String(v || ''));
 const store = (path) => `${supabaseUrl()}/storage/v1/object/${BUCKET}/${path}`;
@@ -74,11 +74,15 @@ export async function appUser(userId, q, request) {
     await ensureBucket();
     const month = new Date().toISOString().slice(0, 7);
     const mine = await userJobs(userId);
-    const thisMonth = mine.filter((x) => String(x.created_at || '').startsWith(month)).length;
-    if (thisMonth >= MONTHLY()) return fail('app_limit', 429, `Tu as déjà créé ${MONTHLY()} applications ce mois-ci. Tu pourras en créer d’autres le 1er du mois.`);
     // Stesso nome di un'app già fatta da questo utente = aggiornamento (stesso pacchetto, versione +1, stessa chiave).
-    let prev = null;
-    for (const x of mine.slice(0, 30)) { const j = await readJob(x.name.replace('.json', '')); if (j && j.name.toLowerCase() === name.toLowerCase() && j.status === 'ready') { prev = j; break; } }
+    let prev = null, newThisMonth = 0;
+    for (const x of mine.slice(0, 40)) {
+      const j = await readJob(x.name.replace('.json', ''));
+      if (!j) continue;
+      if (!prev && j.name.toLowerCase() === name.toLowerCase() && j.status === 'ready') prev = j;
+      if (String(j.created || '').startsWith(month) && !j.keyFrom && j.status !== 'failed') newThisMonth++;
+    }
+    if (!prev && newThisMonth >= MONTHLY()) return fail('app_limit', 429, `Tu as déjà créé ${MONTHLY()} nouvelles applications ce mois-ci (les mises à jour sont illimitées). Tu pourras en créer d’autres le 1er du mois.`);
     const id = randomBytes(9).toString('base64url').toLowerCase().replace(/[^a-z0-9]/g, '').padEnd(12, '0').slice(0, 12);
     const job = {
       id, user: userId, name, color, status: 'uploading', created: new Date().toISOString(),

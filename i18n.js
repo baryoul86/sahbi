@@ -3,6 +3,21 @@
 // {x} = parte variabile (numero, data, nome...).
 (() => {
 const D = [
+['📱 App Android', '📱 تطبيق أندرويد', '📱 Android app'],
+['🎮 Mon jeu / mon appli', '🎮 لعبتي / تطبيقي', '🎮 My game / my app'],
+['Créer un jeu ou une appli', 'أنشئ لعبة أو تطبيقًا', 'Create a game or an app'],
+['Joue tout de suite, puis ton app Android', 'العب فورًا، ثم تطبيق أندرويد خاص بك', 'Play right away, then your Android app'],
+['📱 Ton application Android', '📱 تطبيقك على أندرويد', '📱 Your Android app'],
+['Nom de l’application', 'اسم التطبيق', 'App name'],
+['Couleur principale', 'اللون الرئيسي', 'Main colour'],
+['Créer mon application', 'أنشئ تطبيقي', 'Create my app'],
+['Création de ton application… (2 à 5 minutes)', 'جارٍ إنشاء تطبيقك… (من 2 إلى 5 دقائق)', 'Creating your app… (2 to 5 minutes)'],
+['✅ Ton application est prête !', '✅ تطبيقك جاهز!', '✅ Your app is ready!'],
+['⬇️ Télécharger l’application (.aab)', '⬇️ حمّل التطبيق (.aab)', '⬇️ Download the app (.aab)'],
+['⬇️ Télécharger le kit (clé, icône, image)', '⬇️ حمّل الحزمة (المفتاح، الأيقونة، الصورة)', '⬇️ Download the kit (key, icon, image)'],
+['📋 Me guider pour Google Play', '📋 أرشدني لنشره على Google Play', '📋 Guide me for Google Play'],
+['La création d’applications Android est réservée à Sahbi Pro.', 'إنشاء تطبيقات أندرويد خاص بصاحبي برو.', 'Creating Android apps is part of Sahbi Pro.'],
+['Copié ✅', 'تم النسخ ✅', 'Copied ✅'],
 ['Création de sites internet', 'إنشاء مواقع إنترنت', 'Website creation'],
 [' et mise en ligne en un clic', ' ونشرها بنقرة واحدة', ' and one-tap publishing'],
 ['et mise en ligne en un clic', 'ونشرها بنقرة واحدة', 'and one-tap publishing'],

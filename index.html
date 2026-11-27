@@ -126,6 +126,7 @@ footer.composer .col{padding-block:10px 12px;display:flex;flex-direction:column;
 .mic.busy{opacity:.5;cursor:default}
 @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(47,174,116,.55)}100%{box-shadow:0 0 0 14px rgba(47,174,116,0)}}
 .send{background:var(--mint);color:var(--mint-ink)}
+.sheet a.cta,.sheet a.alt{display:block;text-align:center;text-decoration:none;box-sizing:border-box}
 .trial-badge{margin:6px 0 0;padding:8px 12px;border-radius:12px;background:var(--mint);color:var(--mint-ink);font-weight:700;font-size:15px;text-align:center}
 .send.stop{background:var(--fg);color:var(--panel,#fff)}
 .send:disabled{background:var(--panel-2);color:var(--muted);cursor:default}
@@ -703,6 +704,31 @@ html[lang=ar] body{line-height:1.7}
       <button type="button" data-p="Écris un joli message de vœux pour le Ramadan à envoyer à ">Message de vœux</button>
     </div>
     <button class="ghost" id="prClose" type="button">Fermer</button>
+  </div>
+</section>
+
+<section class="sheet" id="appSheet" hidden role="dialog" aria-modal="true" aria-labelledby="appTitle">
+  <div class="col">
+    <h2 id="appTitle">📱 Ton application Android</h2>
+    <div id="appForm">
+      <p class="s-note">Sahbi transforme ton jeu ou ton site en vraie application Android (fichier .aab), prête à être publiée sur <b>ton</b> compte Google Play. Sahbi te guide ensuite étape par étape.</p>
+      <div class="field"><label for="appName">Nom de l’application</label><input id="appName" maxlength="30" autocomplete="off" placeholder="Ex. Moto Rush"></div>
+      <div class="field"><label for="appColor">Couleur principale</label><input id="appColor" type="color" value="#0F2E24"></div>
+      <p class="s-note">Pour mettre à jour une application déjà créée, garde exactement le même nom : Sahbi garde la même clé et augmente la version.</p>
+      <button class="cta" id="appGo" type="button">Créer mon application</button>
+    </div>
+    <div id="appWork" hidden>
+      <div class="work-card"><span class="wk-spin"></span><span class="wk-txt" id="appWorkTxt">Création de ton application… (2 à 5 minutes)</span></div>
+      <p class="s-note">Tu peux fermer cette fenêtre : la création continue. Rouvre « 📱 App Android » pour voir le résultat.</p>
+    </div>
+    <div id="appDone" hidden>
+      <p class="trial-badge">✅ Ton application est prête !</p>
+      <a class="cta" id="appAab" href="#" download>⬇️ Télécharger l’application (.aab)</a>
+      <a class="alt" id="appKit" href="#" download>⬇️ Télécharger le kit (clé, icône, image)</a>
+      <p class="s-note">Mot de passe de ta clé : <b id="appPass" data-noi18n></b> <button class="linkish" id="appPassCopy" type="button">Copier</button><br>Garde la clé et ce mot de passe : ils servent pour les mises à jour.</p>
+      <button class="cta" id="appGuide" type="button">📋 Me guider pour Google Play</button>
+    </div>
+    <button class="ghost" id="appClose" type="button">Fermer</button>
   </div>
 </section>
 
@@ -1559,7 +1585,9 @@ function siteCard(textEl, text, html) {
   let pre = null; code.addEventListener('click', () => { if (pre) { pre.remove(); pre = null; return; } pre = el('pre', '', html); card.appendChild(pre); });
   const pub = el('button', '', tr('🚀 Mettre en ligne')); pub.type = 'button';
   pub.addEventListener('click', () => publishSite(html, pub, card));
-  bar.append(open, pub, code); card.append(view, bar);
+  const appB = el('button', '', tr('📱 App Android')); appB.type = 'button';
+  appB.addEventListener('click', () => openAppMaker(html));
+  bar.append(open, pub, appB, code); card.append(view, bar);
   textEl.after(card);
 }
 // ⚡ Energia dei siti (Pro): una barra senza numeri, come per Claude; avviso verso la fine, ricarica alle 8.
@@ -1575,6 +1603,84 @@ function energyBar(after, pct) {
   if (pct >= 90 && pct < 100) toast(tr('⚡ Ton énergie pour les sites est presque épuisée. Elle se recharge demain à 8 h.'));
 }
 // 🚀 Pubblicazione in un clic (Pro): il sito va online su Sahbi Sites e si riceve il link da condividere.
+// ---------- 📱 App Android: Sahbi costruisce il file .aab, l'utente lo pubblica sul SUO conto Google Play ----------
+let appHtml = '', appPoll = null;
+const appSaved = () => { try { return JSON.parse(localStorage.getItem('sahbi-app-job') || 'null'); } catch { return null; } };
+const appSave = (v) => { try { v ? localStorage.setItem('sahbi-app-job', JSON.stringify(v)) : localStorage.removeItem('sahbi-app-job'); } catch { /* ignorato */ } };
+function appView(which) { for (const k of ['appForm', 'appWork', 'appDone']) $(k).hidden = k !== which; }
+function openAppMaker(html) {
+  if (!me?.pro) { openSheet(); toast(tr('La création d’applications Android est réservée à Sahbi Pro.')); return; }
+  appHtml = withPhotos(html);
+  closeAll(); $('scrim').hidden = false; $('appSheet').hidden = false;
+  const job = appSaved();
+  if (job && Date.now() - job.at < 7 * 864e5) { appView(job.ready ? 'appDone' : 'appWork'); pollApp(job.id); return; }
+  const title = (/<title>([^<]{2,40})<\/title>/i.exec(html) || [])[1] || '';
+  $('appName').value = title.replace(/\s*[-|–].*$/, '').trim().slice(0, 30);
+  appView('appForm'); $('appName').focus();
+}
+async function pollApp(id) {
+  clearTimeout(appPoll);
+  const r = await api(`/api/library?app=status&id=${id}`).catch(() => null);
+  const d = await r?.json().catch(() => null);
+  if (!d) { appPoll = setTimeout(() => pollApp(id), 15000); return; }
+  if (d.status === 'ready') {
+    appSave({ id, at: Date.now(), ready: true });
+    $('appAab').href = d.aab; $('appKit').href = d.kit; $('appPass').textContent = d.keyPass;
+    $('appDone').dataset.name = d.name; $('appDone').dataset.pkg = d.packageId;
+    appView('appDone');
+    return;
+  }
+  if (d.status === 'failed') { appSave(null); appView('appForm'); toast(tr(d.message || 'La création a échoué. Réessaie.')); return; }
+  appView('appWork');
+  appPoll = setTimeout(() => pollApp(id), 10000);
+}
+$('appGo').addEventListener('click', async () => {
+  const name = $('appName').value.trim();
+  if (name.length < 2) { $('appName').focus(); toast(tr('Donne un nom à ton application (2 lettres minimum).')); return; }
+  const btn = $('appGo'); btn.disabled = true;
+  try {
+    const page = /<html[\s>]/i.test(appHtml) ? appHtml : `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body>${appHtml}</body></html>`;
+    const blob = new Blob([page], { type: 'text/html' });
+    const r = await api('/api/library?app=build', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ name, color: $('appColor').value, size: blob.size }) });
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok) { toast(d.message || tr('La création n’a pas pu démarrer.')); return; }
+    const up = await fetch(d.uploadUrl, { method: 'PUT', headers: { 'content-type': 'text/html', 'x-upsert': 'true' }, body: blob });
+    if (!up.ok) { toast(tr('Envoi impossible. Vérifie ta connexion et réessaie.')); return; }
+    const s2 = await api(`/api/library?app=start&id=${d.id}`, { method: 'POST' });
+    if (!s2.ok) { const e = await s2.json().catch(() => ({})); toast(e.message || tr('La création n’a pas pu démarrer.')); return; }
+    appSave({ id: d.id, at: Date.now() });
+    appView('appWork'); pollApp(d.id);
+  } catch { toast(tr('Envoi impossible. Vérifie ta connexion et réessaie.')); }
+  finally { btn.disabled = false; }
+});
+$('appClose').addEventListener('click', () => { clearTimeout(appPoll); closeAll(); });
+$('appPassCopy').addEventListener('click', () => navigator.clipboard?.writeText($('appPass').textContent).then(() => toast(tr('Copié ✅'))).catch(() => {}));
+$('appGuide').addEventListener('click', () => {
+  const name = $('appDone').dataset.name || '', pkg = $('appDone').dataset.pkg || '';
+  closeAll();
+  bubble('assistant', tr(APP_GUIDE, { n: name, p: pkg }));
+  current.messages.push({ role: 'assistant', content: tr(APP_GUIDE, { n: name, p: pkg }) }); saveCurrent(); scroll();
+  appSave(null);
+});
+const APP_GUIDE = `📱 **Publier « {n} » sur Google Play** — je te guide étape par étape. Envoie-moi une capture d’écran si tu bloques, je te dis où appuyer.
+
+**1. Ton compte développeur** (une seule fois) : https://play.google.com/console/signup — 25 $ une fois, avec une pièce d’identité. Google peut demander quelques jours pour vérifier.
+
+**2. Créer l’application** : https://play.google.com/console → « Créer une application » → nom **{n}**, langue, « Jeu » ou « Application », « Gratuite ».
+
+**3. Importer le fichier** : menu « Tester et publier » → « Test fermé » → « Créer une version » → importe le fichier **.aab** que tu as téléchargé. Accepte « Signature d’application Play ».
+
+**4. Les testeurs** (comptes personnels récents) : Google demande **12 testeurs pendant 14 jours**. Ajoute leurs e-mails dans la liste du test fermé et envoie-leur le lien de test.
+
+**5. La fiche Play Store** : description courte et complète (demande-les-moi, je les écris), icône 512×512 et image 1024×500 (dans le **kit**), et au moins 2 captures d’écran (fais-les sur ton téléphone pendant que tu joues).
+
+**6. Le contenu de l’application** : règles de confidentialité (je peux te créer la page et la mettre en ligne), questionnaire de classification, public cible, « Annonces : non ».
+
+**7. Publication** : après les 14 jours, « Demander l’accès à la production », puis publie.
+
+Nom du paquet : {p}
+Pour une **mise à jour**, recrée l’application dans Sahbi avec **le même nom** : même clé, version suivante.`;
+
 async function publishSite(html, btn, card) {
   if (me && !me.pro) { toast(tr('La mise en ligne en un clic est réservée à Sahbi Pro.')); openSheet(); return; }
   const full = withPhotos(html);
@@ -1885,6 +1991,7 @@ const SHORTCUTS = [
   { i: '🧭', t: 'Agent voyage & Omra', d: 'Vols, hôtels, programme, budget, Omra et Hajj', travel: true },
   { i: '💬', t: 'Messages WhatsApp', d: 'Absence, accueil, réponses rapides automatiques', mode: 'whatsapp', h: 'Salam ! Je prépare tes messages automatiques WhatsApp 💬\n\nPar exemple : « Je ne suis pas disponible, je te rappelle après 18h, laisse-moi un message », un message d’accueil pour tes clients, et des réponses rapides (horaires, adresse, prix).\n\nWhatsApp Business les envoie tout seul, même quand ton téléphone est éteint.\n\nPour commencer : c’est pour toi ou pour ton commerce ? Et à quelles heures es-tu disponible ?' },
   { i: '🌐', t: 'Créer un site internet', d: 'Le code, l’aperçu, et la mise en ligne pas à pas', website: true },
+  { i: '🎮', t: 'Créer un jeu ou une appli', d: 'Joue tout de suite, puis ton app Android', game: true },
   { i: '🎓', t: 'Aide au Bac', d: 'Quiz, fiches, exercices', bac: true },
   { i: '📄', t: 'Mon CV', d: 'Un CV clair et pro', p: 'Aide-moi à écrire mon CV. Voici mon parcours : ' },
   { i: '✉️', t: 'Lettre administrative', d: 'Mairie, banque, employeur', p: 'Écris une lettre administrative pour ' },
@@ -1916,6 +2023,7 @@ function render() {
         if (s.book) { startBookChat(); return; }
         if (s.travel) { startTravelChat(); return; }
         if (s.mode) { startModeChat(s.mode, `${s.i} ${tr(s.t)}`, null, tr(s.h)); return; }
+        if (s.game) { { const g = tr('Salam ! On crée ton jeu ou ton application 🎮📱\n\nDis-moi ce que tu veux, par exemple : « un jeu de moto où on évite les voitures », « un quiz sur le Maroc », « une appli de menu pour mon restaurant ».\n\nJe le crée, tu y joues tout de suite dans l’aperçu, on l’améliore ensemble… puis avec « 📱 App Android » j’en fais une vraie application à publier sur ton compte Google Play.'); startModeChat('website', tr('🎮 Mon jeu / mon appli'), g, g); } return; }
         if (s.website && resumeSite()) return;
         if (s.website) { startModeChat('website', tr('🌐 Mon site internet'), WEB_HELLO[(navigator.languages?.[0] || navigator.language || '').slice(0, 2).toLowerCase()], tr(WEB_FALLBACK)); return; }
         prefill(s.p);
@@ -2952,7 +3060,7 @@ $('form').addEventListener('submit', async (e) => {
 });
 
 function toast(t) { if (/(erreur|error|impossible|échou|خطأ)/i.test(String(t))) noteErr(`toast: ${t}`); const x = $('toast'); x.textContent = t; x.hidden = false; clearTimeout(toast.t); toast.t = setTimeout(() => { x.hidden = true; }, 3000); }
-function closeAll() { $('scrim').hidden = true; $('drawer').hidden = true; $('sheet').hidden = true; $('bacSheet').hidden = true; $('prayerSheet').hidden = true; $('supSheet').hidden = true; }
+function closeAll() { $('scrim').hidden = true; $('drawer').hidden = true; $('sheet').hidden = true; $('bacSheet').hidden = true; $('prayerSheet').hidden = true; $('supSheet').hidden = true; $('appSheet').hidden = true; }
 const store = { get(k, d = null) { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch { return d; } }, set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* ignorato */ } } };
 
 // ---------- Mode Bac ----------
