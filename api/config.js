@@ -186,7 +186,7 @@ async function emailLogin(request) {
 
 // POST /api/config?err=1 { kind, message, meta } → errore visto da un utente (login, chat, pagina).
 // Niente dati personali: e-mail e numeri tolti, solo app/lingua/paese. Uguali nello stesso minuto = uno solo.
-const ERR_KINDS = ['login', 'chat', 'js', 'image', 'voice', 'pay', 'other'];
+const ERR_KINDS = ['login', 'chat', 'js', 'image', 'voice', 'pay', 'site', 'other'];
 async function clientError(request) {
   const { createHash } = await import('node:crypto');
   const { supabaseUrl, serviceHeaders, rpc } = await import('./_lib.js');

@@ -1526,27 +1526,26 @@ function bookCard(m) {
   box.append(t, el('small', '', tr('{c} chapitres · environ {w} mots', { c: bk.chapters.length, w: words })), rb);
   st.appendChild(box); mm.append(avatar(), st); msgsEl.appendChild(mm); scroll();
 }
-// Trova il sito nella risposta, anche se il modello non ha messo bene i ``` (blocco non chiuso o codice "nudo").
+// Trova il sito nella risposta, anche se il modello non ha messo bene i ``` (blocco non chiuso, codice "nudo", file ripreso da capo).
+// Regola d'oro: il codice HTML non resta MAI visibile come testo nella chat.
 function findHtml(text) {
-  const t = String(text || '');
-  const tries = [
-    /```(?:html|htm)?[^\n<]*?\n?\s*(<!doctype html[\s\S]*?<\/html>|<html[\s\S]*?<\/html>)[\s\S]*?(?:```|$)/i,
-    /(<!doctype html[\s\S]*?<\/html>)/i,
-    /(<html[\s\S]*?<\/html>)/i,
-    /((?:<!doctype html|<html[\s>])[\s\S]*)$/i, // risposta tagliata o senza ```: si prende tutto fino alla fine
-  ];
-  for (const re of tries) {
-    const m = t.match(re);
-    if (m) {
-      const start = t.lastIndexOf('```', m.index + m[0].indexOf(m[1])) >= m.index ? m.index : t.indexOf(m[1]);
-      let end = t.indexOf(m[1]) + m[1].length;
-      const close = t.indexOf('```', end); if (close >= 0 && t.slice(end, close).trim() === '') end = close + 3;
-      const h = m[1].replace(/```\s*$/, '').trim();
-      if (!/<(body|div|section|h1|main|header)/i.test(h)) continue;
-      return { html: h, start: Math.min(start, t.indexOf(m[1])), end };
+  const t = String(text || ''); const low = t.toLowerCase();
+  const first = t.search(/```(?:html|htm)?[^\n<]*\n?\s*<(?:!doctype html|html[\s>])|<!doctype html|<html[\s>]/i);
+  if (first < 0) return null;
+  const close = low.lastIndexOf('</html>');
+  if (close >= 0) {
+    // L'ultimo file completo (se il modello ha ricominciato da capo, vale la versione finita).
+    let s0 = low.lastIndexOf('<!doctype html', close); if (s0 < 0) s0 = low.lastIndexOf('<html', close);
+    if (s0 >= 0 && s0 >= first) {
+      const html = t.slice(s0, close + 7).trim();
+      let end = close + 7; const f = t.indexOf('```', end); if (f >= 0 && t.slice(end, f).trim() === '') end = f + 3;
+      return { html, start: first, end };
     }
   }
-  return null;
+  // File non finito (risposta tagliata): il codice si nasconde comunque, l'anteprima segnala che manca la fine.
+  const s1 = low.indexOf('<!doctype html', first) >= 0 ? low.indexOf('<!doctype html', first) : low.indexOf('<html', first);
+  const html = t.slice(s1).replace(/```\s*$/, '').trim();
+  return { html, start: first, end: t.length, partial: true };
 }
 function extractHtml(text) { return findHtml(text)?.html || null; }
 // 📷 Foto dell'utente nel sito: il modello scrive src="foto1.jpg", qui si mette la foto vera (dentro il file, così funziona ovunque).
@@ -1598,6 +1597,20 @@ const previewDoc = (html) => {
 };
 // Anteprima in un riquadro isolato (sandbox): il codice del sito non può toccare Sahbi.
 // Anteprima del sito direttamente nella chat (come una scheda): il codice lungo resta nascosto dietro "</> Code".
+// ⚠️ Codice arrivato a metà (risposta tagliata): niente codice in chat, solo un riquadro con "Réessayer".
+function cutCard(textEl, text, f, last) {
+  const t0 = String(text);
+  textEl.textContent = (t0.slice(0, f.start) + '\n\n' + t0.slice(f.end)).replace(/```[a-z]*\s*$/i, '').replace(/\n{3,}/g, '\n\n').trim();
+  const card = el('div', 'work-card');
+  card.append(el('span', '', '⚠️'), el('span', 'wk-txt', tr('La création a été coupée avant la fin. Appuie sur « Réessayer » : Sahbi la refait en entier.')));
+  textEl.after(card);
+  if (last) {
+    const b = el('button', 'retry', tr('↻ Réessayer')); b.type = 'button';
+    b.addEventListener('click', () => { b.disabled = true; redoLast(); });
+    card.after(b);
+    if (!cutCard.sent?.has(t0.length)) { (cutCard.sent ||= new Set()).add(t0.length); reportErr('site', `HTML non terminé (${f.html.length} car., fin: ${f.html.slice(-60).replace(/\s+/g, ' ')})`); }
+  }
+}
 function siteCard(textEl, text, html) {
   const f0 = findHtml(text); const t0 = String(text);
   const rest = (f0 ? t0.slice(0, f0.start) + '\n\n' + t0.slice(f0.end) : t0).replace(/```[a-z]*\s*$/i, '').replace(/\n{3,}/g, '\n\n').trim();
@@ -1950,11 +1963,13 @@ function addTextActions(textEl, text, last = true) {
     actBtn('flag', 'Signaler', () => reportContent('text', text, st.closest('.msg'))),
   );
   // 🌐 Codice di un sito (```html … ```): anteprima e download del file index.html.
-  const site = extractHtml(text);
+  const found = findHtml(text);
+  const site = found && !found.partial ? found.html : null;
   if (site) siteCard(textEl, text, site);
+  else if (found) cutCard(textEl, text, found, last);
   if (site) row.prepend(actBtn('pdf', '📥 index.html', () => downloadSite(site), true));
   // PDF per le risposte lunghe o strutturate (CV, lettere, fiches).
-  if (!site && (text.length > 400 || text.split('\n').length >= 6)) row.appendChild(actBtn('pdf', 'PDF', () => printText(text), true));
+  if (!found && (text.length > 400 || text.split('\n').length >= 6)) row.appendChild(actBtn('pdf', 'PDF', () => printText(text), true));
   st.appendChild(row);
 }
 function typing() {

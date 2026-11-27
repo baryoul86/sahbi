@@ -121,8 +121,9 @@ MODALITÀ SITO INTERNET (questa chat serve SOLO a creare e pubblicare un sito we
   • Struttura tipica: intestazione fissa con logo/nome e menu (hamburger su telefono) → sezione principale con titolo forte, sottotitolo e pulsante → servizi/prodotti in schede → perché sceglierci/numeri → galleria → avis clients → FAQ → contatti con mappa Google (iframe con l'indirizzo) e pulsanti WhatsApp/telefono → piè di pagina. Adatta le sezioni al tipo di sito; non mettere sezioni vuote.
   • Qualità tecnica: mobile-first, si vede perfetto su telefono; lingua giusta (lang e dir="rtl" per l'arabo); meta title/description, Open Graph, favicon emoji; immagini con alt; contrasti leggibili; link WhatsApp nel formato https://wa.me/NUMERO?text=…; niente librerie pesanti; nessun errore JavaScript.
   • MODIFICHE: quando l'utente chiede un cambiamento (colore, testo, prezzo, foto, sezione), rimanda SEMPRE il file index.html COMPLETO aggiornato (non solo il pezzo), conservando tutto il resto. Poi in 1 riga di' cosa hai cambiato e proponi 1-2 miglioramenti utili (es. "Vuoi che aggiunga una sezione avis clients?").
-- GIOCHI PRONTI (create_game): moto/corsa/macchine → kind=moto (strada 3D, traffico, nitro, monete, suono); personaggio che corre e salta → kind=runner; quiz/domande → kind=quiz (scrivi tu 10-15 domande giuste). Usa SEMPRE create_game per questi tipi: sono giochi professionali senza errori. Scegli titolo, ambientazione, colori e lingua adatti alla richiesta. Per cambiare nome, colori, ambientazione o difficoltà richiama create_game con i nuovi valori (non riscrivere il codice a mano).
+- GIOCHI PRONTI (create_game): moto/corsa/macchine → kind=moto (strada 3D, traffico, nitro, monete, suono); personaggio che corre e salta → kind=runner; quiz/domande → kind=quiz (scrivi tu 10-15 domande giuste); Tetris/blocchi che cadono → kind=blocks; serpente/snake → kind=snake. Usa SEMPRE create_game per questi tipi: sono giochi professionali senza errori. Scegli titolo, ambientazione, colori e lingua adatti alla richiesta. Per cambiare nome, colori, ambientazione o difficoltà richiama create_game con i nuovi valori (non riscrivere il codice a mano).
 - GIOCHI IN 3D (quando l'utente chiede un gioco 3D, o un gioco che è bello solo in 3D: guida, volo, calcio, labirinto, spazio, tiro, piattaforme 3D…): usa Three.js. Metti nell'<head> ESATTAMENTE <script src="https://www.sahbi.bond/lib/three-0.160.min.js"></script> (oggetto globale THREE; NIENTE import/moduli/CDN, niente altri file). Qualità da gioco vero: WebGLRenderer con antialias e setPixelRatio(min(devicePixelRatio,2)), ombre (DirectionalLight con castShadow + HemisphereLight), nebbia (scene.fog) e cielo con colore o sfumatura, terreno con texture disegnata su un <canvas> (CanvasTexture), modelli fatti con forme (Box, Cylinder, Sphere, Cone) raggruppati in THREE.Group con materiali MeshStandardMaterial colorati, telecamera che segue il giocatore in modo morbido (lerp), fisica semplice (gravità, salto, collisioni con Box3), particelle, suoni WebAudio, HUD in HTML sopra il canvas, comandi touch grandi (joystick o pulsanti) + tastiera, adattamento a resize, ciclo con THREE.Clock e dt limitato. Schermata iniziale, fine partita, "Rejouer", record con localStorage in try/catch. Codice completo in un solo file.
+- CODICE COMPLETO E COMPATTO: un gioco o una pagina scritti da te devono stare in UN blocco \`\`\`html che inizia con <!doctype html> e FINISCE SEMPRE con </html> e \`\`\`. Scrivi codice compatto (massimo ~600 righe): niente commenti lunghi, niente codice ripetuto. Prima del blocco al massimo 1 frase. L'utente NON vede il codice: vede solo l'anteprima, quindi un file non finito è un gioco rotto.
 - QUALITÀ DEI GIOCHI SCRITTI DA TE (tipi non coperti da create_game): scrivi come uno sviluppatore di videogiochi esperto. Prima pensa a: ciclo di gioco con requestAnimationFrame e dt (limitato a 0,05 s, mai negativo), stato con variabili tutte inizializzate (MAI NaN/undefined: score=0, speed=1…), collisioni con rettangoli giusti, difficoltà che cresce, canvas adattato allo schermo e a devicePixelRatio, comandi touch grandi + tastiera, schermata iniziale, pausa, fine partita con "Rejouer", record con localStorage dentro try/catch, effetti (particelle, scossa dello schermo, lampo), suoni WebAudio dentro try/catch, grafica curata (sfumature, ombre, sfondo in parallasse, emoji grandi come personaggi). Controlla mentalmente il codice riga per riga prima di mandarlo: niente variabili non definite, niente funzioni chiamate prima di esistere.
 - GIOCHI E MINI-APP: se l'utente vuole un gioco (moto, corsa, salti, puzzle, quiz, memory, serpente…) o un'app (menu, prenotazioni, catalogo, calcolatrice), lo crei in UN solo file HTML con <canvas> o HTML+JS: schermo intero, comandi touch grandi (tocco a sinistra/destra, scorrimento, pulsanti sullo schermo) e anche tastiera, schermata iniziale con titolo e "Jouer", punteggio, livelli o velocità che aumenta, schermata di fine con "Rejouer", record salvato con localStorage, suoni facoltativi con WebAudio (mai file esterni), grafica con forme, sfumature ed emoji (niente immagini da internet in un gioco), 60 fps con requestAnimationFrame, nessuna libreria esterna. Deve funzionare SENZA internet (diventerà un'app Android). Dopo il codice: "Joue dans l'aperçu ! Dis-moi ce qu'on améliore. Quand il te plaît, appuie sur 📱 App Android pour en faire une vraie application."
 - APP ANDROID E GOOGLE PLAY: il pulsante "📱 App Android" sotto l'anteprima crea il file .aab firmato + un kit (chiave, icona 512, immagine 1024×500) e poi Sahbi mostra la guida. L'app si pubblica sul conto Google Play DELL'UTENTE: tu non entri mai nei suoi conti e non chiedi mai password o codici. Se chiede aiuto per la pubblicazione, guidalo UN passo alla volta con i link: conto sviluppatore https://play.google.com/console/signup (25 $ una volta, documento d'identità) → "Créer une application" su https://play.google.com/console → "Test fermé" → "Créer une version" → importare il .aab (accettare "Signature d'application Play") → 12 tester per 14 giorni per i conti personali recenti → scheda Play Store (scrivi tu descrizione breve ≤80 caratteri e completa, e prepara la pagina "Règles de confidentialité" da mettere online con 🚀) → contenuti dell'app (classificazione, pubblico, annunci) → dopo 14 giorni "Demander l'accès à la production". Se manda uno screenshot, digli esattamente cosa premere. Aggiornamento: ricreare l'app con lo STESSO nome. iPhone/App Store: non ancora disponibile.
@@ -354,17 +355,35 @@ const WEATHER_TOOL = {
   },
 };
 // 🎮 Giochi pronti, scritti a mano (belli e senza errori): Sahbi li personalizza invece di scriverli da zero.
+// Tempo massimo prima di fermarsi da soli (Vercel chiude la funzione a 300 s).
+const CUT_MS = 282000;
+// Un file HTML è "aperto" se è cominciato ma manca </html> dopo l'ultimo inizio.
+export function htmlOpen(t) {
+  const low = String(t || '').toLowerCase();
+  const s0 = Math.max(low.lastIndexOf('<!doctype html'), low.lastIndexOf('<html'));
+  return s0 >= 0 && low.indexOf('</html>', s0) < 0;
+}
+// Toglie dall'inizio della continuazione i ``` e il pezzo già scritto che il modello ripete.
+export function cleanHead(head, before) {
+  let h = head.replace(/^\s*```(?:html|htm)?\s*\n?/i, '');
+  if (/^\s*<(?:!doctype html|html[\s>])/i.test(h)) return '\n' + h; // ricomincia da capo: vale l'ultimo file completo
+  const tail = before.slice(-400);
+  for (let n = Math.min(tail.length, h.length); n >= 12; n--) {
+    if (tail.endsWith(h.slice(0, n))) { h = h.slice(n); break; }
+  }
+  return h;
+}
 const GAME_TOOL = {
   type: 'function',
   function: {
     name: 'create_game',
-    description: "Crea un gioco professionale già pronto (motori scritti a mano: grafica curata, suono, record, comandi touch). kind=moto: corsa in 3D su strada (moto, macchine). kind=runner: personaggio che corre e salta gli ostacoli (ninja, gatto, cammello, calciatore…). kind=quiz: domande a scelta multipla su qualsiasi tema (scrivi TU 10-15 domande vere e verificate). Usalo SEMPRE quando la richiesta corrisponde a uno di questi tipi, o per cambiare nome, colori, ambientazione, personaggio, domande o difficoltà.",
+    description: "Crea un gioco professionale già pronto (motori scritti a mano: grafica curata, suono, record, comandi touch). kind=moto: corsa in 3D su strada (moto, macchine). kind=runner: personaggio che corre e salta gli ostacoli (ninja, gatto, cammello, calciatore…). kind=quiz: domande a scelta multipla su qualsiasi tema (scrivi TU 10-15 domande vere e verificate). kind=blocks: puzzle di blocchi che cadono (Tetris, tetris, blocchi, briques, tetromini). kind=snake: serpente (snake, serpent). Usalo SEMPRE quando la richiesta corrisponde a uno di questi tipi, o per cambiare nome, colori, ambientazione, personaggio, domande o difficoltà.",
     parameters: {
       type: 'object',
       properties: {
-        kind: { type: 'string', enum: ['moto', 'runner', 'quiz'], description: 'moto = corsa 3D su strada; runner = corsa e salti; quiz = domande.' },
+        kind: { type: 'string', enum: ['moto', 'runner', 'quiz', 'blocks', 'snake'], description: 'moto = corsa 3D su strada; runner = corsa e salti; quiz = domande; blocks = blocchi che cadono e righe da completare (tipo Tetris); snake = serpente che mangia e cresce.' },
         hero: { type: 'string', description: 'runner/quiz: UNA emoji del personaggio o del tema (es. 🥷 🐱 🐪 ⚽ 🇲🇦).' },
-        obstacles: { type: 'array', items: { type: 'string' }, description: 'runner: 3-5 emoji di ostacoli adatti al tema (es. 🌵 🪨 🦂).' },
+        obstacles: { type: 'array', items: { type: 'string' }, description: 'runner: 3-5 emoji di ostacoli adatti al tema (es. 🌵 🪨 🦂). snake: 3-5 emoji di cibo (es. 🍎 🍓).' },
         questions: { type: 'array', description: 'quiz: 10-15 domande.', items: { type: 'object', properties: { question: { type: 'string' }, answers: { type: 'array', items: { type: 'string' }, description: '2-4 risposte' }, correct: { type: 'integer', description: 'indice (da 0) della risposta giusta' }, explanation: { type: 'string', description: 'breve spiegazione' } }, required: ['question', 'answers', 'correct'], additionalProperties: false } },
         title: { type: 'string', description: 'Nome del gioco, corto (es. "Rush Moto").' },
         subtitle: { type: 'string', description: 'Una frase sotto il titolo, nella lingua dell\'utente.' },
@@ -542,6 +561,7 @@ async function videoFrames(userId, prompt, opts) {
 export function GET() { return new Response(null, { status: 204, headers: { 'cache-control': 'no-store' } }); }
 
 export async function POST(request) {
+  const t0 = Date.now();
   const userId = await getUserId(request);
   if (!userId) return fail('auth', 401, 'Session expirée. Recharge la page.');
 
@@ -771,6 +791,11 @@ export async function POST(request) {
         const video = tool.name === 'create_video';
         controller.enqueue(encoder.encode(frame({ type: video ? 'video_error' : 'image_error', error: 'upstream', message: video ? 'Impossible de créer la vidéo maintenant. Réessaie dans un instant.' : "Impossible de créer l'image maintenant. Réessaie dans un instant." })));
       } finally { clearInterval(hb); }
+      // 🧩 File HTML rimasto a metà (risposta troppo lunga): Sahbi lo continua da solo, l'utente vede solo l'anteprima.
+      if (siteMode && !tool.name) {
+        const hb2 = setInterval(() => { try { controller.enqueue(encoder.encode(frame({ type: 'ping' }))); } catch { /* chiuso */ } }, 8000);
+        try { await finishHtml(controller); } catch (e) { console.error('finishHtml', e?.message); } finally { clearInterval(hb2); }
+      }
       if (siteMode && pro) {
         // Il gioco pronto non costa OpenAI: conta solo come un piccolo messaggio.
         const used = await addEnergy(userId, (tool.name === 'create_game' ? 2000 : reply.length) / 1000);
@@ -779,14 +804,18 @@ export async function POST(request) {
       controller.enqueue(encoder.encode(await memoryFrame()));
     },
   };
-  let gone = false;
+  let gone = false, cutOff = false;
   const stream = new ReadableStream({
     start(ctrl) {
       const out = { enqueue: (x) => { if (gone) return; try { ctrl.enqueue(x); } catch { gone = true; } } };
       const work = (async () => {
         const rd = upstream.body.getReader();
         try {
-          for (;;) { const { value, done } = await rd.read(); if (done) break; T.transform(value, out); }
+          for (;;) {
+            // Vercel chiude a 300 s: ci si ferma prima, così il file tagliato si può completare o segnalare.
+            if (Date.now() - t0 > CUT_MS) { cutOff = true; rd.cancel().catch(() => {}); break; }
+            const { value, done } = await rd.read(); if (done) break; T.transform(value, out);
+          }
           await T.flush(out);
         } catch (e) { console.error('Stream chat', e?.message); }
         if (!gone) { try { ctrl.close(); } catch { /* già chiuso */ } }
@@ -827,6 +856,36 @@ export async function POST(request) {
     if (!wrote) controller.enqueue(encoder.encode(fallback()));
   }
 
+  // Continua un file HTML tagliato (fino a 2 volte, finché c'è tempo prima dei 300 s di Vercel).
+  async function finishHtml(controller) {
+    for (let k = 0; k < 2 && htmlOpen(reply) && Date.now() - t0 < CUT_MS - 45000; k++) {
+      controller.enqueue(encoder.encode(frame({ type: 'working' })));
+      const tail = reply.slice(-1500);
+      const nudge = `Il file HTML si è interrotto a metà. Continua ESATTAMENTE dal punto dove si è fermato: scrivi SOLO il codice che manca, partendo dal carattere successivo a questa fine:\n«${tail.slice(-300)}»\nNiente testo prima, niente \`\`\` all'inizio, non ripetere niente di già scritto. Chiudi tutti i tag, finisci con </html> e poi \`\`\`. Codice compatto.`;
+      const r = await call({ ...payload, reasoning_effort: payload.reasoning_effort ? 'minimal' : undefined, tool_choice: 'none', messages: [...payload.messages, { role: 'assistant', content: reply }, { role: 'user', content: nudge }] }).catch(() => null);
+      if (!r?.ok || !r.body) return;
+      const rd = r.body.getReader(); let buf = '', head = '', started = false;
+      const emit = (c) => { reply += c; controller.enqueue(encoder.encode(c.replaceAll(SEP, ''))); };
+      for (;;) {
+        if (Date.now() - t0 > CUT_MS) { rd.cancel().catch(() => {}); break; }
+        const { value, done } = await rd.read(); if (done) break;
+        buf += decoder.decode(value, { stream: true });
+        const lines = buf.split('\n'); buf = lines.pop();
+        for (const line of lines) {
+          const d = line.startsWith('data:') ? line.slice(5).trim() : '';
+          if (!d || d === '[DONE]') continue;
+          let c; try { c = JSON.parse(d).choices?.[0]?.delta?.content; } catch { continue; }
+          if (!c) continue;
+          if (started) { emit(c); continue; }
+          // L'inizio della continuazione: si tolgono ``` e una parte già scritta ripetuta per sbaglio.
+          head += c; if (head.length < 80) continue;
+          started = true; emit(cleanHead(head, reply));
+        }
+      }
+      if (!started && head) emit(cleanHead(head, reply));
+    }
+  }
+
   // Il modello ha solo annunciato ("sto generando…", "un attimo") senza consegnare: lo si fa continuare subito.
   async function deliverNow(controller) {
     controller.enqueue(encoder.encode(frame({ type: 'working' })));
@@ -853,7 +912,7 @@ export async function POST(request) {
         const a = parseJSON(tool.args);
         const { motoGame } = await import('./_game_moto.js');
         const { moreGame } = await import('./_game_more.js');
-        const html = a.kind === 'runner' || a.kind === 'quiz' ? moreGame(a) : motoGame(a);
+        const html = ['runner', 'quiz', 'blocks', 'snake'].includes(a.kind) ? moreGame(a) : motoGame(a);
         if (!html) { const t = "Je n'ai pas pu préparer les questions du quiz. Dis-moi le thème et je recommence."; reply += t; controller.enqueue(encoder.encode(t)); return; }
         const intro = String(a.intro || '').replace(/```/g, '').slice(0, 400) || '🏍️ Ton jeu est prêt !';
         const outro = { it: "Gioca nell'anteprima! Posso cambiare ambientazione (città, deserto, notte, foresta, mare), colori, difficoltà o nome. Quando ti piace, premi 📱 App Android.", en: 'Play it in the preview! I can change the setting (city, desert, night, forest, coast), colours, difficulty or name. When you like it, tap 📱 Android app.', ar: 'العبها في المعاينة! أقدر نبدل المكان (مدينة، صحراء، ليل، غابة، بحر)، الألوان، الصعوبة أو الاسم. ملي تعجبك، اضغط على 📱 تطبيق أندرويد.', es: '¡Juega en la vista previa! Puedo cambiar el escenario, los colores, la dificultad o el nombre. Cuando te guste, pulsa 📱 App Android.' }[a.lang] || 'Joue dans l’aperçu ! Je peux changer le décor (ville, désert, nuit, forêt, mer), les couleurs, la difficulté ou le nom. Quand il te plaît, appuie sur 📱 App Android.';

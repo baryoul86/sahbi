@@ -58,6 +58,19 @@ if (logged) {
     must(/```html/.test(t) && /MOTO_TEMPLATE|moto-best-|"theme":"/.test(t), `il gioco pronto non è stato usato: ${t.slice(0, 160)}`);
     return 'ok';
   });
+  await step('Gioco tipo Tetris (motore pronto, mai codice)', async () => {
+    const t = await chat('Adesso creami un gioco come tetris', { mode: 'website' });
+    must(/```html/.test(t) && /blocks-best-/.test(t), `non è stato usato il motore dei blocchi: ${t.slice(0, 160)}`);
+    return 'ok';
+  });
+  await step('Gioco scritto da Sahbi (file completo, anteprima)', async () => {
+    const t0 = Date.now();
+    const t = await chat('Crée-moi un jeu de casse-briques simple et joli.', { mode: 'website' });
+    const low = t.toLowerCase(); const s0 = low.lastIndexOf('<!doctype html');
+    must(s0 >= 0, `nessun HTML (${t.length} caratteri): ${t.slice(0, 160)}`);
+    must(low.indexOf('</html>', s0) > 0, `HTML tagliato: l'utente vedrebbe "Réessayer" (${t.length} caratteri, ${Math.round((Date.now() - t0) / 1000)} s)`);
+    return `${Math.round(t.length / 1024)} KB in ${Math.round((Date.now() - t0) / 1000)} s`;
+  });
   await step('Libreria 3D per i giochi (Three.js)', async () => {
     const r = await fetch(`${BASE}/lib/three-0.160.min.js`); const t = await r.text();
     must(r.ok && /REVISION="160"|REVISION = "160"|"160"/.test(t.slice(0, 5000)) || (r.ok && t.length > 500000), `HTTP ${r.status}`); return `${Math.round(t.length / 1024)} KB`;

@@ -52,6 +52,7 @@ const D = [
 ['🔎 Sahbi cherche sur internet…', '🔎 صاحبي كيقلب فالأنترنت…', '🔎 Sahbi is searching the web…'],
 ['🌤️ Sahbi regarde la météo…', '🌤️ صاحبي كيشوف الطقس…', '🌤️ Sahbi is checking the weather…'],
 ['↻ Réessayer', '↻ أعد المحاولة', '↻ Try again'],
+['La création a été coupée avant la fin. Appuie sur « Réessayer » : Sahbi la refait en entier.', 'توقف الإنشاء قبل النهاية. اضغط « أعد المحاولة » وصاحبي يعاودو كامل.', 'The creation was cut off before the end. Tap “Try again”: Sahbi will redo it in full.'],
 ['Ça prend plus de temps que prévu…', 'الأمر يأخذ وقتًا أطول من المتوقع…', 'This is taking longer than expected…'],
 // ---------- Assistance ----------
 ['Assistance', 'المساعدة', 'Support'],
