@@ -3,6 +3,7 @@
 // {x} = parte variabile (numero, data, nome...).
 (() => {
 const D = [
+['Le jeu/site a une erreur. Écris « corrige l’erreur : {m} » et Sahbi la répare.', 'في اللعبة/الموقع خطأ. اكتب « صحّح الخطأ: {m} » وصاحبي يصلحه.', 'The game/site has an error. Type “fix the error: {m}” and Sahbi will repair it.'],
 ['Coach minceur', 'مدرب الرشاقة', 'Weight-loss coach'],
 ['Perdre du poids sainement, cuisine du Maghreb', 'خسارة الوزن بطريقة صحية، بالمطبخ المغاربي', 'Lose weight the healthy way, with Maghreb food'],
 ['📱 App Android', '📱 تطبيق أندرويد', '📱 Android app'],

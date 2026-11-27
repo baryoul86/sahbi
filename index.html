@@ -1574,9 +1574,24 @@ function downloadSite(html) {
 // Nell'anteprima (iframe srcdoc) i link "#pagina" e i moduli puntavano all'indirizzo di Sahbi e ricaricavano Sahbi
 // dentro il riquadro (es. "Gioca" → pagina di Sahbi). Si fissa la base su about:srcdoc, i moduli non si inviano,
 // e i link esterni si aprono in una nuova scheda.
-const PREVIEW_FIX = '<base href="about:srcdoc"><script>document.addEventListener("submit",function(e){e.preventDefault()},true);'
+const PREVIEW_FIX = '<base href="about:srcdoc"><script>'
+  // Il riquadro protetto non ha localStorage/sessionStorage (i giochi ci salvano il record): si usa una memoria al loro posto.
+  + '(function(){function M(){var d={};return{getItem:function(k){return Object.prototype.hasOwnProperty.call(d,k)?d[k]:null},setItem:function(k,v){d[k]=String(v)},removeItem:function(k){delete d[k]},clear:function(){d={}},key:function(i){return Object.keys(d)[i]||null},get length(){return Object.keys(d).length}}}'
+  + '["localStorage","sessionStorage"].forEach(function(n){try{window[n].getItem("x")}catch(e){try{Object.defineProperty(window,n,{value:M(),configurable:true})}catch(_){}}})})();'
+  // Errori del gioco/sito: si mostrano in basso e si avvisa Sahbi (per proporre la correzione).
+  + 'window.addEventListener("error",function(e){try{parent.postMessage({sahbiPreviewError:String(e.message||e).slice(0,300)},"*")}catch(_){}});'
+  + 'document.addEventListener("submit",function(e){e.preventDefault()},true);'
   + 'document.addEventListener("click",function(e){var a=e.target.closest&&e.target.closest("a[href]");if(!a)return;var h=a.getAttribute("href")||"";'
   + 'if(h==="#"||h===""){e.preventDefault();return}if(/^(https?:|mailto:|tel:|sms:|whatsapp:)/i.test(h)){a.target="_blank";a.rel="noopener"}},true);<\/script>';
+// Errori dentro l'anteprima: avviso con il pulsante per farlo correggere a Sahbi.
+let lastPreviewErr = '';
+addEventListener('message', (e) => {
+  const m = e.data && e.data.sahbiPreviewError;
+  if (!m || m === lastPreviewErr) return;
+  lastPreviewErr = m;
+  reportErr('js', `aperçu: ${m}`);
+  toast(tr('Le jeu/site a une erreur. Écris « corrige l’erreur : {m} » et Sahbi la répare.', { m: m.slice(0, 120) }));
+});
 const previewDoc = (html) => {
   const h = withPhotos(html);
   return /<head[^>]*>/i.test(h) ? h.replace(/<head[^>]*>/i, (m) => m + PREVIEW_FIX) : PREVIEW_FIX + h;
