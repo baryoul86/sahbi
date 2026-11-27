@@ -58,6 +58,10 @@ if (logged) {
     must(/```html/.test(t) && /MOTO_TEMPLATE|moto-best-|"theme":"/.test(t), `il gioco pronto non è stato usato: ${t.slice(0, 160)}`);
     return 'ok';
   });
+  await step('Libreria 3D per i giochi (Three.js)', async () => {
+    const r = await fetch(`${BASE}/lib/three-0.160.min.js`); const t = await r.text();
+    must(r.ok && /REVISION="160"|REVISION = "160"|"160"/.test(t.slice(0, 5000)) || (r.ok && t.length > 500000), `HTTP ${r.status}`); return `${Math.round(t.length / 1024)} KB`;
+  });
   await step('Immagini dei siti (/img)', async () => {
     const r = await fetch(`${BASE}/img?w=800&h=600&q=bread,bakery&s=1`, { redirect: 'manual' });
     must(r.status === 302 && r.headers.get('location'), `HTTP ${r.status}`);

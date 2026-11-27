@@ -46,6 +46,13 @@ jobs:
           env.write(f"APP_NAME={j['name']}\nAPP_COLOR={j['color']}\nAPP_ID={j['packageId']}\nAPP_VERSION_CODE={j['versionCode']}\nAPP_VERSION_NAME=1.{j['versionCode'] - 1}\nKEYSTORE_PASS={j['keyPass']}\n")
           PY
           curl -sSf "$(jq -r .html /tmp/job.json)" -o app-template/app/src/main/assets/index.html
+          # Librerie di sahbi.bond (es. Three.js per i giochi 3D) copiate DENTRO l'app: funziona senza internet.
+          for L in $(grep -o 'https://www\.sahbi\.bond/lib/[A-Za-z0-9._-]*\.js' app-template/app/src/main/assets/index.html | sort -u); do
+            mkdir -p app-template/app/src/main/assets/lib
+            curl -sSf "$L" -o "app-template/app/src/main/assets/lib/$(basename "$L")"
+            sed -i "s#$L#lib/$(basename "$L")#g" app-template/app/src/main/assets/index.html
+            echo "Libreria inclusa: $(basename "$L")"
+          done
           echo "Pacchetto: $(jq -r .packageId /tmp/job.json) · versione $(jq -r .versionCode /tmp/job.json) · $(wc -c < app-template/app/src/main/assets/index.html) byte"
       - name: Icone e immagini per Google Play
         run: |
