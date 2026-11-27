@@ -1,11 +1,15 @@
 import { json, fail, getUserId, listImages, deleteImage, getPlan, supabaseUrl, serviceHeaders, signPath, BUCKET, env, rpc } from './_lib.js';
 import { checkVideo } from './_video.js';
+import { appUser, appCi } from './_apps.js';
 
 // Galleria delle immagini e dei video creati dall'utente.
 // GET /api/library?video=ID → a che punto è un video in creazione.
 export async function GET(request) {
+  const q0 = new URL(request.url).searchParams;
+  if (q0.get('app') === 'job') return appCi(q0, request); // costruttore su GitHub (token OIDC)
   const userId = await getUserId(request);
   if (!userId) return fail('auth', 401, 'Session expirée. Recharge la page.');
+  if (q0.get('app')) return appUser(userId, q0, request);
   const video = new URL(request.url).searchParams.get('video');
   try {
     if (video) return json(await checkVideo(userId, video));
@@ -45,9 +49,11 @@ async function ensureVideoTypes() {
   bucketReady = true;
 }
 export async function POST(request) {
+  const q = new URL(request.url).searchParams;
+  if (q.get('app') === 'done') return appCi(q, request); // costruttore su GitHub (token OIDC)
   const userId = await getUserId(request);
   if (!userId) return fail('auth', 401, 'Session expirée. Recharge la page.');
-  const q = new URL(request.url).searchParams;
+  if (q.get('app')) return appUser(userId, q, request);
   if (q.get('upload') === 'video') {
     const { pro, limits } = await getPlan(userId);
     if (!pro) return fail('pro', 402, 'Les vidéos dans le site sont réservées à Sahbi Pro.');

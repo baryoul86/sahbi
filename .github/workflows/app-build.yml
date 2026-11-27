@@ -1,0 +1,108 @@
+# Costruisce l'app Android di un utente di Sahbi (gioco, sito o mini-app) e la consegna firmata.
+# Avviato da sahbi.bond (pulsante "📱 Application Android"): riceve solo il numero del lavoro.
+# I dati veri (HTML, nome, password della chiave, indirizzi di caricamento) si chiedono a sahbi.bond
+# con un token OIDC firmato da GitHub: niente dati dell'utente nei log pubblici.
+name: App Android per un utente
+run-name: App ${{ inputs.job }}
+on:
+  workflow_dispatch:
+    inputs:
+      job:
+        description: 'Numero del lavoro'
+        required: true
+permissions:
+  contents: read
+  id-token: write
+concurrency:
+  group: app-${{ inputs.job }}
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      JOB: ${{ inputs.job }}
+      API: https://www.sahbi.bond/api/library
+    steps:
+      - uses: actions/checkout@v4
+        with: { sparse-checkout: app-template }
+      - name: Dati del lavoro
+        run: |
+          set -e
+          [[ "$JOB" =~ ^[a-z0-9]{12}$ ]] || { echo "lavoro non valido"; exit 1; }
+          if [ "$JOB" = "demo00000000" ]; then
+            # Prova del costruttore (nessun utente): app di esempio con l'HTML del modello.
+            printf 'APP_NAME=Moto Demo\nAPP_COLOR=#1E6B52\nAPP_ID=app.motodemo.test01\nAPP_VERSION_CODE=1\nAPP_VERSION_NAME=1.0\nKEYSTORE_PASS=demo-pass-123\n' >> $GITHUB_ENV
+            echo '{}' > /tmp/job.json; exit 0
+          fi
+          OIDC=$(curl -sS -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=sahbi-apps" | jq -r .value)
+          echo "::add-mask::$OIDC"; echo "OIDC=$OIDC" >> $GITHUB_ENV
+          curl -sSf -H "authorization: Bearer $OIDC" "$API?app=job&id=$JOB" -o /tmp/job.json
+          python3 - <<'PY'
+          import json, os
+          j = json.load(open('/tmp/job.json'))
+          for k in ('keyPass', 'html', 'aabUpload', 'kitUpload', 'keyUpload', 'oldKey'):
+              if j.get(k): print('::add-mask::' + j[k])
+          env = open(os.environ['GITHUB_ENV'], 'a')
+          env.write(f"APP_NAME={j['name']}\nAPP_COLOR={j['color']}\nAPP_ID={j['packageId']}\nAPP_VERSION_CODE={j['versionCode']}\nAPP_VERSION_NAME=1.{j['versionCode'] - 1}\nKEYSTORE_PASS={j['keyPass']}\n")
+          PY
+          curl -sSf "$(jq -r .html /tmp/job.json)" -o app-template/app/src/main/assets/index.html
+          echo "Pacchetto: $(jq -r .packageId /tmp/job.json) · versione $(jq -r .versionCode /tmp/job.json) · $(wc -c < app-template/app/src/main/assets/index.html) byte"
+      - name: Icone e immagini per Google Play
+        run: |
+          set -e
+          sudo apt-get install -y -qq imagemagick fonts-dejavu-core >/dev/null
+          LETTER=$(python3 -c "import os;n=os.environ['APP_NAME'].strip();print((n[:1] or 'A').upper())")
+          FONT=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf
+          mk() { convert -size ${1}x${1} xc:none -fill "$APP_COLOR" -draw "roundrectangle 0,0,$(( $1-1 )),$(( $1-1 )),$(( $1/5 )),$(( $1/5 ))" -fill white -font $FONT -pointsize $(( $1*55/100 )) -gravity center -annotate +0+0 "$LETTER" "$2"; }
+          R=app-template/app/src/main/res
+          for d in mdpi:48 hdpi:72 xhdpi:96 xxhdpi:144 xxxhdpi:192; do mkdir -p $R/mipmap-${d%%:*}; mk ${d##*:} $R/mipmap-${d%%:*}/ic_launcher.png; done
+          mkdir -p kit
+          convert -size 512x512 xc:"$APP_COLOR" -fill white -font $FONT -pointsize 280 -gravity center -annotate +0+0 "$LETTER" kit/icone-512.png
+          convert -size 1024x500 xc:"$APP_COLOR" -fill white -font $FONT -pointsize 90 -gravity center -annotate +0+0 "$APP_NAME" kit/image-presentation-1024x500.png
+      - name: Chiave di firma
+        run: |
+          set -e
+          OLD=$(jq -r '.oldKey // empty' /tmp/job.json)
+          if [ -n "$OLD" ]; then curl -sSf "$OLD" -o app-template/app/upload.jks; echo "Aggiornamento: stessa chiave"; else
+            keytool -genkeypair -keystore app-template/app/upload.jks -alias upload -keyalg RSA -keysize 2048 -validity 10000 \
+              -storepass "$KEYSTORE_PASS" -keypass "$KEYSTORE_PASS" -dname "CN=$APP_NAME" -noprompt; fi
+          echo "KEYSTORE_FILE=$PWD/app-template/app/upload.jks" >> $GITHUB_ENV
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: '17' }
+      - uses: gradle/actions/setup-gradle@v4
+        with: { gradle-version: '8.11.1' }
+      - name: Android SDK
+        run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-36" "build-tools;36.0.0" > /dev/null
+      - name: Costruzione (AAB firmato)
+        working-directory: app-template
+        run: gradle --no-daemon -q bundleRelease
+      - name: Consegna
+        run: |
+          set -e
+          AAB=app-template/app/build/outputs/bundle/release/app-release.aab
+          ls -la $AAB
+          cp app-template/app/upload.jks kit/cle-de-signature-upload.jks
+          cat > kit/LISEZ-MOI.txt <<EOF
+          Application : $APP_NAME
+          Nom du paquet : $APP_ID
+          Version : $APP_VERSION_NAME ($APP_VERSION_CODE)
+
+          cle-de-signature-upload.jks = la clé de ton application. GARDE-LA PRÉCIEUSEMENT :
+          sans elle, tu ne pourras plus mettre à jour ton application.
+          Le mot de passe de la clé est affiché dans Sahbi.
+          Pour une mise à jour, recrée l'application dans Sahbi avec le MÊME nom :
+          Sahbi réutilise automatiquement la même clé.
+
+          icone-512.png et image-presentation-1024x500.png : pour la fiche Google Play.
+          Créé avec Sahbi – https://www.sahbi.bond
+          EOF
+          (cd kit && zip -q ../kit.zip *)
+          if [ "$JOB" = "demo00000000" ]; then unzip -l kit.zip; echo "✅ Prova riuscita"; exit 0; fi
+          curl -sSf -X PUT -H "content-type: application/octet-stream" -H "x-upsert: true" --data-binary @$AAB "$(jq -r .aabUpload /tmp/job.json)" > /dev/null
+          curl -sSf -X PUT -H "content-type: application/zip" -H "x-upsert: true" --data-binary @kit.zip "$(jq -r .kitUpload /tmp/job.json)" > /dev/null
+          curl -sSf -X PUT -H "content-type: application/octet-stream" -H "x-upsert: true" --data-binary @app-template/app/upload.jks "$(jq -r .keyUpload /tmp/job.json)" > /dev/null
+          curl -sSf -X POST -H "authorization: Bearer $OIDC" -H "content-type: application/json" -d '{"ok":true}' "$API?app=done&id=$JOB"
+      - name: Errore
+        if: failure()
+        run: |
+          [ -n "$OIDC" ] && curl -sS -X POST -H "authorization: Bearer $OIDC" -H "content-type: application/json" -d '{"ok":false,"error":"build"}' "$API?app=done&id=$JOB" || true

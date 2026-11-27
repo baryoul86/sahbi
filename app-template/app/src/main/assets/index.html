@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Moto Demo</title>
+<style>
+  html,body{margin:0;height:100%;background:#0b1f18;color:#fff;font-family:system-ui,sans-serif;overflow:hidden;touch-action:none}
+  canvas{display:block;width:100vw;height:100vh}
+  #ui{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;text-align:center}
+  #ui button{font:700 20px system-ui;padding:14px 28px;border:0;border-radius:999px;background:#2FAE74;color:#0b1f18}
+  #score{position:fixed;top:12px;left:0;right:0;text-align:center;font:700 22px system-ui}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="score">0</div>
+<div id="ui"><h1>🏍️ Moto Demo</h1><p>Touche à gauche ou à droite pour éviter les voitures.</p><button id="go">Jouer</button></div>
+<script>
+const c = document.getElementById('c'), x = c.getContext('2d'), ui = document.getElementById('ui'), sc = document.getElementById('score');
+let W, H, lane = 1, cars = [], t = 0, score = 0, run = false, speed = 4;
+const fit = () => { W = c.width = innerWidth; H = c.height = innerHeight; };
+addEventListener('resize', fit); fit();
+const laneX = (l) => W / 2 + (l - 1) * Math.min(110, W / 3.2);
+addEventListener('pointerdown', (e) => { if (!run) return; lane = Math.max(0, Math.min(2, lane + (e.clientX < W / 2 ? -1 : 1))); });
+document.getElementById('go').onclick = () => { cars = []; score = 0; speed = 4; lane = 1; run = true; ui.style.display = 'none'; };
+function loop() {
+  x.fillStyle = '#333'; x.fillRect(0, 0, W, H);
+  x.fillStyle = '#fff'; for (let i = 0; i < 2; i++) for (let y = (t * speed) % 60 - 60; y < H; y += 60) x.fillRect(W / 2 + (i - 0.5) * Math.min(110, W / 3.2) - 3, y, 6, 30);
+  if (run) {
+    t++; if (t % Math.max(18, 50 - score / 5 | 0) === 0) cars.push({ l: Math.random() * 3 | 0, y: -80 });
+    speed += 0.002;
+    for (const car of cars) car.y += speed + 2;
+    cars = cars.filter((car) => { if (car.y > H) { score++; return false; } return true; });
+    for (const car of cars) if (car.l === lane && car.y > H - 190 && car.y < H - 60) { run = false; ui.style.display = 'flex'; ui.querySelector('h1').textContent = '💥 Score : ' + score; }
+  }
+  for (const car of cars) { x.fillStyle = '#E5484D'; x.fillRect(laneX(car.l) - 22, car.y, 44, 70); }
+  x.font = '64px serif'; x.textAlign = 'center'; x.fillText('🏍️', laneX(lane), H - 90);
+  sc.textContent = score;
+  requestAnimationFrame(loop);
+}
+loop();
+</script>
+</body>
+</html>

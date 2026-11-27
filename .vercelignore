@@ -6,3 +6,4 @@ supabase
 LANCIO.md
 guides/_*.py
 scripts/
+app-template/

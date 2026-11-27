@@ -1,0 +1,26 @@
+// App Android creata da Sahbi: il gioco/sito è dentro l'app (assets/index.html) e funziona anche senza internet.
+// Nome, pacchetto, versione e firma arrivano dalle variabili d'ambiente del costruttore.
+plugins { id 'com.android.application' }
+android {
+    namespace 'app.sahbi.template'
+    compileSdk 36
+    defaultConfig {
+        applicationId System.getenv('APP_ID') ?: 'app.sahbi.demo'
+        minSdk 24
+        targetSdk 36
+        versionCode Integer.parseInt(System.getenv('APP_VERSION_CODE') ?: '1')
+        versionName System.getenv('APP_VERSION_NAME') ?: '1.0'
+        resValue 'string', 'app_name', (System.getenv('APP_NAME') ?: 'Mon app')
+        resValue 'color', 'app_color', (System.getenv('APP_COLOR') ?: '#0F2E24')
+    }
+    signingConfigs {
+        release {
+            storeFile file(System.getenv('KEYSTORE_FILE') ?: 'upload.jks')
+            storePassword System.getenv('KEYSTORE_PASS')
+            keyAlias 'upload'
+            keyPassword System.getenv('KEYSTORE_PASS')
+        }
+    }
+    buildTypes { release { minifyEnabled false; signingConfig signingConfigs.release } }
+    compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
+}
