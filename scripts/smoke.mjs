@@ -8,7 +8,7 @@ const ko = (name, detail = '') => { results.push({ name, ok: false, detail }); c
 const step = async (name, fn) => { try { const d = await fn(); ok(name, d || ''); return true; } catch (e) { ko(name, String(e.message || e).slice(0, 300)); return false; } };
 const must = (c, m) => { if (!c) throw new Error(m); };
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-let cfg = {}, token = '', html = '', slug = '';
+let cfg = {}, token = '', html = '', slug = '', isPro = false;
 
 await step('Pagina iniziale', async () => {
   const r = await fetch(BASE); const t = await r.text();
@@ -38,6 +38,7 @@ const chat = async (content, extra = {}) => {
 if (logged) {
   await step('Profilo (/api/me)', async () => {
     const r = await api('/api/me'); const d = await r.json(); must(r.ok, d.message || r.status);
+    isPro = !!d.pro;
     return `${d.pro ? 'Pro' : 'gratuito'}${d.trial ? ' (prova)' : ''}`;
   });
   await step('Chat normale', async () => {
@@ -59,7 +60,15 @@ if (logged) {
     must(i.ok && /^image\//.test(i.headers.get('content-type') || ''), `immagine non caricata (${i.status} ${i.headers.get('content-type')}) da ${loc}`);
     return new URL(loc).host;
   });
-  if (html) {
+  await step('Server dei siti pubblicati (sahbi-sites)', async () => {
+    const r = await fetch('https://sahbi-sites.vercel.app/questo-sito-non-esiste-123'); must(r.status === 404, `HTTP ${r.status} (atteso 404)`); return 'risponde';
+  });
+  // Il compte de test è gratuito (serve ad Apple per provare l'acquisto): la pubblicazione si prova solo se è Pro.
+  if (html && !isPro) await step('Pubblicazione del sito', async () => {
+    const r = await api('/api/library?publish=1', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ text: html, size: html.length }) });
+    must(r.status === 402, `atteso "réservé à Pro" (402), ricevuto ${r.status}`); return 'riservata ai Pro come previsto (conto di test gratuito)';
+  });
+  if (html && isPro) {
     await step('Pubblicazione del sito (sahbi-sites)', async () => {
       const full = html.replace(/https:\/\/loremflickr\.com/g, `${BASE}/img`);
       const r = await api('/api/library?publish=1', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ text: full, size: full.length, title: 'test controllo' }) });
