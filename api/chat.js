@@ -121,6 +121,7 @@ MODALITÀ SITO INTERNET (questa chat serve SOLO a creare e pubblicare un sito we
   • Struttura tipica: intestazione fissa con logo/nome e menu (hamburger su telefono) → sezione principale con titolo forte, sottotitolo e pulsante → servizi/prodotti in schede → perché sceglierci/numeri → galleria → avis clients → FAQ → contatti con mappa Google (iframe con l'indirizzo) e pulsanti WhatsApp/telefono → piè di pagina. Adatta le sezioni al tipo di sito; non mettere sezioni vuote.
   • Qualità tecnica: mobile-first, si vede perfetto su telefono; lingua giusta (lang e dir="rtl" per l'arabo); meta title/description, Open Graph, favicon emoji; immagini con alt; contrasti leggibili; link WhatsApp nel formato https://wa.me/NUMERO?text=…; niente librerie pesanti; nessun errore JavaScript.
   • MODIFICHE: quando l'utente chiede un cambiamento (colore, testo, prezzo, foto, sezione), rimanda SEMPRE il file index.html COMPLETO aggiornato (non solo il pezzo), conservando tutto il resto. Poi in 1 riga di' cosa hai cambiato e proponi 1-2 miglioramenti utili (es. "Vuoi che aggiunga una sezione avis clients?").
+- GIOCHI DI MOTO/CORSA/MACCHINE: usa SEMPRE lo strumento create_game (gioco professionale già pronto con strada 3D, traffico, nitro, monete, suono, record). Scegli titolo, ambientazione, colori e lingua adatti alla richiesta. Per cambiare nome, colori, ambientazione o difficoltà richiama create_game con i nuovi valori (non riscrivere il codice a mano).
 - GIOCHI E MINI-APP: se l'utente vuole un gioco (moto, corsa, salti, puzzle, quiz, memory, serpente…) o un'app (menu, prenotazioni, catalogo, calcolatrice), lo crei in UN solo file HTML con <canvas> o HTML+JS: schermo intero, comandi touch grandi (tocco a sinistra/destra, scorrimento, pulsanti sullo schermo) e anche tastiera, schermata iniziale con titolo e "Jouer", punteggio, livelli o velocità che aumenta, schermata di fine con "Rejouer", record salvato con localStorage, suoni facoltativi con WebAudio (mai file esterni), grafica con forme, sfumature ed emoji (niente immagini da internet in un gioco), 60 fps con requestAnimationFrame, nessuna libreria esterna. Deve funzionare SENZA internet (diventerà un'app Android). Dopo il codice: "Joue dans l'aperçu ! Dis-moi ce qu'on améliore. Quand il te plaît, appuie sur 📱 App Android pour en faire une vraie application."
 - APP ANDROID E GOOGLE PLAY: il pulsante "📱 App Android" sotto l'anteprima crea il file .aab firmato + un kit (chiave, icona 512, immagine 1024×500) e poi Sahbi mostra la guida. L'app si pubblica sul conto Google Play DELL'UTENTE: tu non entri mai nei suoi conti e non chiedi mai password o codici. Se chiede aiuto per la pubblicazione, guidalo UN passo alla volta con i link: conto sviluppatore https://play.google.com/console/signup (25 $ una volta, documento d'identità) → "Créer une application" su https://play.google.com/console → "Test fermé" → "Créer une version" → importare il .aab (accettare "Signature d'application Play") → 12 tester per 14 giorni per i conti personali recenti → scheda Play Store (scrivi tu descrizione breve ≤80 caratteri e completa, e prepara la pagina "Règles de confidentialité" da mettere online con 🚀) → contenuti dell'app (classificazione, pubblico, annunci) → dopo 14 giorni "Demander l'accès à la production". Se manda uno screenshot, digli esattamente cosa premere. Aggiornamento: ricreare l'app con lo STESSO nome. iPhone/App Store: non ancora disponibile.
 - PIÙ PAGINE: se l'attività ha più prodotti/marchi/servizi o l'utente vuole "un'altra pagina quando clicco", fai un sito a più pagine in UN solo file: ogni pagina è <section data-page="nome">, i link sono <a href="#nome">, uno script su 'hashchange' mostra solo la pagina giusta (pagina iniziale #home, scrollTo(0,0), pulsante "← Retour"). Le schede/anteprime sono cliccabili e aprono la pagina di dettaglio con contenuto vero.
@@ -350,6 +351,31 @@ const WEATHER_TOOL = {
     },
   },
 };
+// 🎮 Giochi pronti, scritti a mano (belli e senza errori): Sahbi li personalizza invece di scriverli da zero.
+const GAME_TOOL = {
+  type: 'function',
+  function: {
+    name: 'create_game',
+    description: "Crea un gioco professionale già pronto (motore scritto a mano, grafica 3D, suono, record, comandi touch). Usalo SEMPRE quando l'utente vuole un gioco di moto, di corsa, di macchine o di strada, o vuole cambiarne titolo, colori, ambientazione o difficoltà.",
+    parameters: {
+      type: 'object',
+      properties: {
+        kind: { type: 'string', enum: ['moto'], description: 'Tipo di gioco (moto = corsa su strada, va bene anche per macchine).' },
+        title: { type: 'string', description: 'Nome del gioco, corto (es. "Rush Moto").' },
+        subtitle: { type: 'string', description: 'Una frase sotto il titolo, nella lingua dell\'utente.' },
+        theme: { type: 'string', enum: ['city', 'desert', 'night', 'forest', 'coast'], description: 'Ambientazione: città al tramonto, deserto con palme, notte neon, foresta, mare.' },
+        color1: { type: 'string', description: 'Colore principale #RRGGBB (moto e pulsanti).' },
+        color2: { type: 'string', description: 'Secondo colore #RRGGBB.' },
+        difficulty: { type: 'string', enum: ['easy', 'normal', 'hard'] },
+        lang: { type: 'string', enum: ['fr', 'it', 'en', 'ar', 'es'], description: 'Lingua dei testi del gioco (quella dell\'utente).' },
+        intro: { type: 'string', description: "1-2 frasi per l'utente prima del gioco, nella sua lingua (cosa hai creato)." },
+      },
+      required: ['kind', 'title', 'theme', 'lang', 'intro'],
+      additionalProperties: false,
+    },
+  },
+};
+
 const SEARCH_TOOL = {
   type: 'function',
   function: {
@@ -552,7 +578,7 @@ export async function POST(request) {
   const imgOpts = (edit) => ({ limit: limits.image, photo: edit ? photo : null, userText: ownWords.slice(0, 1500), history: recent });
   const vidOpts = (fromPhoto) => ({ pro, limit: limits.video, photo: fromPhoto ? photo : null });
   const media = videoEnabled() ? [...TOOLS, VIDEO_TOOL] : TOOLS;
-  const tools = [...media, WEATHER_TOOL, SEARCH_TOOL, REMINDER_TOOL];
+  const tools = [...media, WEATHER_TOOL, SEARCH_TOOL, REMINDER_TOOL, ...(body?.mode === 'website' ? [GAME_TOOL] : [])];
   const NAMES = media.map((t) => t.function.name); // strumenti che creano immagini o video
   // Esegue lo strumento scelto dal modello e restituisce i messaggi di controllo per il telefono.
   // Foto + "trasformala": si parte SEMPRE dalla foto dell'utente, anche se il modello dimentica edit_photo.
@@ -734,7 +760,8 @@ export async function POST(request) {
         controller.enqueue(encoder.encode(frame({ type: video ? 'video_error' : 'image_error', error: 'upstream', message: video ? 'Impossible de créer la vidéo maintenant. Réessaie dans un instant.' : "Impossible de créer l'image maintenant. Réessaie dans un instant." })));
       } finally { clearInterval(hb); }
       if (siteMode && pro) {
-        const used = await addEnergy(userId, reply.length / 1000);
+        // Il gioco pronto non costa OpenAI: conta solo come un piccolo messaggio.
+        const used = await addEnergy(userId, (tool.name === 'create_game' ? 2000 : reply.length) / 1000);
         if (used !== null) controller.enqueue(encoder.encode(frame({ type: 'energy', pct: Math.min(100, Math.round(used / energyMax * 100)) })));
       }
       controller.enqueue(encoder.encode(await memoryFrame()));
@@ -810,6 +837,17 @@ export async function POST(request) {
 
   async function finishTools(controller) {
       if (INFO_TOOLS.includes(tool.name)) { await weatherFollowUp(controller); return; }
+      if (tool.name === 'create_game') {
+        const a = parseJSON(tool.args);
+        const { motoGame } = await import('./_game_moto.js');
+        const html = motoGame(a);
+        const intro = String(a.intro || '').replace(/```/g, '').slice(0, 400) || '🏍️ Ton jeu est prêt !';
+        const outro = { it: "Gioca nell'anteprima! Posso cambiare ambientazione (città, deserto, notte, foresta, mare), colori, difficoltà o nome. Quando ti piace, premi 📱 App Android.", en: 'Play it in the preview! I can change the setting (city, desert, night, forest, coast), colours, difficulty or name. When you like it, tap 📱 Android app.', ar: 'العبها في المعاينة! أقدر نبدل المكان (مدينة، صحراء، ليل، غابة، بحر)، الألوان، الصعوبة أو الاسم. ملي تعجبك، اضغط على 📱 تطبيق أندرويد.', es: '¡Juega en la vista previa! Puedo cambiar el escenario, los colores, la dificultad o el nombre. Cuando te guste, pulsa 📱 App Android.' }[a.lang] || 'Joue dans l’aperçu ! Je peux changer le décor (ville, désert, nuit, forêt, mer), les couleurs, la difficulté ou le nom. Quand il te plaît, appuie sur 📱 App Android.';
+        const text = `${intro}\n\n\`\`\`html\n${html}\n\`\`\`\n\n${outro}`;
+        reply += text;
+        controller.enqueue(encoder.encode(text));
+        return;
+      }
       if (tool.name === 'create_reminder') {
         const a = parseJSON(tool.args);
         const title = String(a.title || '').slice(0, 120), start = String(a.start || '').slice(0, 16), notes = String(a.notes || '').slice(0, 300);

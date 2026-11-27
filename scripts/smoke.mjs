@@ -53,6 +53,11 @@ if (logged) {
     const imgs = [...html.matchAll(/<img[^>]+src=["']([^"']+)/gi)].map((x) => x[1]);
     return `${Math.round(html.length / 1024)} KB in ${Math.round((Date.now() - t0) / 1000)} s, ${imgs.length} immagini`;
   });
+  await step('Gioco di moto (motore pronto)', async () => {
+    const t = await chat('Crée-moi un jeu de moto qui s’appelle Test Rush, ambiance nuit.', { mode: 'website' });
+    must(/```html/.test(t) && /MOTO_TEMPLATE|moto-best-|"theme":"/.test(t), `il gioco pronto non è stato usato: ${t.slice(0, 160)}`);
+    return 'ok';
+  });
   await step('Immagini dei siti (/img)', async () => {
     const r = await fetch(`${BASE}/img?w=800&h=600&q=bread,bakery&s=1`, { redirect: 'manual' });
     must(r.status === 302 && r.headers.get('location'), `HTTP ${r.status}`);

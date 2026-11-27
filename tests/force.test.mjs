@@ -76,3 +76,14 @@ console.log('site photo OK');
   assert.doesNotMatch(n.messages[0].content, /non si possono creare immagini/);
 }
 console.log('site edit OK');
+// Gioco di moto in modalità siti: lo strumento create_game è disponibile (e solo lì).
+{
+  first = null; const r = await POST(new Request('https://w/api/chat', { method: 'POST', headers: { authorization: 'Bearer t' }, body: JSON.stringify({ messages: [{ role: 'user', content: 'Fais-moi un jeu de moto' }], mode: 'website' }) })); await r.text();
+  assert.ok(first.tools.some((x) => x.function.name === 'create_game'));
+  first = null; const r2 = await POST(new Request('https://w/api/chat', { method: 'POST', headers: { authorization: 'Bearer t' }, body: JSON.stringify({ messages: [{ role: 'user', content: 'Salut' }] }) })); await r2.text();
+  assert.ok(!first.tools.some((x) => x.function.name === 'create_game'));
+  const { motoGame } = await import('../api/_game_moto.js');
+  const h = motoGame({ title: 'Rush <b>Moto</b>', theme: 'night', lang: 'it', color1: 'red' });
+  assert.match(h, /<title>Rush bMoto\/b<\/title>/); assert.match(h, /"theme":"night"/); assert.match(h, /"color1":"#ff6b35"/); assert.doesNotMatch(h, /__CFG__/);
+}
+console.log('game OK');
