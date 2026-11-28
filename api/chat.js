@@ -1,4 +1,5 @@
 import { env, fail, getUserId, useCredit, refundCredit, useSiteCredit, refundSiteCredit, getEnergy, addEnergy, SITE_ENERGY, getPlan, openaiHeaders, OPENAI, generateImage, parsePhoto } from './_lib.js';
+import { siteSkill } from './_site_skills.js';
 import { startVideo, videoEnabled } from './_video.js';
 import { getMemory, learnFromMessage, memoryPrompt } from './_memory.js';
 import { openaiAlert } from './_alert.js';
@@ -585,6 +586,7 @@ export async function POST(request) {
   const userText = messages[messages.length - 1].content;
   // Chat dei siti: usa gli stessi messaggi della chat (15 gratis / 150 Pro). In più, per i Pro, l'energia dei siti.
   const siteMode = body?.mode === 'website';
+  const skill = siteMode ? siteSkill(messages) : { id: null, prompt: '' };
   const siteFree = false;
   if (siteMode && pro && (await getEnergy(userId)) >= energyMax) {
     return fail('energy', 429, '⚡ Ton énergie pour créer des sites est épuisée pour aujourd’hui. Elle se recharge demain à 8 h. Ton site est bien enregistré.');
@@ -659,7 +661,7 @@ export async function POST(request) {
     // Foto + "trasformala in stile…", oppure "fammi un'immagine di…": si disegna subito, senza domande.
     tool_choice: !sitePhoto && !noImage && (again || (!NOT_IMAGE.test(nowText) && ((photo && !body?.photoEarlier && STYLE_ASK.test(nowText)) || ((!photo || body?.photoEarlier) && IMAGE_REQ.test(nowText)))))
       ? { type: 'function', function: { name: 'create_image' } } : 'auto',
-    messages: [{ role: 'system', content: SYSTEM.replace('{{VIDEO}}', videoEnabled() ? VIDEO_ON : VIDEO_OFF) + memoryPrompt(memory) + uiLangPrompt(body?.lang) + todayPrompt() + clientNowPrompt(body?.now) + langPrompt(detectLang(nowText) ? nowText : (again ? prevUserText : nowText)) + (body?.voice === true ? VOICE_STYLE : '') + (body?.mode === 'book' ? BOOK_MODE : body?.mode === 'travel' ? TRAVEL_MODE + countryHint(request) : body?.mode === 'website' ? WEBSITE_MODE + (pro ? WEBSITE_PRO : WEBSITE_FREE) + (Number(body?.sitePhotos) > 0 ? `\n- In questa chat l'utente ha già mandato ${Math.min(12, Number(body.sitePhotos) | 0)} foto: foto1.jpg … foto${Math.min(12, Number(body.sitePhotos) | 0)}.jpg. Usale tutte nel sito.` : '') + (Number(body?.siteVideos) > 0 ? `\n- L'utente ha mandato anche ${Math.min(5, Number(body.siteVideos) | 0)} video: video1.mp4 … video${Math.min(5, Number(body.siteVideos) | 0)}.mp4. Mettili nel sito.` : '') : body?.mode === 'business' ? BUSINESS_MODE + countryHint(request) : body?.mode === 'whatsapp' ? WHATSAPP_MODE : body?.mode === 'coach' ? COACH_MODE : (pro ? '' : WEBSITE_FREE_CHAT)) + (sitePhoto ? SITE_PHOTO_NOW(Number(body?.sitePhotos) | 0) : '') + (offTopicImg ? OFF_TOPIC_IMG_BASE + (body?.mode === 'website' ? `Se invece vuole quell'immagine DENTRO il sito, basta dirlo ("mettila nel sito").\n` : '') : siteEdit ? SITE_EDIT_NOW(body?.mode === 'website') : '') }, ...messages],
+    messages: [{ role: 'system', content: SYSTEM.replace('{{VIDEO}}', videoEnabled() ? VIDEO_ON : VIDEO_OFF) + memoryPrompt(memory) + uiLangPrompt(body?.lang) + todayPrompt() + clientNowPrompt(body?.now) + langPrompt(detectLang(nowText) ? nowText : (again ? prevUserText : nowText)) + (body?.voice === true ? VOICE_STYLE : '') + (body?.mode === 'book' ? BOOK_MODE : body?.mode === 'travel' ? TRAVEL_MODE + countryHint(request) : body?.mode === 'website' ? WEBSITE_MODE + (pro ? WEBSITE_PRO : WEBSITE_FREE) + skill.prompt + (Number(body?.sitePhotos) > 0 ? `\n- In questa chat l'utente ha già mandato ${Math.min(12, Number(body.sitePhotos) | 0)} foto: foto1.jpg … foto${Math.min(12, Number(body.sitePhotos) | 0)}.jpg. Usale tutte nel sito.` : '') + (Number(body?.siteVideos) > 0 ? `\n- L'utente ha mandato anche ${Math.min(5, Number(body.siteVideos) | 0)} video: video1.mp4 … video${Math.min(5, Number(body.siteVideos) | 0)}.mp4. Mettili nel sito.` : '') : body?.mode === 'business' ? BUSINESS_MODE + countryHint(request) : body?.mode === 'whatsapp' ? WHATSAPP_MODE : body?.mode === 'coach' ? COACH_MODE : (pro ? '' : WEBSITE_FREE_CHAT)) + (sitePhoto ? SITE_PHOTO_NOW(Number(body?.sitePhotos) | 0) : '') + (offTopicImg ? OFF_TOPIC_IMG_BASE + (body?.mode === 'website' ? `Se invece vuole quell'immagine DENTRO il sito, basta dirlo ("mettila nel sito").\n` : '') : siteEdit ? SITE_EDIT_NOW(body?.mode === 'website') : '') }, ...messages],
   };
   if (model.startsWith('gpt-5')) payload.reasoning_effort = env('OPENAI_REASONING_EFFORT', 'minimal');
   // Siti: un po' più di riflessione = struttura e design molto migliori (costo un po' più alto, coperto dall'energia).

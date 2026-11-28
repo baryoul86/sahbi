@@ -143,6 +143,7 @@ footer.composer .col{padding-block:10px 12px;display:flex;flex-direction:column;
 .bookcard .rb button{min-height:40px;padding:0 14px;border-radius:999px;border:1px solid var(--line);background:var(--bg);color:var(--fg);font:inherit;font-size:14px;cursor:pointer}
 .bookcard .rb button.main{background:var(--mint);border-color:var(--mint);color:var(--mint-ink)}
 .work-card{display:flex;align-items:center;gap:10px;margin:10px 0 4px;padding:14px 16px;border:1px dashed var(--line);border-radius:16px;background:var(--panel);font-size:15px;max-width:520px}
+.work-card.qa{font-size:14px;padding:10px 14px;flex-wrap:wrap;border-style:solid}.work-card.qa small{width:100%;opacity:.75}
 .work-card .wk-spin{width:18px;height:18px;border-radius:50%;border:3px solid var(--line);border-top-color:var(--mint,#2FAE74);animation:wkspin .8s linear infinite;flex:none}
 @keyframes wkspin{to{transform:rotate(360deg)}}
 .site-card{margin:10px 0 4px;border:1px solid var(--line);border-radius:16px;overflow:hidden;background:var(--panel);max-width:520px}
@@ -1584,7 +1585,9 @@ const PREVIEW_FIX = '<base href="about:srcdoc"><script>'
   + 'if(h==="#"||h===""){e.preventDefault();return}if(/^(https?:|mailto:|tel:|sms:|whatsapp:)/i.test(h)){a.target="_blank";a.rel="noopener"}},true);<\/script>';
 // Errori dentro l'anteprima: avviso con il pulsante per farlo correggere a Sahbi.
 let lastPreviewErr = '';
+const auditWins = new Set();
 addEventListener('message', (e) => {
+  if (auditWins.has(e.source)) return; // controllo qualità nascosto: gestito a parte
   const m = e.data && e.data.sahbiPreviewError;
   if (!m || m === lastPreviewErr) return;
   lastPreviewErr = m;
@@ -1595,6 +1598,66 @@ const previewDoc = (html) => {
   const h = withPhotos(html);
   return /<head[^>]*>/i.test(h) ? h.replace(/<head[^>]*>/i, (m) => m + PREVIEW_FIX) : PREVIEW_FIX + h;
 };
+// 🛠️ Agente "controllo qualità": apre il sito in un telefono invisibile (390 px), aspetta che si carichi
+// e cerca i problemi che vedrebbe un cliente: errori JavaScript, immagini rotte, pagina più larga dello schermo,
+// testi "undefined/NaN/Lorem ipsum", pagina vuota, niente adattamento al telefono.
+const AUDIT_JS = '<script>(function(){var E=[];addEventListener("error",function(e){E.push(String(e.message||"erreur").slice(0,160))});'
+  + 'function go(){var I=[],d=document,b=d.body||d.documentElement,txt=(b.innerText||"");'
+  + 'if(E.length)I.push({k:"js",m:E.slice(0,3).join(" | ")});'
+  + 'var bad=[].slice.call(d.images).filter(function(i){return i.complete&&i.naturalWidth===0&&i.getAttribute("src")&&!/^data:/.test(i.src)});if(bad.length)I.push({k:"img",n:bad.length,m:bad.slice(0,3).map(function(i){return i.getAttribute("src").slice(0,90)}).join(" ")});'
+  + 'var ov=d.documentElement.scrollWidth-innerWidth;if(ov>8){var w=null;[].slice.call(d.querySelectorAll("body *")).some(function(el){var r=el.getBoundingClientRect();if(r.right>innerWidth+8&&r.width>40&&getComputedStyle(el).position!=="fixed"){w=el;return true}});I.push({k:"wide",n:ov,m:w?(w.tagName.toLowerCase()+(w.id?"#"+w.id:"")+(w.className&&typeof w.className==="string"?"."+w.className.trim().split(/\\s+/)[0]:"")):""})}'
+  + 'var t=txt.match(/\\b(NaN|undefined)\\b|\\[object Object\\]|lorem ipsum/i);if(t)I.push({k:"text",m:t[0]});'
+  + 'if(txt.trim().length<15&&!d.querySelector("canvas,svg,video,img"))I.push({k:"empty"});'
+  + 'if(!d.querySelector("meta[name=viewport]"))I.push({k:"viewport"});'
+  + 'parent.postMessage({sahbiAudit:ID,issues:I},"*")}'
+  + 'addEventListener("load",function(){setTimeout(go,3500)})})();<\/script>';
+function auditSite(html) {
+  return new Promise((done) => {
+    const id = Math.random().toString(36).slice(2);
+    const f = document.createElement('iframe');
+    f.setAttribute('sandbox', 'allow-scripts'); f.setAttribute('aria-hidden', 'true'); f.tabIndex = -1;
+    f.style.cssText = 'position:fixed;left:-10000px;top:0;width:390px;height:844px;border:0;opacity:0;pointer-events:none';
+    const doc = previewDoc(html), js = AUDIT_JS.replace('ID', JSON.stringify(id));
+    f.srcdoc = /<head[^>]*>/i.test(doc) ? doc.replace(/<head[^>]*>/i, (m) => m + js) : js + doc;
+    let end = null;
+    const finish = (issues) => { if (end === null) return; clearTimeout(end); end = null; removeEventListener('message', on); auditWins.delete(f.contentWindow); f.remove(); done(issues); };
+    const on = (e) => { if (e.data && e.data.sahbiAudit === id) finish(e.data.issues || []); };
+    addEventListener('message', on);
+    document.body.appendChild(f); auditWins.add(f.contentWindow);
+    end = setTimeout(() => finish(null), 12000); // troppo lento: nessun giudizio
+  });
+}
+const AUDIT_TXT = {
+  js: (i) => tr('Erreur JavaScript : {m}', { m: i.m }),
+  img: (i) => tr('{n} image(s) ne s’affichent pas : {m}', { n: i.n, m: i.m }),
+  wide: (i) => tr('La page dépasse l’écran du téléphone de {n} px ({m})', { n: i.n, m: i.m || '?' }),
+  text: (i) => tr('Texte bizarre visible : « {m} »', { m: i.m }),
+  empty: () => tr('La page est presque vide'),
+  viewport: () => tr('Il manque l’adaptation au téléphone (meta viewport)'),
+};
+async function qualityCheck(html, after, auto) {
+  const line = el('div', 'work-card qa'); line.append(el('span', 'wk-spin'), el('span', 'wk-txt', tr('🛠️ Contrôle qualité sur un téléphone…')));
+  after.after(line); scroll();
+  const issues = await auditSite(html);
+  if (issues === null) { line.remove(); return; }
+  if (!issues.length) { line.replaceChildren(el('span', 'wk-txt', tr('✅ Contrôle qualité : tout fonctionne sur téléphone.'))); return; }
+  const list = issues.map((i) => '• ' + (AUDIT_TXT[i.k] || (() => i.k))(i));
+  line.replaceChildren(el('span', 'wk-txt', `${tr('🛠️ Contrôle qualité : {n} problème(s) trouvé(s)', { n: issues.length })}\n${list.join('\n')}`));
+  line.querySelector('.wk-txt').style.whiteSpace = 'pre-line';
+  const ask = `${tr('🛠️ Contrôle qualité automatique : corrige ces problèmes et renvoie le fichier complet.')}\n${list.join('\n')}`;
+  const fix = async () => {
+    for (let k = 0; busy && k < 300; k++) await new Promise((r) => setTimeout(r, 200));
+    if (busy) return;
+    busy = true; grow();
+    try { await sendChat(ask, null, null, { qaFix: true }); } catch { /* errore già mostrato */ }
+    busy = false; grow();
+  };
+  // Pro (e prova): l'agente corregge da solo, una volta. Gratis o dopo una correzione: pulsante.
+  if ((me?.pro || me?.trial) && !auto) { line.append(el('small', '', tr('Sahbi corrige tout seul…'))); setTimeout(fix, 1200); return; }
+  const b = el('button', 'retry', tr('🛠️ Corriger')); b.type = 'button';
+  b.addEventListener('click', () => { b.disabled = true; fix(); });
+  line.after(b); scroll();
+}
 // Anteprima in un riquadro isolato (sandbox): il codice del sito non può toccare Sahbi.
 // Anteprima del sito direttamente nella chat (come una scheda): il codice lungo resta nascosto dietro "</> Code".
 // ⚠️ Codice arrivato a metà (risposta tagliata): niente codice in chat, solo un riquadro con "Réessayer".
@@ -2448,6 +2511,8 @@ async function sendChat(text, pic = null, docAtt = null, opts = {}) {
     current.messages.push({ role: 'assistant', content: reply });
     linkify(out);
     addTextActions(out, reply);
+    const built = !ctrl.stopped && findHtml(reply);
+    if (built && !built.partial) { const card = out.parentElement?.querySelector('.site-card'); if (card) qualityCheck(built.html, card, !!opts.qaFix); }
   }
   delete msg.waiting;
   current.messages.push(...extra);
