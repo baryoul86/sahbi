@@ -473,7 +473,8 @@ a.s-row[hidden]{display:none}
 .rec button{width:44px;height:44px;border-radius:50%;border:0;display:grid;place-items:center;flex:0 0 44px}
 .rec .rx{background:var(--panel-2);color:var(--fg)}
 .rec .rx:hover{color:var(--fg);background:var(--panel-2)}
-.rec .rs{background:var(--mint);color:var(--mint-ink)}
+.rec .rs{background:#e5484d;color:#fff;width:auto;flex:0 0 auto;border-radius:22px;padding:0 14px;gap:6px;display:flex;align-items:center;font:800 15px system-ui}
+.rec .rsend{background:var(--mint);color:var(--mint-ink)}
 .rec canvas{flex:1;min-width:0;height:36px}
 .rec .rt{font-size:14px;color:var(--muted);font-variant-numeric:tabular-nums;min-width:40px;text-align:center}
 .rec.busy canvas{opacity:.35}
@@ -573,7 +574,8 @@ html[lang=ar] body{line-height:1.7}
           <button type="button" class="rx" id="recCancel" aria-label="Annuler l’enregistrement"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
           <canvas id="recWave" aria-hidden="true"></canvas>
           <span class="rt" id="recTime">0:00</span>
-          <button type="button" class="rs" id="recStop" aria-label="Arrêter et écrire le texte"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></button>
+          <button type="button" class="rs" id="recStop" aria-label="Stop : arrêter et écrire le texte (sans envoyer)"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="5" y="5" width="14" height="14" rx="3"/></svg><b>Stop</b></button>
+          <button type="button" class="rsend" id="recSend" aria-label="Arrêter et envoyer tout de suite"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7"/></svg></button>
         </div>
         <button class="send stop" id="stopBtn" type="button" aria-label="Arrêter la réponse" hidden>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="5" y="5" width="14" height="14" rx="3"/></svg>
@@ -3051,13 +3053,13 @@ $('docFile').addEventListener('change', async () => {
 $('removeDoc').addEventListener('click', () => setDoc(null));
 
 // ---------- Microfono (come ChatGPT: premi, parli, ■ per finire, ✕ per annullare) ----------
-let recorder = null, chunks = [], stopTimer = null, recCancelled = false, recStart = 0, recRaf = 0, recCtx = null;
+let recorder = null, chunks = [], stopTimer = null, recCancelled = false, recSendAfter = false, recStart = 0, recRaf = 0, recCtx = null;
 const recBar = $('rec'), recWave = $('recWave');
 function micState(on) {
   mic.classList.toggle('on', on); mic.setAttribute('aria-pressed', String(on));
   recBar.hidden = !on; recBar.classList.remove('busy');
-  $('recStop').innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
-  $('recStop').disabled = false;
+  $('recStop').innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="5" y="5" width="14" height="14" rx="3"/></svg><b>Stop</b>';
+  $('recStop').disabled = false; $('recSend').disabled = false;
   if (on) $('recStop').focus();
 }
 // Onda che si muove con la voce + cronometro.
@@ -3088,7 +3090,7 @@ function stopWave() { cancelAnimationFrame(recRaf); recCtx?.close().catch(() => 
 const chatContext = () => (current?.messages || []).slice(-2).map((m) => String(m.content || '').slice(-200)).join(' ').replace(/\[[^\]]*\]/g, '').trim();
 // Trascrizione in streaming: il testo appare man mano.
 async function transcribe(blob) {
-  recBar.classList.add('busy'); $('recStop').disabled = true; $('recStop').innerHTML = '<span class="spin" aria-hidden="true"></span>';
+  recBar.classList.add('busy'); $('recStop').disabled = true; $('recSend').disabled = true; $('recStop').innerHTML = '<span class="spin" aria-hidden="true"></span>';
   const before = ta.value ? ta.value.replace(/\s+$/, '') + ' ' : '';
   try {
     const fd = new FormData(); fd.append('audio', blob, 'audio'); fd.append('stream', '1'); fd.append('context', chatContext());
@@ -3103,7 +3105,10 @@ async function transcribe(blob) {
     text = text.trim();
     if (!text) { toast('Je n’ai pas compris. Réessaie.'); ta.value = before.trimEnd(); }
     else ta.value = before + text;
-    grow(); ta.focus();
+    grow();
+    // ➤ "Arrêter et envoyer": il messaggio parte da solo. ■ Stop: il testo resta da rileggere.
+    if (recSendAfter && text) { recSendAfter = false; micState(false); $('form').requestSubmit(); }
+    else ta.focus();
   } catch { toast('Pas de connexion.'); }
   finally { micState(false); }
 }
@@ -3117,7 +3122,7 @@ async function startMic() {
   // File più leggero = invio più veloce (la voce resta chiara).
   try { recorder = new MediaRecorder(stream, { ...(type ? { mimeType: type } : {}), audioBitsPerSecond: 32000 }); }
   catch { recorder = new MediaRecorder(stream, type ? { mimeType: type } : undefined); }
-  chunks = []; recCancelled = false; recStart = Date.now();
+  chunks = []; recCancelled = false; recSendAfter = false; recStart = Date.now();
   recorder.ondataavailable = (e) => { if (e.data.size) chunks.push(e.data); };
   recorder.onstop = () => {
     stream.getTracks().forEach((t) => t.stop()); stopWave(); clearTimeout(stopTimer);
@@ -3130,7 +3135,8 @@ async function startMic() {
   stopTimer = setTimeout(() => recorder?.state === 'recording' && recorder.stop(), 120000);
 }
 mic.addEventListener('click', () => { if (!recorder && recBar.hidden) startMic(); });
-$('recStop').addEventListener('click', () => { if (recorder?.state === 'recording') recorder.stop(); });
+$('recStop').addEventListener('click', () => { recSendAfter = false; if (recorder?.state === 'recording') recorder.stop(); });
+$('recSend').addEventListener('click', () => { recSendAfter = true; if (recorder?.state === 'recording') recorder.stop(); });
 $('recCancel').addEventListener('click', () => {
   recCancelled = true;
   if (recorder?.state === 'recording') recorder.stop(); else micState(false);
